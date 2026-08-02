@@ -1,0 +1,75 @@
+// precommitEU palette, matching precommit.eu.
+// Plain CSS rules only: applied after the theme, no theme internals.
+
+:root {
+  --c-reflex-blue: #003399;
+  --c-reflex-blue-deep: #00256e;
+  --c-eu-yellow: #ffcc00;
+  --c-off-white: #f4f4f0;
+  --c-line: #e5e5dc;
+}
+
+.site-header {
+  border-bottom: 3px solid var(--c-eu-yellow);
+}
+
+.site-title {
+  color: var(--c-reflex-blue) !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.site-nav .nav-list .nav-list-item .nav-list-link {
+  &:hover {
+    background-image: linear-gradient(
+      -90deg,
+      rgba(0, 51, 153, 0.1) 0%,
+      rgba(0, 51, 153, 0.05) 80%,
+      transparent 100%
+    );
+  }
+
+  &.active {
+    color: var(--c-reflex-blue);
+    font-weight: 600;
+    background-image: linear-gradient(
+      -90deg,
+      rgba(255, 204, 0, 0.3) 0%,
+      rgba(255, 204, 0, 0.1) 80%,
+      transparent 100%
+    );
+  }
+}
+
+.main-content {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--c-reflex-blue);
+  }
+
+  h2 {
+    border-bottom: 1px solid var(--c-line);
+    padding-bottom: 0.3em;
+  }
+
+  a {
+    color: var(--c-reflex-blue);
+  }
+
+  pre.highlight,
+  code {
+    background-color: var(--c-off-white);
+  }
+
+  blockquote {
+    border-left: 4px solid var(--c-eu-yellow);
+  }
+
+  table th {
+    background-color: var(--c-off-white);
+  }
+}
