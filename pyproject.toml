@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "precommiteu"
+version = "0.1.0"
+description = "Local-first EU regulatory compliance scanner for source code."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
+authors = [
+    { name = "Alexandru Girlea", email = "alex@girlea.ro" },
+]
+keywords = [
+    "gdpr",
+    "eu-ai-act",
+    "dora",
+    "dsa",
+    "compliance",
+    "privacy",
+    "security",
+    "static-analysis",
+    "code-scanner",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "pydantic>=2",
+]
+
+[project.urls]
+Homepage = "https://github.com/AlexandruGirlea/precommiteu"
+Repository = "https://github.com/AlexandruGirlea/precommiteu"
+Documentation = "https://github.com/AlexandruGirlea/precommiteu/tree/main/docs"
+Issues = "https://github.com/AlexandruGirlea/precommiteu/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9.10",
+]
+
+[project.scripts]
+precommiteu = "precommiteu.cli:main"
+
+[tool.hatch.build]
+# Build must not honor ambient gitignore rules.
+ignore-vcs = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/precommiteu"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "src",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "uv.lock",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Lint all files regardless of ambient gitignore rules.
+respect-gitignore = false
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "C4", "UP", "RUF", "PLE", "PLW", "ERA"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/precommiteu/src/**" = ["E501", "RUF022"]
+# Embedded GBNF grammars are verbatim model contracts.
+"src/precommiteu/grammar.py" = ["E501"]
+
+[dependency-groups]
+dev = [
+    "vulture>=2.16",
+]

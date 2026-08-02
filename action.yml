@@ -1,0 +1,122 @@
+name: precommitEU compliance scan
+description: Scan changed code for EU regulatory compliance violations, locally.
+author: Alexandru Girlea
+
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  regulations:
+    description: Comma-separated regulation packs to scan against.
+    default: gdpr
+  paths:
+    description: Paths to scan. Empty scans files changed vs the merge target.
+    default: ""
+  fail-on-findings:
+    description: Fail the job when confirmed findings remain.
+    default: "true"
+  sarif:
+    description: Path to write the SARIF report to.
+    default: precommiteu.sarif
+  summary:
+    description: Path to write the Markdown summary to.
+    default: precommiteu-summary.md
+  version:
+    description: precommiteu version to install. Empty installs the latest.
+    default: ""
+  models-revision:
+    description: Model bundle revision on Hugging Face — tag, branch or commit.
+    default: main
+  llama-build:
+    description: llama.cpp release providing llama-server.
+    default: b10158
+
+outputs:
+  sarif:
+    description: Path to the SARIF report.
+    value: ${{ inputs.sarif }}
+  summary:
+    description: Path to the Markdown summary.
+    value: ${{ inputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve merge-target history
+      if: inputs.paths == ''
+      shell: bash
+      env:
+        TARGET: ${{ github.base_ref || github.event.repository.default_branch || 'main' }}
+      run: |
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          git fetch --unshallow --quiet || true
+        fi
+        git fetch --quiet origin "+refs/heads/${TARGET}:refs/remotes/origin/${TARGET}" || true
+
+    - name: Install llama-server
+      shell: bash
+      env:
+        BUILD: ${{ inputs.llama-build }}
+      run: |
+        curl -fsSL -o "$RUNNER_TEMP/llama.tar.gz" \
+          "https://github.com/ggml-org/llama.cpp/releases/download/${BUILD}/llama-${BUILD}-bin-ubuntu-x64.tar.gz"
+        mkdir -p "$RUNNER_TEMP/llama"
+        tar -xzf "$RUNNER_TEMP/llama.tar.gz" -C "$RUNNER_TEMP/llama"
+        dirname "$(find "$RUNNER_TEMP/llama" -name llama-server -type f | head -1)" >> "$GITHUB_PATH"
+
+    - name: Install precommiteu
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        python3 -m venv "$RUNNER_TEMP/precommiteu-venv"
+        "$RUNNER_TEMP/precommiteu-venv/bin/pip" install --quiet --upgrade pip
+        "$RUNNER_TEMP/precommiteu-venv/bin/pip" install --quiet \
+          "huggingface_hub[cli]" "precommiteu${VERSION:+==$VERSION}"
+        echo "$RUNNER_TEMP/precommiteu-venv/bin" >> "$GITHUB_PATH"
+
+    - name: Cache the model bundle
+      id: models
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/precommiteu-models
+        key: precommiteu-models-${{ inputs.regulations }}-${{ inputs.models-revision }}
+
+    - name: Download the model bundle
+      if: steps.models.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        REGULATIONS: ${{ inputs.regulations }}
+        REVISION: ${{ inputs.models-revision }}
+      run: |
+        files=(base.gguf)
+        for r in ${REGULATIONS//,/ }; do
+          files+=("${r}/detector-adapter.gguf")
+        done
+        hf download AlexandruGirlea/precommiteu-models "${files[@]}" \
+          --revision "$REVISION" \
+          --local-dir "$RUNNER_TEMP/precommiteu-models"
+
+    - name: Scan
+      shell: bash
+      env:
+        PRECOMMITEU_MODELS_DIR: ${{ runner.temp }}/precommiteu-models
+        GIT_MERGE_TARGET_BRANCH: ${{ github.base_ref || github.event.repository.default_branch || 'main' }}
+        REGULATIONS: ${{ inputs.regulations }}
+        PATHS: ${{ inputs.paths }}
+        SARIF: ${{ inputs.sarif }}
+        SUMMARY: ${{ inputs.summary }}
+        FAIL_ON_FINDINGS: ${{ inputs.fail-on-findings }}
+      run: |
+        # --force: the action owns these paths and rewrites them each run.
+        args=(--regulations "$REGULATIONS" --sarif "$SARIF" --out "$SUMMARY" --force)
+        if [ "$FAIL_ON_FINDINGS" = "true" ]; then
+          args+=(--fail-on-findings)
+        fi
+        if [ -n "$PATHS" ]; then
+          # shellcheck disable=SC2086
+          precommiteu scan $PATHS "${args[@]}"
+        else
+          precommiteu scan --ci "${args[@]}"
+        fi

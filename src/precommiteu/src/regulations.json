@@ -1,0 +1,1193 @@
+{
+  "cra": {
+    "articles": [
+      {
+        "article_number": "4",
+        "full_ref": "CRA Art. 4",
+        "id": "cra_art4",
+        "title": "Free movement"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "CRA Art. 6",
+        "id": "cra_art6",
+        "title": "Requirements for products with digital elements"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "CRA Art. 13",
+        "id": "cra_art13",
+        "title": "Obligations of manufacturers"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "CRA Art. 14",
+        "id": "cra_art14",
+        "title": "Reporting obligations of manufacturers"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "CRA Art. 23",
+        "id": "cra_art23",
+        "title": "Identification of economic operators"
+      },
+      {
+        "article_number": "24",
+        "full_ref": "CRA Art. 24",
+        "id": "cra_art24",
+        "title": "Obligations of open-source software stewards"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "CRA Art. 28",
+        "id": "cra_art28",
+        "title": "EU declaration of conformity"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "CRA Art. 30",
+        "id": "cra_art30",
+        "title": "Rules and conditions for affixing the CE marking"
+      },
+      {
+        "article_number": "31",
+        "full_ref": "CRA Art. 31",
+        "id": "cra_art31",
+        "title": "Technical documentation"
+      }
+    ],
+    "celex": "32024R2847",
+    "full_name": "Cyber Resilience Act (CRA)",
+    "id": "cra",
+    "name": "CRA"
+  },
+  "cra-dma-nis2": {
+    "articles": [
+      {
+        "article_number": "4",
+        "full_ref": "CRA Art. 4",
+        "id": "cra_art4",
+        "title": "Free movement"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "CRA Art. 6",
+        "id": "cra_art6",
+        "title": "Requirements for products with digital elements"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "CRA Art. 13",
+        "id": "cra_art13",
+        "title": "Obligations of manufacturers"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "CRA Art. 14",
+        "id": "cra_art14",
+        "title": "Reporting obligations of manufacturers"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "CRA Art. 23",
+        "id": "cra_art23",
+        "title": "Identification of economic operators"
+      },
+      {
+        "article_number": "24",
+        "full_ref": "CRA Art. 24",
+        "id": "cra_art24",
+        "title": "Obligations of open-source software stewards"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "CRA Art. 28",
+        "id": "cra_art28",
+        "title": "EU declaration of conformity"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "CRA Art. 30",
+        "id": "cra_art30",
+        "title": "Rules and conditions for affixing the CE marking"
+      },
+      {
+        "article_number": "31",
+        "full_ref": "CRA Art. 31",
+        "id": "cra_art31",
+        "title": "Technical documentation"
+      },
+      {
+        "article_number": "5",
+        "full_ref": "DMA Art. 5",
+        "id": "dma_art5",
+        "title": "Obligations for gatekeepers"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "DMA Art. 6",
+        "id": "dma_art6",
+        "title": "Obligations for gatekeepers susceptible of being further specified under Article 8"
+      },
+      {
+        "article_number": "7",
+        "full_ref": "DMA Art. 7",
+        "id": "dma_art7",
+        "title": "Obligation for gatekeepers on interoperability of number-independent interpersonal communications services"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "DMA Art. 13",
+        "id": "dma_art13",
+        "title": "Anti-circumvention"
+      },
+      {
+        "article_number": "15",
+        "full_ref": "DMA Art. 15",
+        "id": "dma_art15",
+        "title": "Obligation of an audit"
+      },
+      {
+        "article_number": "43",
+        "full_ref": "DMA Art. 43",
+        "id": "dma_art43",
+        "title": "Reporting of breaches and protection of reporting persons"
+      },
+      {
+        "article_number": "54",
+        "full_ref": "DMA Art. 54",
+        "id": "dma_art54",
+        "title": "Entry into force and application"
+      },
+      {
+        "article_number": "21",
+        "full_ref": "NIS2 Art. 21",
+        "id": "nis2_art21",
+        "title": "Cybersecurity risk-management measures"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "NIS2 Art. 23",
+        "id": "nis2_art23",
+        "title": "Reporting obligations"
+      },
+      {
+        "article_number": "27",
+        "full_ref": "NIS2 Art. 27",
+        "id": "nis2_art27",
+        "title": "Registry of entities"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "NIS2 Art. 28",
+        "id": "nis2_art28",
+        "title": "Database of domain name registration data"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "NIS2 Art. 30",
+        "id": "nis2_art30",
+        "title": "Voluntary notification of relevant information"
+      }
+    ],
+    "celex": null,
+    "full_name": "Cyber Resilience Act, Digital Markets Act & NIS2 Directive (CRA/DMA/NIS2)",
+    "id": "cra-dma-nis2",
+    "name": "CRA/DMA/NIS2"
+  },
+  "dma": {
+    "articles": [
+      {
+        "article_number": "5",
+        "full_ref": "DMA Art. 5",
+        "id": "dma_art5",
+        "title": "Obligations for gatekeepers"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "DMA Art. 6",
+        "id": "dma_art6",
+        "title": "Obligations for gatekeepers susceptible of being further specified under Article 8"
+      },
+      {
+        "article_number": "7",
+        "full_ref": "DMA Art. 7",
+        "id": "dma_art7",
+        "title": "Obligation for gatekeepers on interoperability of number-independent interpersonal communications services"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "DMA Art. 13",
+        "id": "dma_art13",
+        "title": "Anti-circumvention"
+      },
+      {
+        "article_number": "15",
+        "full_ref": "DMA Art. 15",
+        "id": "dma_art15",
+        "title": "Obligation of an audit"
+      },
+      {
+        "article_number": "43",
+        "full_ref": "DMA Art. 43",
+        "id": "dma_art43",
+        "title": "Reporting of breaches and protection of reporting persons"
+      },
+      {
+        "article_number": "54",
+        "full_ref": "DMA Art. 54",
+        "id": "dma_art54",
+        "title": "Entry into force and application"
+      }
+    ],
+    "celex": "32022R1925",
+    "full_name": "Digital Markets Act (DMA)",
+    "id": "dma",
+    "name": "DMA"
+  },
+  "dora": {
+    "articles": [
+      {
+        "article_number": "6",
+        "full_ref": "DORA Art. 6",
+        "id": "dora_art6",
+        "title": "ICT risk management framework"
+      },
+      {
+        "article_number": "7",
+        "full_ref": "DORA Art. 7",
+        "id": "dora_art7",
+        "title": "ICT systems, protocols and tools"
+      },
+      {
+        "article_number": "8",
+        "full_ref": "DORA Art. 8",
+        "id": "dora_art8",
+        "title": "Identification"
+      },
+      {
+        "article_number": "9",
+        "full_ref": "DORA Art. 9",
+        "id": "dora_art9",
+        "title": "Protection and prevention"
+      },
+      {
+        "article_number": "10",
+        "full_ref": "DORA Art. 10",
+        "id": "dora_art10",
+        "title": "Detection"
+      },
+      {
+        "article_number": "11",
+        "full_ref": "DORA Art. 11",
+        "id": "dora_art11",
+        "title": "Response and recovery"
+      },
+      {
+        "article_number": "12",
+        "full_ref": "DORA Art. 12",
+        "id": "dora_art12",
+        "title": "Backup policies and procedures, restoration and recovery procedures and methods"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "DORA Art. 14",
+        "id": "dora_art14",
+        "title": "Communication"
+      },
+      {
+        "article_number": "16",
+        "full_ref": "DORA Art. 16",
+        "id": "dora_art16",
+        "title": "Simplified ICT risk management framework"
+      },
+      {
+        "article_number": "17",
+        "full_ref": "DORA Art. 17",
+        "id": "dora_art17",
+        "title": "ICT-related incident management process"
+      },
+      {
+        "article_number": "18",
+        "full_ref": "DORA Art. 18",
+        "id": "dora_art18",
+        "title": "Classification of ICT-related incidents and cyber threats"
+      },
+      {
+        "article_number": "19",
+        "full_ref": "DORA Art. 19",
+        "id": "dora_art19",
+        "title": "Reporting of major ICT-related incidents and voluntary notification of significant cyber threats"
+      },
+      {
+        "article_number": "25",
+        "full_ref": "DORA Art. 25",
+        "id": "dora_art25",
+        "title": "Testing of ICT tools and systems"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "DORA Art. 28",
+        "id": "dora_art28",
+        "title": "General principles"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "DORA Art. 30",
+        "id": "dora_art30",
+        "title": "Key contractual provisions"
+      },
+      {
+        "article_number": "45",
+        "full_ref": "DORA Art. 45",
+        "id": "dora_art45",
+        "title": "Information-sharing arrangements on cyber threat information and intelligence"
+      },
+      {
+        "article_number": "61",
+        "full_ref": "DORA Art. 61",
+        "id": "dora_art61",
+        "title": "Amendments to Regulation (EU) No 909/2014"
+      }
+    ],
+    "celex": "32022R2554",
+    "full_name": "Digital Operational Resilience Act (DORA)",
+    "id": "dora",
+    "name": "DORA"
+  },
+  "dsa": {
+    "articles": [
+      {
+        "article_number": "4",
+        "full_ref": "DSA Art. 4",
+        "id": "dsa_art4",
+        "title": "‘Mere conduit’"
+      },
+      {
+        "article_number": "5",
+        "full_ref": "DSA Art. 5",
+        "id": "dsa_art5",
+        "title": "‘Caching’"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "DSA Art. 6",
+        "id": "dsa_art6",
+        "title": "Hosting"
+      },
+      {
+        "article_number": "9",
+        "full_ref": "DSA Art. 9",
+        "id": "dsa_art9",
+        "title": "Orders to act against illegal content"
+      },
+      {
+        "article_number": "10",
+        "full_ref": "DSA Art. 10",
+        "id": "dsa_art10",
+        "title": "Orders to provide information"
+      },
+      {
+        "article_number": "11",
+        "full_ref": "DSA Art. 11",
+        "id": "dsa_art11",
+        "title": "Points of contact for Member States’ authorities, the Commission and the Board"
+      },
+      {
+        "article_number": "12",
+        "full_ref": "DSA Art. 12",
+        "id": "dsa_art12",
+        "title": "Points of contact for recipients of the service"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "DSA Art. 13",
+        "id": "dsa_art13",
+        "title": "Legal representatives"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "DSA Art. 14",
+        "id": "dsa_art14",
+        "title": "Terms and conditions"
+      },
+      {
+        "article_number": "15",
+        "full_ref": "DSA Art. 15",
+        "id": "dsa_art15",
+        "title": "Transparency reporting obligations for providers of intermediary services"
+      },
+      {
+        "article_number": "16",
+        "full_ref": "DSA Art. 16",
+        "id": "dsa_art16",
+        "title": "Notice and action mechanisms"
+      },
+      {
+        "article_number": "17",
+        "full_ref": "DSA Art. 17",
+        "id": "dsa_art17",
+        "title": "Statement of reasons"
+      },
+      {
+        "article_number": "18",
+        "full_ref": "DSA Art. 18",
+        "id": "dsa_art18",
+        "title": "Notification of suspicions of criminal offences"
+      },
+      {
+        "article_number": "20",
+        "full_ref": "DSA Art. 20",
+        "id": "dsa_art20",
+        "title": "Internal complaint-handling system"
+      },
+      {
+        "article_number": "21",
+        "full_ref": "DSA Art. 21",
+        "id": "dsa_art21",
+        "title": "Out-of-court dispute settlement"
+      },
+      {
+        "article_number": "22",
+        "full_ref": "DSA Art. 22",
+        "id": "dsa_art22",
+        "title": "Trusted flaggers"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "DSA Art. 23",
+        "id": "dsa_art23",
+        "title": "Measures and protection against misuse"
+      },
+      {
+        "article_number": "24",
+        "full_ref": "DSA Art. 24",
+        "id": "dsa_art24",
+        "title": "Transparency reporting obligations for providers of online platforms"
+      },
+      {
+        "article_number": "25",
+        "full_ref": "DSA Art. 25",
+        "id": "dsa_art25",
+        "title": "Online interface design and organisation"
+      },
+      {
+        "article_number": "26",
+        "full_ref": "DSA Art. 26",
+        "id": "dsa_art26",
+        "title": "Advertising on online platforms"
+      },
+      {
+        "article_number": "27",
+        "full_ref": "DSA Art. 27",
+        "id": "dsa_art27",
+        "title": "Recommender system transparency"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "DSA Art. 28",
+        "id": "dsa_art28",
+        "title": "Online protection of minors"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "DSA Art. 30",
+        "id": "dsa_art30",
+        "title": "Traceability of traders"
+      },
+      {
+        "article_number": "31",
+        "full_ref": "DSA Art. 31",
+        "id": "dsa_art31",
+        "title": "Compliance by design"
+      },
+      {
+        "article_number": "32",
+        "full_ref": "DSA Art. 32",
+        "id": "dsa_art32",
+        "title": "Right to information"
+      },
+      {
+        "article_number": "34",
+        "full_ref": "DSA Art. 34",
+        "id": "dsa_art34",
+        "title": "Risk assessment"
+      },
+      {
+        "article_number": "35",
+        "full_ref": "DSA Art. 35",
+        "id": "dsa_art35",
+        "title": "Mitigation of risks"
+      },
+      {
+        "article_number": "38",
+        "full_ref": "DSA Art. 38",
+        "id": "dsa_art38",
+        "title": "Recommender systems"
+      },
+      {
+        "article_number": "39",
+        "full_ref": "DSA Art. 39",
+        "id": "dsa_art39",
+        "title": "Additional online advertising transparency"
+      },
+      {
+        "article_number": "40",
+        "full_ref": "DSA Art. 40",
+        "id": "dsa_art40",
+        "title": "Data access and scrutiny"
+      },
+      {
+        "article_number": "42",
+        "full_ref": "DSA Art. 42",
+        "id": "dsa_art42",
+        "title": "Transparency reporting obligations"
+      },
+      {
+        "article_number": "72",
+        "full_ref": "DSA Art. 72",
+        "id": "dsa_art72",
+        "title": "Monitoring actions"
+      },
+      {
+        "article_number": "86",
+        "full_ref": "DSA Art. 86",
+        "id": "dsa_art86",
+        "title": "Representation"
+      }
+    ],
+    "celex": "32022R2065",
+    "full_name": "Digital Services Act (DSA)",
+    "id": "dsa",
+    "name": "DSA"
+  },
+  "eu-ai-act": {
+    "articles": [
+      {
+        "article_number": "5",
+        "full_ref": "EU AI ACT Art. 5",
+        "id": "eu_ai_act_art5",
+        "title": "Prohibited AI practices"
+      },
+      {
+        "article_number": "9",
+        "full_ref": "EU AI ACT Art. 9",
+        "id": "eu_ai_act_art9",
+        "title": "Risk management system"
+      },
+      {
+        "article_number": "10",
+        "full_ref": "EU AI ACT Art. 10",
+        "id": "eu_ai_act_art10",
+        "title": "Data and data governance"
+      },
+      {
+        "article_number": "11",
+        "full_ref": "EU AI ACT Art. 11",
+        "id": "eu_ai_act_art11",
+        "title": "Technical documentation"
+      },
+      {
+        "article_number": "12",
+        "full_ref": "EU AI ACT Art. 12",
+        "id": "eu_ai_act_art12",
+        "title": "Record-keeping"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "EU AI ACT Art. 13",
+        "id": "eu_ai_act_art13",
+        "title": "Transparency and provision of information to deployers"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "EU AI ACT Art. 14",
+        "id": "eu_ai_act_art14",
+        "title": "Human oversight"
+      },
+      {
+        "article_number": "15",
+        "full_ref": "EU AI ACT Art. 15",
+        "id": "eu_ai_act_art15",
+        "title": "Accuracy, robustness and cybersecurity"
+      },
+      {
+        "article_number": "16",
+        "full_ref": "EU AI ACT Art. 16",
+        "id": "eu_ai_act_art16",
+        "title": "Obligations of providers of high-risk AI systems"
+      },
+      {
+        "article_number": "17",
+        "full_ref": "EU AI ACT Art. 17",
+        "id": "eu_ai_act_art17",
+        "title": "Quality management system"
+      },
+      {
+        "article_number": "18",
+        "full_ref": "EU AI ACT Art. 18",
+        "id": "eu_ai_act_art18",
+        "title": "Documentation keeping"
+      },
+      {
+        "article_number": "19",
+        "full_ref": "EU AI ACT Art. 19",
+        "id": "eu_ai_act_art19",
+        "title": "Automatically generated logs"
+      },
+      {
+        "article_number": "20",
+        "full_ref": "EU AI ACT Art. 20",
+        "id": "eu_ai_act_art20",
+        "title": "Corrective actions and duty of information"
+      },
+      {
+        "article_number": "21",
+        "full_ref": "EU AI ACT Art. 21",
+        "id": "eu_ai_act_art21",
+        "title": "Cooperation with competent authorities"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "EU AI ACT Art. 23",
+        "id": "eu_ai_act_art23",
+        "title": "Obligations of importers"
+      },
+      {
+        "article_number": "24",
+        "full_ref": "EU AI ACT Art. 24",
+        "id": "eu_ai_act_art24",
+        "title": "Obligations of distributors"
+      },
+      {
+        "article_number": "26",
+        "full_ref": "EU AI ACT Art. 26",
+        "id": "eu_ai_act_art26",
+        "title": "Obligations of deployers of high-risk AI systems"
+      },
+      {
+        "article_number": "43",
+        "full_ref": "EU AI ACT Art. 43",
+        "id": "eu_ai_act_art43",
+        "title": "Conformity assessment"
+      },
+      {
+        "article_number": "46",
+        "full_ref": "EU AI ACT Art. 46",
+        "id": "eu_ai_act_art46",
+        "title": "Derogation from conformity assessment procedure"
+      },
+      {
+        "article_number": "47",
+        "full_ref": "EU AI ACT Art. 47",
+        "id": "eu_ai_act_art47",
+        "title": "EU declaration of conformity"
+      },
+      {
+        "article_number": "48",
+        "full_ref": "EU AI ACT Art. 48",
+        "id": "eu_ai_act_art48",
+        "title": "CE marking"
+      },
+      {
+        "article_number": "49",
+        "full_ref": "EU AI ACT Art. 49",
+        "id": "eu_ai_act_art49",
+        "title": "Registration"
+      },
+      {
+        "article_number": "50",
+        "full_ref": "EU AI ACT Art. 50",
+        "id": "eu_ai_act_art50",
+        "title": "Transparency obligations for providers and deployers of certain AI systems"
+      },
+      {
+        "article_number": "53",
+        "full_ref": "EU AI ACT Art. 53",
+        "id": "eu_ai_act_art53",
+        "title": "Obligations for providers of general-purpose AI models"
+      },
+      {
+        "article_number": "55",
+        "full_ref": "EU AI ACT Art. 55",
+        "id": "eu_ai_act_art55",
+        "title": "Obligations of providers of general-purpose AI models with systemic risk"
+      },
+      {
+        "article_number": "59",
+        "full_ref": "EU AI ACT Art. 59",
+        "id": "eu_ai_act_art59",
+        "title": "Further processing of personal data for developing certain AI systems in the public interest in the AI regulatory sandbox"
+      },
+      {
+        "article_number": "60",
+        "full_ref": "EU AI ACT Art. 60",
+        "id": "eu_ai_act_art60",
+        "title": "Testing of high-risk AI systems in real world conditions outside AI regulatory sandboxes"
+      },
+      {
+        "article_number": "61",
+        "full_ref": "EU AI ACT Art. 61",
+        "id": "eu_ai_act_art61",
+        "title": "Informed consent to participate in testing in real world conditions outside AI regulatory sandboxes"
+      },
+      {
+        "article_number": "71",
+        "full_ref": "EU AI ACT Art. 71",
+        "id": "eu_ai_act_art71",
+        "title": "EU database for high-risk AI systems listed in Annex III"
+      },
+      {
+        "article_number": "72",
+        "full_ref": "EU AI ACT Art. 72",
+        "id": "eu_ai_act_art72",
+        "title": "Post-market monitoring by providers and post-market monitoring plan for high-risk AI systems"
+      },
+      {
+        "article_number": "73",
+        "full_ref": "EU AI ACT Art. 73",
+        "id": "eu_ai_act_art73",
+        "title": "Reporting of serious incidents"
+      },
+      {
+        "article_number": "74",
+        "full_ref": "EU AI ACT Art. 74",
+        "id": "eu_ai_act_art74",
+        "title": "Market surveillance and control of AI systems in the Union market"
+      },
+      {
+        "article_number": "78",
+        "full_ref": "EU AI ACT Art. 78",
+        "id": "eu_ai_act_art78",
+        "title": "Confidentiality"
+      },
+      {
+        "article_number": "86",
+        "full_ref": "EU AI ACT Art. 86",
+        "id": "eu_ai_act_art86",
+        "title": "Right to explanation of individual decision-making"
+      }
+    ],
+    "celex": "32024R1689",
+    "full_name": "EU Artificial Intelligence Act",
+    "id": "eu-ai-act",
+    "name": "EU AI Act"
+  },
+  "eu-data-act": {
+    "articles": [
+      {
+        "article_number": "3",
+        "full_ref": "EU DATA ACT Art. 3",
+        "id": "eu_data_act_art3",
+        "title": "Obligation to make product data and related service data accessible to the user"
+      },
+      {
+        "article_number": "4",
+        "full_ref": "EU DATA ACT Art. 4",
+        "id": "eu_data_act_art4",
+        "title": "The rights and obligations of users and data holders with regard to access, use and making available product data and related service data"
+      },
+      {
+        "article_number": "5",
+        "full_ref": "EU DATA ACT Art. 5",
+        "id": "eu_data_act_art5",
+        "title": "Right of the user to share data with third parties"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "EU DATA ACT Art. 6",
+        "id": "eu_data_act_art6",
+        "title": "Obligations of third parties receiving data at the request of the user"
+      },
+      {
+        "article_number": "8",
+        "full_ref": "EU DATA ACT Art. 8",
+        "id": "eu_data_act_art8",
+        "title": "Conditions under which data holders make data available to data recipients"
+      },
+      {
+        "article_number": "9",
+        "full_ref": "EU DATA ACT Art. 9",
+        "id": "eu_data_act_art9",
+        "title": "Compensation for making data available"
+      },
+      {
+        "article_number": "11",
+        "full_ref": "EU DATA ACT Art. 11",
+        "id": "eu_data_act_art11",
+        "title": "Technical protection measures on the unauthorised use or disclosure of data"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "EU DATA ACT Art. 14",
+        "id": "eu_data_act_art14",
+        "title": "Obligation to make data available on the basis of an exceptional need"
+      },
+      {
+        "article_number": "17",
+        "full_ref": "EU DATA ACT Art. 17",
+        "id": "eu_data_act_art17",
+        "title": "Requests for data to be made available"
+      },
+      {
+        "article_number": "18",
+        "full_ref": "EU DATA ACT Art. 18",
+        "id": "eu_data_act_art18",
+        "title": "Compliance with requests for data"
+      },
+      {
+        "article_number": "19",
+        "full_ref": "EU DATA ACT Art. 19",
+        "id": "eu_data_act_art19",
+        "title": "Obligations of public sector bodies, the Commission, the European Central Bank and Union bodies"
+      },
+      {
+        "article_number": "21",
+        "full_ref": "EU DATA ACT Art. 21",
+        "id": "eu_data_act_art21",
+        "title": "Sharing of data obtained in the context of an exceptional need with research organisations or statistical bodies"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "EU DATA ACT Art. 23",
+        "id": "eu_data_act_art23",
+        "title": "Removing obstacles to effective switching"
+      },
+      {
+        "article_number": "25",
+        "full_ref": "EU DATA ACT Art. 25",
+        "id": "eu_data_act_art25",
+        "title": "Contractual terms concerning switching"
+      },
+      {
+        "article_number": "26",
+        "full_ref": "EU DATA ACT Art. 26",
+        "id": "eu_data_act_art26",
+        "title": "Information obligation of providers of data processing services"
+      },
+      {
+        "article_number": "27",
+        "full_ref": "EU DATA ACT Art. 27",
+        "id": "eu_data_act_art27",
+        "title": "Obligation of good faith"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "EU DATA ACT Art. 28",
+        "id": "eu_data_act_art28",
+        "title": "Contractual transparency obligations on international access and transfer"
+      },
+      {
+        "article_number": "29",
+        "full_ref": "EU DATA ACT Art. 29",
+        "id": "eu_data_act_art29",
+        "title": "Gradual withdrawal of switching charges"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "EU DATA ACT Art. 30",
+        "id": "eu_data_act_art30",
+        "title": "Technical aspects of switching"
+      },
+      {
+        "article_number": "31",
+        "full_ref": "EU DATA ACT Art. 31",
+        "id": "eu_data_act_art31",
+        "title": "Specific regime for certain data processing services"
+      },
+      {
+        "article_number": "32",
+        "full_ref": "EU DATA ACT Art. 32",
+        "id": "eu_data_act_art32",
+        "title": "International governmental access and transfer"
+      },
+      {
+        "article_number": "33",
+        "full_ref": "EU DATA ACT Art. 33",
+        "id": "eu_data_act_art33",
+        "title": "Essential requirements regarding interoperability of data, of data sharing mechanisms and services, as well as of common European data spaces"
+      },
+      {
+        "article_number": "34",
+        "full_ref": "EU DATA ACT Art. 34",
+        "id": "eu_data_act_art34",
+        "title": "Interoperability for the purposes of in-parallel use of data processing services"
+      },
+      {
+        "article_number": "36",
+        "full_ref": "EU DATA ACT Art. 36",
+        "id": "eu_data_act_art36",
+        "title": "Essential requirements regarding smart contracts for executing data sharing agreements"
+      }
+    ],
+    "celex": "32023R2854",
+    "full_name": "EU Data Act",
+    "id": "eu-data-act",
+    "name": "EU Data Act"
+  },
+  "gdpr": {
+    "articles": [
+      {
+        "article_number": "5",
+        "full_ref": "GDPR Art. 5",
+        "id": "gdpr_art5",
+        "title": "Principles relating to processing of personal data"
+      },
+      {
+        "article_number": "6",
+        "full_ref": "GDPR Art. 6",
+        "id": "gdpr_art6",
+        "title": "Lawfulness of processing"
+      },
+      {
+        "article_number": "7",
+        "full_ref": "GDPR Art. 7",
+        "id": "gdpr_art7",
+        "title": "Conditions for consent"
+      },
+      {
+        "article_number": "8",
+        "full_ref": "GDPR Art. 8",
+        "id": "gdpr_art8",
+        "title": "Conditions applicable to child's consent in relation to information society services"
+      },
+      {
+        "article_number": "9",
+        "full_ref": "GDPR Art. 9",
+        "id": "gdpr_art9",
+        "title": "Processing of special categories of personal data"
+      },
+      {
+        "article_number": "10",
+        "full_ref": "GDPR Art. 10",
+        "id": "gdpr_art10",
+        "title": "Processing of personal data relating to criminal convictions and offences"
+      },
+      {
+        "article_number": "11",
+        "full_ref": "GDPR Art. 11",
+        "id": "gdpr_art11",
+        "title": "Processing which does not require identification"
+      },
+      {
+        "article_number": "12",
+        "full_ref": "GDPR Art. 12",
+        "id": "gdpr_art12",
+        "title": "Transparent information, communication and modalities for the exercise of the rights of the data subject"
+      },
+      {
+        "article_number": "13",
+        "full_ref": "GDPR Art. 13",
+        "id": "gdpr_art13",
+        "title": "Information to be provided where personal data are collected from the data subject"
+      },
+      {
+        "article_number": "14",
+        "full_ref": "GDPR Art. 14",
+        "id": "gdpr_art14",
+        "title": "Information to be provided where personal data have not been obtained from the data subject"
+      },
+      {
+        "article_number": "15",
+        "full_ref": "GDPR Art. 15",
+        "id": "gdpr_art15",
+        "title": "Right of access by the data subject"
+      },
+      {
+        "article_number": "16",
+        "full_ref": "GDPR Art. 16",
+        "id": "gdpr_art16",
+        "title": "Right to rectification"
+      },
+      {
+        "article_number": "17",
+        "full_ref": "GDPR Art. 17",
+        "id": "gdpr_art17",
+        "title": "Right to erasure (‘right to be forgotten’)"
+      },
+      {
+        "article_number": "18",
+        "full_ref": "GDPR Art. 18",
+        "id": "gdpr_art18",
+        "title": "Right to restriction of processing"
+      },
+      {
+        "article_number": "19",
+        "full_ref": "GDPR Art. 19",
+        "id": "gdpr_art19",
+        "title": "Notification obligation regarding rectification or erasure of personal data or restriction of processing"
+      },
+      {
+        "article_number": "20",
+        "full_ref": "GDPR Art. 20",
+        "id": "gdpr_art20",
+        "title": "Right to data portability"
+      },
+      {
+        "article_number": "21",
+        "external_celex": [
+          "32002L0058"
+        ],
+        "full_ref": "GDPR Art. 21",
+        "id": "gdpr_art21",
+        "title": "Right to object"
+      },
+      {
+        "article_number": "22",
+        "full_ref": "GDPR Art. 22",
+        "id": "gdpr_art22",
+        "title": "Automated individual decision-making, including profiling"
+      },
+      {
+        "article_number": "24",
+        "full_ref": "GDPR Art. 24",
+        "id": "gdpr_art24",
+        "title": "Responsibility of the controller"
+      },
+      {
+        "article_number": "25",
+        "full_ref": "GDPR Art. 25",
+        "id": "gdpr_art25",
+        "title": "Data protection by design and by default"
+      },
+      {
+        "article_number": "26",
+        "full_ref": "GDPR Art. 26",
+        "id": "gdpr_art26",
+        "title": "Joint controllers"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "GDPR Art. 28",
+        "id": "gdpr_art28",
+        "title": "Processor"
+      },
+      {
+        "article_number": "29",
+        "full_ref": "GDPR Art. 29",
+        "id": "gdpr_art29",
+        "title": "Processing under the authority of the controller or processor"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "GDPR Art. 30",
+        "id": "gdpr_art30",
+        "title": "Records of processing activities"
+      },
+      {
+        "article_number": "32",
+        "full_ref": "GDPR Art. 32",
+        "id": "gdpr_art32",
+        "title": "Security of processing"
+      },
+      {
+        "article_number": "33",
+        "full_ref": "GDPR Art. 33",
+        "id": "gdpr_art33",
+        "title": "Notification of a personal data breach to the supervisory authority"
+      },
+      {
+        "article_number": "34",
+        "full_ref": "GDPR Art. 34",
+        "id": "gdpr_art34",
+        "title": "Communication of a personal data breach to the data subject"
+      },
+      {
+        "article_number": "38",
+        "full_ref": "GDPR Art. 38",
+        "id": "gdpr_art38",
+        "title": "Position of the data protection officer"
+      },
+      {
+        "article_number": "44",
+        "full_ref": "GDPR Art. 44",
+        "id": "gdpr_art44",
+        "title": "General principle for transfers"
+      },
+      {
+        "article_number": "46",
+        "full_ref": "GDPR Art. 46",
+        "id": "gdpr_art46",
+        "title": "Transfers subject to appropriate safeguards"
+      },
+      {
+        "article_number": "48",
+        "full_ref": "GDPR Art. 48",
+        "id": "gdpr_art48",
+        "title": "Transfers or disclosures not authorised by Union law"
+      },
+      {
+        "article_number": "49",
+        "full_ref": "GDPR Art. 49",
+        "id": "gdpr_art49",
+        "title": "Derogations for specific situations"
+      },
+      {
+        "article_number": "86",
+        "full_ref": "GDPR Art. 86",
+        "id": "gdpr_art86",
+        "title": "Processing and public access to official documents"
+      },
+      {
+        "article_number": "87",
+        "full_ref": "GDPR Art. 87",
+        "id": "gdpr_art87",
+        "title": "Processing of the national identification number"
+      },
+      {
+        "article_number": "88",
+        "full_ref": "GDPR Art. 88",
+        "id": "gdpr_art88",
+        "title": "Processing in the context of employment"
+      },
+      {
+        "article_number": "89",
+        "full_ref": "GDPR Art. 89",
+        "id": "gdpr_art89",
+        "title": "Safeguards and derogations relating to processing for archiving purposes in the public interest, scientific or historical research purposes or statistical purposes"
+      }
+    ],
+    "celex": "32016R0679",
+    "full_name": "General Data Protection Regulation (GDPR)",
+    "id": "gdpr",
+    "name": "GDPR"
+  },
+  "nis2": {
+    "articles": [
+      {
+        "article_number": "21",
+        "full_ref": "NIS2 Art. 21",
+        "id": "nis2_art21",
+        "title": "Cybersecurity risk-management measures"
+      },
+      {
+        "article_number": "23",
+        "full_ref": "NIS2 Art. 23",
+        "id": "nis2_art23",
+        "title": "Reporting obligations"
+      },
+      {
+        "article_number": "27",
+        "full_ref": "NIS2 Art. 27",
+        "id": "nis2_art27",
+        "title": "Registry of entities"
+      },
+      {
+        "article_number": "28",
+        "full_ref": "NIS2 Art. 28",
+        "id": "nis2_art28",
+        "title": "Database of domain name registration data"
+      },
+      {
+        "article_number": "30",
+        "full_ref": "NIS2 Art. 30",
+        "id": "nis2_art30",
+        "title": "Voluntary notification of relevant information"
+      }
+    ],
+    "celex": "32022L2555",
+    "full_name": "Network and Information Systems Directive (NIS2)",
+    "id": "nis2",
+    "name": "NIS2"
+  }
+}

@@ -1,0 +1,28 @@
+title: precommitEU
+description: Local-first EU regulatory compliance scanner for source code
+remote_theme: just-the-docs/just-the-docs
+
+url: https://alexandrugirlea.github.io
+baseurl: /precommiteu
+
+color_scheme: dark
+search_enabled: true
+heading_anchors: true
+back_to_top: true
+back_to_top_text: "Back to top"
+
+aux_links:
+  GitHub:
+    - "https://github.com/AlexandruGirlea/precommiteu"
+  precommit.eu:
+    - "https://precommit.eu"
+aux_links_new_tab: true
+
+footer_content: 'Apache-2.0. A compliance signal, not legal advice.'
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: false

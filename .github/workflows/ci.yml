@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: pip install build
+      - run: python -m build
+
+      - name: Install wheel into a clean environment
+        run: |
+          python -m venv /tmp/wheelenv
+          /tmp/wheelenv/bin/pip install dist/*.whl
+
+      # Runs outside the checkout so a broken wheel cannot fall back to ./src.
+      - name: Verify regulation data files survived packaging
+        working-directory: /tmp
+        run: |
+          /tmp/wheelenv/bin/python - <<'PY'
+          from importlib.resources import files
+
+          from precommiteu.regulations import get_regulation_pack
+
+          REGULATIONS = (
+              "gdpr", "eu_ai_act", "eu_data_act", "dora", "dsa", "cra_dma_nis2",
+          )
+          for name in REGULATIONS:
+              pack = get_regulation_pack(name)
+              assert pack.detector_system.strip(), f"{name}: empty detector prompt"
+              assert pack.validator_system.strip(), f"{name}: empty validator prompt"
+              assert pack.regulations_summary.strip(), f"{name}: empty summary"
+              cases = files(f"precommiteu.regulations.{name}") / "cases.jsonl"
+              assert cases.is_file(), f"{name}: cases.jsonl missing from wheel"
+          print(f"ok: {len(REGULATIONS)} regulation packs intact")
+          PY
+
+      - name: Verify the CLI runs from the installed wheel
+        working-directory: /tmp
+        run: |
+          mkdir -p smoke/app
+          printf 'email = user.email\n' > smoke/app/handler.py
+          /tmp/wheelenv/bin/precommiteu --version
+          /tmp/wheelenv/bin/precommiteu scan --dry-run smoke/app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

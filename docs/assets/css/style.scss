@@ -1,0 +1,92 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* precommitEU palette, matching precommit.eu */
+:root {
+  --c-reflex-blue: #003399;
+  --c-reflex-blue-deep: #00256e;
+  --c-eu-yellow: #ffcc00;
+  --c-off-white: #f4f4f0;
+  --c-charcoal: #1b1b1f;
+  --c-line: #e5e5dc;
+  --c-mute: #4b5563;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--c-charcoal);
+}
+
+.page-header {
+  background-color: var(--c-reflex-blue);
+  background-image: linear-gradient(
+    120deg,
+    var(--c-reflex-blue-deep),
+    var(--c-reflex-blue)
+  );
+  border-bottom: 4px solid var(--c-eu-yellow);
+}
+
+.project-name {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.project-tagline {
+  opacity: 0.9;
+}
+
+.btn {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+
+  &:hover {
+    background-color: var(--c-eu-yellow);
+    border-color: var(--c-eu-yellow);
+    color: var(--c-charcoal);
+  }
+}
+
+.main-content {
+  h1, h2, h3, h4, h5, h6 { color: var(--c-reflex-blue); }
+
+  a { color: var(--c-reflex-blue); }
+
+  h2 {
+    border-bottom: 1px solid var(--c-line);
+    padding-bottom: 0.3em;
+  }
+
+  code, pre {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  pre {
+    background-color: var(--c-off-white);
+    border: 1px solid var(--c-line);
+  }
+
+  table {
+    th {
+      background-color: var(--c-off-white);
+      color: var(--c-charcoal);
+    }
+    td, th { border-color: var(--c-line); }
+  }
+
+  blockquote {
+    color: var(--c-mute);
+    border-left-color: var(--c-eu-yellow);
+  }
+}
+
+.site-footer {
+  border-top: 1px solid var(--c-line);
+  color: var(--c-mute);
+}
+
+/* The hero logo is a pre-rendered APNG so it animates in GitHub's markdown
+   view as well as here. Size is set on the tag itself. */

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.DS_Store
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+
+# Linting/Formatting
+.ruff_cache/
+
+# Type checking
+.mypy_cache/
+
+# Never commit secrets
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa*
+.netrc
+*.credentials
+*.log
