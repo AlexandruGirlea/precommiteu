@@ -23,7 +23,7 @@ keywords = [
     "security",
     "static-analysis",
     "code-scanner",
-    "llm",
+    "slm",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -42,10 +42,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/AlexandruGirlea/precommiteu"
+Homepage = "https://precommit.eu"
+Documentation = "https://alexandrugirlea.github.io/precommiteu/"
 Repository = "https://github.com/AlexandruGirlea/precommiteu"
-Documentation = "https://github.com/AlexandruGirlea/precommiteu/tree/main/docs"
 Issues = "https://github.com/AlexandruGirlea/precommiteu/issues"
+Changelog = "https://github.com/AlexandruGirlea/precommiteu/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
