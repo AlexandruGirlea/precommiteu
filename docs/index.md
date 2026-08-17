@@ -39,6 +39,11 @@ Two things to know before your first run:
 - `precommiteu scan src/ --dry-run` prints the exact file selection and exits
   without loading a model. Use it whenever the scope looks wrong.
 
+The same scan is available from a local web UI. `pip install "precommiteu[ui]"`,
+then `precommiteu ui` serves it on `http://127.0.0.1:8787` and opens a browser.
+From there you can install what is missing, download a regulation pack, run a
+scan and read the findings, one pack at a time. Flags: [cli.md](cli.md).
+
 ## Two artifacts, downloaded separately
 
 This is the part people trip over. precommitEU ships as two independent
@@ -94,12 +99,31 @@ Every file gets a 90 second wall-clock budget. Files routed to the
 orchestrator also get a hard cap of 12 agent iterations. The code view sent to
 the model is capped at 8000 tokens.
 
+## Incremental rescans
+
+A scan records every file it analysed cleanly. The next scan of the same folder
+with the same regulation reads only what changed and replays the rest, so the
+second run of a repository that took hours takes minutes. Reused files are
+reported as reused, and their findings are replayed into every report, so an
+incremental run still produces a complete one.
+
+The record is one small JSON file per folder and regulation under
+`~/.precommiteu/scans/`, named from a hash of the absolute path. Nothing is
+written into the folder being scanned. `--rescan-all` forces a full pass,
+`--scan-log PATH` puts the record elsewhere, and `--ci` keeps none. Change
+detection and the exact reuse rules: [cli.md](cli.md#incremental-rescans).
+
+The UI has the same thing on the Target screen: scan only the changed files,
+start clean, or forget the cached findings for that folder. Its Settings screen
+moves the model bundle, the scan cache and the reports directory, and the next
+scan uses the new location without a restart.
+
 ## Documentation
 
 | Guide | Contents |
 |---|---|
 | [Installation](install.md) | Requirements, per-platform install, model bundle download, CPU vs GPU, verify, uninstall |
-| [CLI](cli.md) | `precommiteu scan`, complete flag reference, agent routing, exit codes |
+| [CLI](cli.md) | `precommiteu scan`, `precommiteu ui`, complete flag reference, agent routing, exit codes |
 | [Regulation packs](regulations.md) | The six packs, application dates, choosing packs, multi-regulation runs |
 | [Suppressions](suppressions.md) | `.eu-ignore`, inline `eu-ignore` directives, audited `precommiteu-ignore` markers |
 | [Examples](examples.md) | Worked scans, real output, common flag combinations |

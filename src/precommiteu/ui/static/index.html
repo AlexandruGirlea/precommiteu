@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Regulation Scanner</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+:root{
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  --r:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+html{color-scheme:dark}
+body{background:var(--window);color:var(--text);font-family:var(--sans);
+  font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column}
+.hide{display:none!important}
+#brandrule{height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-deep));
+  flex:none}
+#shell{flex:1;display:flex;min-height:0}
+
+/* sidebar */
+#side{width:238px;flex:none;background:var(--side);
+  border-right:1px solid var(--line-side);display:flex;flex-direction:column;padding:14px 12px}
+#brand{padding:4px 8px 16px}
+#logo{min-height:46px;max-height:64px;border:1.5px dashed var(--line-mute);
+  border-radius:8px;display:grid;place-items:center;font-size:9.5px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--grey-3);
+  background:rgba(var(--glass-rgb),.45);margin-bottom:11px;padding:6px}
+#logo img{max-width:100%;max-height:52px;object-fit:contain;display:block}
+#logo.set{border:0;background:none;padding:0}
+#logo.set span{display:none}
+#brand .t{font-size:13px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+#brand .s{font-size:11px;color:var(--grey)}
+.navlbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--grey-2);padding:0 8px 7px}
+.nav{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:var(--r);
+  cursor:pointer;color:var(--ink);font-size:13.5px;font-weight:500;
+  transition:background .12s}
+.nav:hover:not(.off){background:rgba(var(--tint-rgb),.05)}
+.nav.on{background:var(--accent);color:var(--on-accent);font-weight:600}
+.nav.off{color:var(--grey-4);cursor:default}
+.nav.on,.nav.on.off{background:var(--accent);color:var(--on-accent);cursor:pointer}
+.nav .num{width:19px;height:19px;border-radius:5px;flex:none;display:grid;
+  place-items:center;font-size:10.5px;font-weight:700;background:rgba(var(--tint-rgb),.09)}
+.nav.on .num{background:rgba(var(--tint-rgb),.16)}
+.nav .cnt{margin-left:auto;font-size:11px;font-weight:600;color:var(--grey)}
+.nav.on .cnt{color:var(--on-accent)}
+#sidefoot{margin-top:auto;padding:10px 9px;border-top:1px solid var(--line-side);
+  font-size:11px;color:var(--grey);line-height:1.6}
+#sidefoot b{color:var(--accent-deep);font-weight:600}
+
+/* main */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#toolbar{height:50px;flex:none;background:rgba(var(--glass-rgb),.82);
+  backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line-side);
+  display:flex;align-items:center;gap:12px;padding:0 20px}
+#tbtitle{font-size:13.5px;font-weight:600}
+#tbsub{font-size:12px;color:var(--grey)}
+.spacer{flex:1}
+#chip:empty{display:none}
+#offline{font-size:11.5px;font-weight:600;color:var(--on-red);background:var(--red);
+  padding:5px 10px;border-radius:6px}
+#chip{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--accent-deep);
+  border:1px solid var(--line);background:var(--paper);padding:5px 10px;
+  border-radius:6px}
+#langpick{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--grey-2)}
+#lang{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--ink);
+  background:var(--paper);border:1px solid var(--line);border-radius:6px;
+  padding:4px 6px;cursor:pointer}
+#lang:hover{background:var(--surface-hover)}
+#lang:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#content{flex:1;overflow:auto;padding:26px 30px 34px}
+.wrap{max-width:1320px;margin:0 auto}
+
+h2.title{font-size:25px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px}
+.sub{color:var(--grey);font-size:13.5px;margin-bottom:20px}
+
+/* panels & controls */
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.panel h3{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--grey);padding:11px 16px;border-bottom:1px solid var(--line);
+  background:var(--surface)}
+.row{display:flex;align-items:center;gap:14px;padding:13px 16px;
+  border-bottom:1px solid var(--line-soft)}
+.row:last-child{border-bottom:0}
+.row.bad{background:var(--red-tint)}
+.row .mark{width:20px;height:20px;border-radius:50%;flex:none;display:grid;
+  place-items:center;font-size:11px;font-weight:700;color:var(--on-red)}
+.mark.ok{background:var(--accent);color:var(--on-accent)}
+.mark.bad{background:var(--red)}
+.row .lbl{font-weight:600;min-width:175px}
+.row .det{font-family:var(--mono);font-size:11.5px;color:var(--grey);flex:1;
+  text-align:right;word-break:break-all}
+
+.bar{display:flex;gap:9px;align-items:center;margin-top:18px;flex-wrap:wrap}
+button{font-family:var(--sans);font-size:13px;font-weight:600;border:0;
+  padding:8px 17px;border-radius:var(--r);cursor:pointer;background:var(--accent);
+  color:var(--on-accent);transition:background .12s;box-shadow:var(--shadow-btn)}
+button:hover:not(:disabled){background:var(--accent-hover)}
+button.ghost{background:var(--paper);color:var(--text);border:1px solid var(--line-strong)}
+button.ghost:hover{background:var(--surface-hover)}
+button.danger{background:var(--red);color:var(--on-red)}
+button.danger:hover:not(:disabled){background:var(--red);filter:brightness(.9)}
+button:disabled,button.ghost:disabled{background:var(--disabled-bg);
+  color:var(--grey-4);border-color:var(--line);cursor:not-allowed;box-shadow:none}
+
+.stats{display:flex;background:var(--paper);border:1px solid var(--line);
+  border-radius:10px;box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.stat{flex:1;padding:16px 20px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat .n{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.stat .k{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--grey);margin-top:6px}
+.stat.hot .n{color:var(--red)} .stat.warm .n{color:var(--accent-deep)}
+
+#pill{display:inline-block;background:var(--accent);color:var(--on-accent);
+  font-weight:600;font-size:12px;padding:8px 14px;border-radius:20px;
+  margin-bottom:14px}
+
+/* scan */
+#hero{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  box-shadow:var(--shadow);padding:22px 24px;margin-bottom:18px}
+#heroTop{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+#etaBig{font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1}
+#etaSub{color:var(--grey);font-size:13px;margin-top:7px}
+#clock{font-family:var(--mono);font-size:12.5px;color:var(--grey)}
+#track{height:8px;background:var(--neutral);border-radius:4px;margin-top:18px;overflow:hidden}
+#fill{height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-deep));
+  transition:width .5s cubic-bezier(.16,1,.3,1)}
+#split{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
+#split .panel{margin:0;display:flex;flex-direction:column;height:352px}
+#split .body{overflow:auto;flex:1}
+
+.f{display:flex;align-items:center;gap:11px;padding:9px 16px;
+  border-bottom:1px solid var(--line-soft);font-size:13px}
+.f:last-child{border-bottom:0}
+.f .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line-side)}
+.f .nm{flex:1;font-family:var(--mono);font-size:11.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.f .tag{font-size:9px;font-weight:700;letter-spacing:.07em;padding:2px 6px;
+  border-radius:4px;border:1px solid var(--line);color:var(--grey);background:var(--surface)}
+.f .note{font-size:11.5px;color:var(--grey);min-width:96px;text-align:right}
+.f.queued .nm{color:var(--grey-3)}
+.f.cached{background:var(--surface)} .f.cached .nm{color:var(--grey)}
+.f.cached .dot{background:var(--accent)}
+.f.running{background:var(--accent-tint)}
+.f.running .nm{color:var(--accent-deep);font-weight:600}
+.f.running .dot{background:var(--accent-deep);animation:p 1.1s infinite}
+.f.running .tag{border-color:var(--accent-deep);color:var(--accent-deep);background:var(--paper)}
+.f.done .dot{background:var(--accent)}
+.f.hit .nm{color:var(--red);font-weight:600}
+.f.hit .note{color:var(--red);font-weight:600}
+.f.hit .dot{background:var(--red)}
+.f.partial .note,.f.interrupted .note{color:var(--rose)}
+.f.error .note{color:var(--red)}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+
+#console{background:var(--code-bg);color:var(--on-ink-dim);font-family:var(--mono);
+  font-size:11px;line-height:1.95;padding:12px 16px}
+#console b{color:var(--accent);font-weight:500}
+#console i{color:var(--rose);font-style:normal}
+#err{border-left:4px solid var(--red);background:var(--paper);padding:14px 16px;
+  border-radius:8px;font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;
+  margin-top:16px}
+
+/* findings */
+.card{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--red);
+  border-radius:10px;box-shadow:var(--shadow);padding:19px 22px;margin-bottom:12px}
+.card.adv{border-left-color:var(--rose)}
+.card .top{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.badge{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:4px 9px;border-radius:5px;background:var(--red);color:var(--on-red)}
+.badge.adv{background:var(--rose)}
+.card .art{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.card .loc{font-family:var(--mono);font-size:11.5px;color:var(--grey);margin-left:auto}
+.card .desc{color:var(--ink2);font-size:13.5px;line-height:1.62;margin-bottom:13px;
+  max-width:82ch}
+.card pre{background:var(--code-bg);color:var(--on-ink);padding:13px 17px;border-radius:7px;
+  font-family:var(--mono);font-size:12px;overflow-x:auto;white-space:pre-wrap;
+  line-height:1.6}
+.note-line{font-size:12.5px;color:var(--grey);margin:2px 0 12px}
+.card.clean{border-left-color:var(--accent);display:flex;align-items:center;gap:20px;
+  padding:27px 26px}
+.card.clean .tick{width:44px;height:44px;border-radius:50%;flex:none;display:grid;
+  place-items:center;background:var(--accent);color:var(--on-accent);font-size:21px;
+  font-weight:700}
+.card.clean .h{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.card.clean .p{color:var(--ink2);line-height:1.62;margin-top:5px;max-width:82ch}
+
+/* jurisdiction + catalogue */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px}
+.jur{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);padding:22px;cursor:pointer;transition:.14s;
+  display:flex;flex-direction:column;gap:9px}
+.jur:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
+.jur .fl{font-size:44px;line-height:1}
+.jur .nm{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.jur .bl{font-size:12.5px;color:var(--grey);line-height:1.5;flex:1}
+.jur .st{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--accent-deep)}
+.jur.soon{border-style:dashed;box-shadow:none;background:var(--surface)}
+.jur.soon:hover{transform:none;box-shadow:none;border-color:var(--line-dash)}
+.jur.soon .st{color:var(--grey)}
+.jur .arrow{font-size:15px;color:var(--faint)}
+
+.pk{background:var(--paper);border:1px solid var(--line);border-radius:11px;
+  box-shadow:var(--shadow);padding:17px 19px;display:flex;flex-direction:column;
+  gap:8px;transition:.14s}
+.pk.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.35),
+  var(--shadow)}
+.pk .hd{display:flex;align-items:flex-start;gap:9px}
+.pk .nm{font-size:15px;font-weight:700;letter-spacing:-.01em;flex:1}
+.pk .ref{font-family:var(--mono);font-size:10.5px;color:var(--grey)}
+.pk .cv{font-size:12.5px;color:var(--ink2);line-height:1.5}
+.pk .tl{font-size:11.5px;color:var(--grey);margin-top:auto;padding-top:6px}
+.pk .ft{display:flex;align-items:center;gap:8px;margin-top:4px}
+.chipst{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:5px}
+.chipst.installed{background:var(--accent-chip);color:var(--accent-deep)}
+.chipst.unavailable{background:var(--neutral-2);color:var(--grey-2)}
+.pk button{padding:6px 14px;font-size:12px;margin-left:auto}
+.pk button+button{margin-left:0}
+.pk.unavailable{opacity:.66}
+.ipad{padding:14px 16px}
+.ipad button{margin-top:13px}
+#itrack{height:8px;background:var(--neutral);border-radius:4px;margin-top:11px;
+  overflow:hidden}
+#ifill{height:100%;width:0;border-radius:4px;transition:width .4s ease;
+  background:linear-gradient(90deg,var(--accent),var(--accent-deep))}
+#ifill.bad{background:var(--red)}
+.cmd{font-family:var(--mono);font-size:11px;color:var(--accent-deep);
+  background:var(--surface);border:1px solid var(--line);border-radius:5px;
+  padding:4px 8px;white-space:nowrap}
+.pk .loc{font-family:var(--mono);font-size:10.5px;color:var(--grey-3);
+  margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk .dl{height:5px;background:var(--neutral);border-radius:3px;margin-top:9px;
+  overflow:hidden}
+.pk .dlfill{height:100%;background:var(--accent);transition:width .4s ease}
+.secthead{display:flex;align-items:baseline;gap:10px;margin:26px 0 12px}
+.secthead .h{font-size:12px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--grey)}
+.secthead .n{font-size:12px;color:var(--grey-3)}
+
+/* source picker */
+.src{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  box-shadow:var(--shadow);padding:18px 20px;margin-bottom:18px}
+.src .lab{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--grey);margin-bottom:9px}
+.src input{width:100%;font-family:var(--mono);font-size:12.5px;color:var(--ink);
+  border:1px solid var(--line);border-radius:7px;padding:10px 13px;outline:0;
+  background:var(--surface)}
+.src input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.22);
+  background:var(--paper)}
+.src .hint{font-size:12px;color:var(--grey);margin-top:9px}
+.srcbar{display:flex;gap:9px;align-items:center;margin-top:13px;flex-wrap:wrap}
+.src .help{font-size:12px;color:var(--grey);margin:2px 0 11px;max-width:78ch}
+.hint.ok{color:var(--accent-deep)}
+.hint.bad{color:var(--red)}
+.chipst.dflt{background:var(--neutral);color:var(--ink2)}
+.chipst.custom{background:var(--accent-chip);color:var(--accent-deep)}
+
+/* settings + cache controls */
+.navlbl.sep{border-top:1px solid var(--line-side);margin-top:13px;padding-top:14px}
+#pillWrap{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:14px}
+#pill{margin-bottom:0}
+#forgetBtn{padding:5px 12px;font-size:12px}
+</style>
+</head>
+<body>
+<div id="brandrule"></div>
+<div id="shell">
+
+  <aside id="side">
+    <div id="brand">
+      <div id="logo"><span data-t="brand.logo">Your logo here</span></div>
+      <div class="t" data-t="app.title">Code Regulation Scanner</div>
+      <div class="s" data-t="brand.sub">Local inference · zero egress</div>
+    </div>
+    <div class="navlbl" data-t="nav.workflow">Workflow</div>
+    <div class="nav on" id="nav-ready" onclick="go('ready',1)">
+      <span class="num">1</span><span data-t="nav.ready">Readiness</span>
+      <span class="cnt" id="c-ready"></span></div>
+    <div class="nav off" id="nav-jur" onclick="go('jur',1)">
+      <span class="num">2</span><span data-t="nav.jur">Jurisdiction</span>
+      <span class="cnt" id="c-jur"></span></div>
+    <div class="nav off" id="nav-catalog" onclick="go('catalog',1)">
+      <span class="num">3</span><span data-t="nav.catalog">Regulation</span>
+      <span class="cnt" id="c-catalog"></span></div>
+    <div class="nav off" id="nav-target" onclick="go('target',1)">
+      <span class="num">4</span><span data-t="nav.target">Target</span>
+      <span class="cnt" id="c-target"></span></div>
+    <div class="nav off" id="nav-scan" onclick="go('scan',1)">
+      <span class="num">5</span><span data-t="nav.scan">Scan</span>
+      <span class="cnt" id="c-scan"></span></div>
+    <div class="nav off" id="nav-results" onclick="go('results',1)">
+      <span class="num">6</span><span data-t="nav.results">Findings</span>
+      <span class="cnt" id="c-results"></span></div>
+    <div class="navlbl sep" data-t="nav.machine">This machine</div>
+    <div class="nav" id="nav-settings" onclick="go('settings')">
+      <span class="num">⚙</span><span data-t="nav.settings">Settings</span>
+      <span class="cnt" id="c-settings"></span></div>
+    <div id="sidefoot"><b data-t="side.foot">Your code never leaves this machine</b></div>
+  </aside>
+
+  <div id="main">
+    <div id="toolbar">
+      <span id="tbtitle">Readiness</span>
+      <span id="tbsub"></span>
+      <div class="spacer"></div>
+      <span id="offline" class="hide" data-t="app.offline">Not responding</span>
+      <span id="chip"></span>
+      <label id="langpick"><select id="lang" onchange="setLang(this.value)">
+        <option value="en">🇬🇧 English</option>
+        <option value="ro">🇷🇴 Română</option>
+        <option value="de">🇩🇪 Deutsch</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="it">🇮🇹 Italiano</option>
+      </select></label>
+    </div>
+
+    <div id="content"><div class="wrap">
+
+      <section id="ready">
+        <h2 class="title" data-t="ready.h">Everything runs on this machine.</h2>
+        <div class="sub" data-t="ready.sub">No cloud, no telemetry. Your source code
+          never leaves the laptop.</div>
+        <div class="panel"><h3 data-t="ready.panel">System readiness</h3>
+          <div id="checks"></div></div>
+        <div class="panel hide" id="installPanel"><h3 id="installHead">Installing</h3>
+          <div class="ipad"><div id="installMsg"></div>
+          <div id="itrack"><div id="ifill"></div></div>
+          <button id="cancelBtn" class="danger hide" onclick="cancelInstall()"
+            data-t="install.cancel">Cancel download</button></div></div>
+        <div class="bar">
+          <button id="go" disabled onclick="go('jur')" data-t="ready.continue">
+            Continue</button>
+          <button class="ghost" id="recheckBtn" onclick="preflight()"
+            data-t="ready.recheck">
+            Re-check</button>
+        </div>
+      </section>
+
+      <section id="jur" class="hide">
+        <h2 class="title" data-t="jur.h">Where do you deploy?</h2>
+        <div class="sub" data-t="jur.sub">Regulatory exposure follows the market you
+          ship into. Pick a jurisdiction to see its packs.</div>
+        <div class="grid" id="jurs"></div>
+      </section>
+
+      <section id="catalog" class="hide">
+        <h2 class="title" id="catTitle">Regulation packs</h2>
+        <div class="sub" id="catSub"></div>
+        <div id="catBody"></div>
+        <div class="bar"><button class="ghost" onclick="go('jur')"
+          data-t="common.back">Back</button></div>
+      </section>
+
+      <section id="target" class="hide">
+        <h2 class="title" id="tname"></h2>
+        <div class="sub" data-t="tgt.sub">Point the scanner at a codebase. Nothing is
+          uploaded and nothing is written into it.</div>
+
+        <div class="bar">
+          <button id="srcLocal" onclick="setSource('local')"
+            data-t="tgt.src.local">Local folder</button>
+          <button class="ghost" id="srcGit" onclick="setSource('git')"
+            data-t="tgt.src.git">Clone from Git</button>
+        </div>
+
+        <div class="src" id="paneLocal">
+          <div class="lab" data-t="tgt.lab">Path to the folder to scan</div>
+          <input id="tpath" spellcheck="false" placeholder="/path/to/your/repo"
+            onkeydown="if(event.key==='Enter')useTyped()">
+          <div class="srcbar">
+            <button class="ghost" onclick="useTyped()" data-t="tgt.use">
+              Use this path</button>
+            <button class="ghost hide" id="browseBtn"
+              onclick="pickInto('tpath', useTyped)"
+              data-t="tgt.browse">Browse…</button>
+          </div>
+        </div>
+
+        <div class="src hide" id="paneGit">
+          <div class="lab" data-t="tgt.git.url">Repository URL</div>
+          <input id="gitUrl" spellcheck="false"
+            placeholder="https://github.com/org/repo"
+            onkeydown="if(event.key==='Enter')cloneRepo()">
+          <div class="lab" data-t="tgt.git.dest">Clone into</div>
+          <input id="gitDest" spellcheck="false" placeholder="/path/to/put/the/clone"
+            onkeydown="if(event.key==='Enter')cloneRepo()">
+          <div class="srcbar">
+            <button class="ghost" id="cloneBtn" onclick="cloneRepo()"
+              data-t="tgt.git.go">Clone and scan</button>
+            <button class="ghost hide" id="browseDest" onclick="pickInto('gitDest')"
+              data-t="tgt.browse">Browse…</button>
+            <span class="hint" data-t="tgt.git.hint">Shallow clone, depth 1. The
+              scan runs on the clone.</span>
+          </div>
+        </div>
+        <div class="srcbar"><span class="hint" id="tHint"></span></div>
+        <div id="pillWrap" class="hide"><span id="pill"></span>
+          <button class="ghost" id="forgetBtn" onclick="forgetCache()"
+            data-t="tgt.forget">Forget cached findings</button></div>
+        <div class="stats">
+          <div class="stat"><div class="n" id="nFiles">0</div>
+            <div class="k" data-t="tgt.files">Files found</div></div>
+          <div class="stat" id="stPlan"><div class="n" id="nPlan">0</div>
+            <div class="k" data-t="tgt.plan">To scan</div></div>
+          <div class="stat"><div class="n" id="nCache">0</div>
+            <div class="k" data-t="tgt.cache">Already verified</div></div>
+          <div class="stat"><div class="n" id="nDeep">0</div>
+            <div class="k" data-t="tgt.deep">Need wider context</div></div>
+        </div>
+        <div class="bar">
+          <button id="scanBtn">Scan</button>
+          <button class="ghost hide" id="rescanBtn" onclick="rescanAll()">
+            Rescan everything</button>
+          <button class="ghost" onclick="go('catalog')" data-t="common.back">
+            Back</button>
+        </div>
+      </section>
+
+      <section id="scan" class="hide">
+        <div id="hero">
+          <div id="heroTop">
+            <div><div id="etaBig"></div><div id="etaSub"></div></div>
+            <div id="clock"></div>
+          </div>
+          <div id="track"><div id="fill"></div></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="n" id="sFiles">0</div>
+            <div class="k" data-t="scan.files">Files analysed</div></div>
+          <div class="stat"><div class="n" id="sChunks">0</div>
+            <div class="k" data-t="scan.chunks">Code sections</div></div>
+          <div class="stat" id="stHits"><div class="n" id="sHits">0</div>
+            <div class="k" data-t="scan.hits">Confirmed violations</div></div>
+          <div class="stat" id="stAdv"><div class="n" id="sAdv">0</div>
+            <div class="k" data-t="scan.adv">Advisories</div></div>
+        </div>
+        <div id="split">
+          <div class="panel"><h3 data-t="scan.panel.files">Files</h3>
+            <div class="body" id="files"></div></div>
+          <div class="panel"><h3 data-t="scan.panel.activity">Detector · validator
+            activity</h3>
+            <div class="body" id="console"></div></div>
+        </div>
+        <div class="bar">
+          <button id="pauseBtn" class="ghost" onclick="post('/api/pause')"
+            data-t="scan.pause">Pause · keep results</button>
+          <button id="stopBtn" class="danger hide" onclick="stopScan()"
+            data-t="scan.stop">Stop · clear results</button>
+          <button id="resumeBtn" class="hide" onclick="post('/api/start')"
+            data-t="scan.resume">Resume</button>
+          <button id="retryBtn" class="hide" onclick="startScan()"
+            data-t="scan.retry">Retry scan</button>
+          <button id="resultsBtn" class="hide" onclick="go('results')">
+            View findings</button>
+          <button id="backScan" class="ghost hide" onclick="go('target')"
+            data-t="common.back">Back</button>
+
+        </div>
+        <div id="err" class="hide"></div>
+      </section>
+
+      <section id="results" class="hide">
+        <h2 class="title" id="rLede"></h2>
+        <div class="sub" id="rSub"></div>
+        <div class="stats" id="rStats"></div>
+        <div id="cards"></div>
+        <div class="bar">
+          <button onclick="post('/api/reveal')" data-t="res.export">Export report</button>
+          <button class="ghost" onclick="go('scan')" data-t="res.backScan">
+            Back to scan</button>
+          <button class="ghost" onclick="clearResults()" data-t="res.clear">
+            Clear results</button>
+        </div>
+      </section>
+
+      <section id="settings" class="hide">
+        <h2 class="title" data-t="set.h">Where this machine keeps things</h2>
+        <div class="sub" data-t="set.sub">Three folders.</div>
+        <div id="setBody"></div>
+        <div class="bar"><button class="ghost" onclick="go(PREV)"
+          data-t="common.back">Back</button></div>
+      </section>
+
+    </div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SECTIONS = ['ready','jur','catalog','target','scan','results','settings'];
+const SETKEYS = ['models_dir','ledger_dir','reports_dir'];
+let LAST = null, LOG = [], SEEN = new Set(), VIEW = 'ready', STOPPING = false;
+let CATALOG = null, JUR = 'eu', PACK = 'eu_ai_act', BUSY = false, INSTALL = null;
+let SETTINGS = null, PREV = 'ready', PICKER = false;
+let PLAN = {files:[], plan:[], cached:[]};
+let LANGS = {}, DICT = {}, EN = {}, PLURAL = new Intl.PluralRules('en');
+
+const t = (k, v = {}) => {
+  const s = DICT[k] ?? EN[k] ?? k;
+  return (typeof s === 'string' ? s : s[PLURAL.select(v.n)] ?? s.other)
+    .replace(/\{(\w+)\}/g, (_, name) => v[name]);
+};
+// Jurisdictions and packs can also come from a demo catalogue, which we cannot
+// have translations for, so its own English text is the fallback.
+const tc = (k, fallback) => DICT[k] ?? fallback;
+
+function setLang(code){
+  const lang = LANGS[code] ? code : 'en';
+  DICT = LANGS[lang];
+  PLURAL = new Intl.PluralRules(lang);
+  localStorage.setItem('precommiteu.lang', lang);
+  document.documentElement.lang = lang;
+  document.title = t('app.title');
+  $('lang').value = lang;
+  $('lang').title = t('lang.label');
+  document.querySelectorAll('[data-t]').forEach(e=>{e.textContent = t(e.dataset.t)});
+  $('tbtitle').textContent = t('title.'+VIEW);
+  drawLog();
+  renderSettings();
+  if (CATALOG) { preflight(); renderJur(); renderCatalog(); loadPlan(); }
+  if (LAST) { paint(LAST); if (VIEW === 'results') render(LAST); }
+}
+
+const get = u => fetch(u).then(r=>r.json());
+const post = (u,b) => fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:b?JSON.stringify(b):null}).then(r=>r.json());
+const size = n => n >= 1024 ? (n/1024).toFixed(1)+' GB' : n+' MB';
+const packName = id => (CATALOG && CATALOG.packs.find(p=>p.id===id) || {}).name || id;
+const esc = s => (s||'').replace(/[<>&"]/g,
+  c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+function go(s, guarded){
+  if (guarded && $('nav-'+s).classList.contains('off')) return;
+  if (s === 'settings' && VIEW !== 'settings') PREV = VIEW;
+  $('nav-'+s).classList.remove('off');
+  VIEW = s;
+  SECTIONS.forEach(x=>{
+    $(x).classList.toggle('hide', x!==s);
+    $('nav-'+x).classList.toggle('on', x===s);
+  });
+  $('tbtitle').textContent = t('title.'+s);
+  $('content').scrollTop = 0;
+  if (s==='jur') renderJur();
+  if (s==='catalog') renderCatalog();
+  if (s==='target') loadPlan();
+  if (s==='results' && LAST) render(LAST);
+  if (s==='settings') loadSettings();
+}
+
+async function loadCatalog(){
+  CATALOG = await get('/api/catalog');
+  $('nav-jur').classList.remove('off');
+  renderJur();
+}
+
+function renderJur(){
+  if (!CATALOG) return;
+  const eu = CATALOG.jurisdictions.find(j=>j.id==='eu');
+  $('c-jur').textContent = t('cnt.loaded', {n: eu.installed});
+  $('jurs').innerHTML = CATALOG.jurisdictions.map(j=>`
+    <div class="jur ${j.live?'':'soon'}" onclick="pickJur('${j.id}')">
+      <div class="fl">${j.flag}</div>
+      <div class="nm">${tc('jur.'+j.id+'.name', j.name)}</div>
+      <div class="bl">${tc('jur.'+j.id+'.blurb', j.blurb)}</div>
+      <div class="st">${j.live ? t('jur.installed',{n:j.installed,total:j.total})
+        : t('jur.notbuilt',{total:j.total})} <span class="arrow">›</span></div>
+    </div>`).join('');
+}
+
+function pickJur(id){
+  JUR = id;
+  $('nav-catalog').classList.remove('off');
+  go('catalog');
+}
+
+function renderCatalog(){
+  if (!CATALOG) return;
+  const j = CATALOG.jurisdictions.find(x=>x.id===JUR);
+  const mine = CATALOG.packs.filter(p=>p.jurisdiction===JUR);
+  const ready = mine.filter(p=>p.installed);
+  const rest = mine.filter(p=>!p.installed);
+  $('catTitle').textContent = `${j.flag}  ${tc('jur.'+j.id+'.name', j.name)}`;
+  $('catSub').textContent = (BUSY ? t('cat.busy') : '')
+    + (ready.length ? t('cat.downloaded',{n:ready.length}) : '')
+    + (rest.length && JUR==='eu' ? t('cat.available',{n:rest.length})
+       : rest.length ? t('cat.notbuilt',{n:rest.length}) : '')
+    + t('cat.each');
+
+  const busyInstall = INSTALL && INSTALL.phase === 'running';
+  const pctOf = p => INSTALL && INSTALL.total_bytes
+    ? Math.min(100, 100 * INSTALL.done_bytes / INSTALL.total_bytes) : 6;
+  const card = p => `<div class="pk ${p.status==='unavailable'?'unavailable':''}
+      ${p.installed&&p.id===PACK?'sel':''}">
+    <div class="hd"><span class="nm">${p.name}</span></div>
+    <div class="ref">${p.reference}</div>
+    <div class="cv">${tc('pk.'+p.id+'.covers', p.covers)}</div>
+    <div class="tl">${tc('pk.'+p.id+'.timeline', p.timeline)}${
+      p.articles ? t('cat.articles',{n:p.articles}) : ''}</div>
+    ${p.path?`<div class="loc" title="${esc(p.path)}">${esc(p.path)}</div>`:''}
+    ${busyInstall && INSTALL.label===p.id
+      ? `<div class="dl"><div class="dlfill" style="width:${pctOf(p)}%"></div></div>`:''}
+    <div class="ft">
+      ${p.status==='available' ? '' : `<span class="chipst ${p.status}">${
+        p.status==='installed'
+          ? t(p.id===PACK?'pk.inuse':'pk.installed',{mb:p.size_mb})
+          : t('pk.notbuilt')}</span>`}
+      ${p.installed
+        ? `<button ${BUSY?'disabled':''} onclick="usePack('${p.id}')">${
+            t(p.id===PACK?'pk.continue':'pk.use')}</button>`
+        : p.status!=='available'
+          ? `<button class="ghost" disabled>${t('pk.na')}</button>`
+          : busyInstall && INSTALL.label===p.id
+            ? `<button class="ghost" disabled>${t('pk.downloading')}</button>
+               <button class="danger" ${INSTALL.cancelable?'':'disabled'}
+                 onclick="cancelInstall()">${t('pk.cancel')}</button>`
+            : `<button ${busyInstall?'disabled':''}
+                onclick="getPack('${p.id}')">${
+                t('pk.get',{size:size(p.download_mb)})}</button>`}
+    </div></div>`;
+
+  $('catBody').innerHTML =
+    (ready.length ? `<div class="secthead">
+       <span class="h">${t('cat.sect.downloaded')}</span>
+       <span class="n">${t('cat.sect.pick')}</span></div>
+       <div class="grid">${ready.map(card).join('')}</div>` : '')
+    + (rest.length ? `<div class="secthead"><span class="h">${
+       t(ready.length?'cat.sect.available':'cat.sect.availableDl')}</span>
+       <span class="n">${
+       t(JUR==='eu'?'cat.sect.adapter':'cat.sect.notbuilt')}</span></div>
+       <div class="grid">${rest.map(card).join('')}</div>` : '');
+}
+
+async function getPack(id){
+  if (INSTALL && INSTALL.phase === 'running') return;
+  const p = CATALOG.packs.find(x=>x.id===id);
+  if (p.download_mb > 1024 && !confirm(
+      t('pk.getConfirm',{size:size(p.download_mb), mb:p.size_mb}))) return;
+  const r = await post('/api/install', {action:'pack', id});
+  if (r.started) pollInstall();
+}
+
+async function usePack(id){
+  if (BUSY) return;
+  PACK = id;
+  await post('/api/regulation',{name:id});
+  const p = CATALOG.packs.find(x=>x.id===id);
+  $('chip').textContent = p.name.toUpperCase();
+  $('c-catalog').textContent = p.name;
+  $('nav-target').classList.remove('off');
+  renderCatalog();
+  preflight();
+  go('target');
+}
+
+const artNo = id => (/art(\d+)/.exec(id||'')||[])[1];
+const artLabel = id => {
+  const n = artNo(id);
+  if (!n) return t('res.regulation');
+  // Titles come from the pack's own article registry, never from this file.
+  const pack = CATALOG && CATALOG.packs.find(x=>x.id===PACK);
+  const title = pack && pack.titles ? pack.titles[String(id).toLowerCase()] : null;
+  return title ? `${t('res.article',{n})}: ${title}` : t('res.article',{n});
+};
+
+const mmss = s => (s==null||s<=0) ? '--:--'
+  : s<60 ? t('time.sec',{n:Math.max(5,Math.round(s/5)*5)})
+  : t('time.min',{m:Math.floor(s/60), s:String(Math.round(s%60)).padStart(2,'0')});
+
+const detail = r => t('det.' + r.det,
+  r.args.pack ? {...r.args, pack: packName(r.args.pack)} : r.args);
+
+async function preflight(){
+  const btn = $('recheckBtn');
+  btn.disabled = true;
+  $('c-ready').textContent = t('cnt.checking');
+  const d = await get('/api/preflight').finally(()=>{ btn.disabled = false; });
+  $('checks').innerHTML = d.rows.map(r=>`<div class="row ${r.ok?'':'bad'}">
+    <span class="mark ${r.ok?'ok':'bad'}">${r.ok?'✓':'!'}</span>
+    <span class="lbl">${tc('row.'+r.label, r.label)}</span>
+    <span class="det">${esc(detail(r))}</span>
+    ${!r.fix ? '' : r.fix.auto
+      ? `<button ${INSTALL&&INSTALL.phase==='running'?'disabled':''}
+           onclick="doFix('${r.fix.action}','${r.fix.id||''}')">${
+           t('fix.'+r.fix.action)}${r.fix.id?' '+packName(r.fix.id):''}</button>`
+      : `<code class="cmd">${esc(r.fix.command)}</code>`}</div>`).join('');
+  $('go').disabled = !d.ok;
+  $('c-ready').textContent = t(d.ok ? 'cnt.ready' : 'cnt.blocked');
+}
+
+async function doFix(action, id){
+  const r = await post('/api/install', {action, id: id||null});
+  if (r.started) { pollInstall(); return; }
+  await preflight();
+}
+
+async function pollInstall(){
+  INSTALL = await get('/api/install');
+  const p = $('installPanel'), running = INSTALL.phase === 'running';
+  p.classList.toggle('hide', INSTALL.phase === 'idle');
+  $('installHead').textContent = running
+      ? t('install.head.running',{pack:packName(INSTALL.label)})
+    : INSTALL.phase === 'failed' ? t('install.head.failed')
+    : INSTALL.phase === 'canceled' ? t('install.head.canceled')
+    : t('install.head.done');
+  const mb = b => (b/1048576).toFixed(0) + ' MB';
+  $('installMsg').textContent = INSTALL.error ? INSTALL.error
+    : INSTALL.phase === 'canceled'
+      ? t('install.canceledMsg',{mb:mb(INSTALL.done_bytes)})
+    : INSTALL.total_bytes
+      ? t('install.progress',{done:mb(INSTALL.done_bytes),
+                              total:mb(INSTALL.total_bytes)})
+    : running ? t('install.working') : t('install.done');
+  $('cancelBtn').classList.toggle('hide', !INSTALL.cancelable);
+  const pct = INSTALL.total_bytes
+    ? Math.min(100, 100 * INSTALL.done_bytes / INSTALL.total_bytes) : (running ? 8 : 100);
+  $('ifill').style.width = pct + '%';
+  $('ifill').classList.toggle('bad', INSTALL.phase === 'failed');
+  if (VIEW === 'catalog') renderCatalog();
+  if (running) { setTimeout(pollInstall, 700); return; }
+  await loadCatalog();
+  await preflight();
+  if (VIEW === 'catalog') renderCatalog();
+}
+
+async function cancelInstall(){
+  if (!confirm(t('install.cancelConfirm'))) return;
+  await post('/api/install', {action:'cancel'});
+}
+
+async function loadPlan(){
+  const d = await get('/api/plan');
+  const st = await get('/api/state');
+  PLAN = d;
+  $('stPlan').className = 'stat';
+  $('tHint').textContent = '';
+  $('tname').textContent = st.target ? st.target.split('/').pop() + '/'
+    : t('tgt.choose');
+  if (st.target) $('tpath').value = st.target;
+  // A folder the scanner finds nothing in is as much a dead end as no folder.
+  if (!st.target || !d.files.length) {
+    ['nFiles','nPlan','nCache','nDeep'].forEach(k=>$(k).textContent='0');
+    $('c-target').textContent = '';
+    $('pillWrap').classList.add('hide');
+    $('rescanBtn').classList.add('hide');
+    $('scanBtn').textContent = t(st.target ? 'tgt.empty' : 'tgt.first');
+    $('scanBtn').disabled = true;
+    return;
+  }
+  $('nFiles').textContent = d.files.length;
+  $('nPlan').textContent = d.plan.length;
+  $('nCache').textContent = d.cached.length;
+  $('stPlan').className = 'stat' + (d.plan.length ? ' warm' : '');
+  $('nDeep').textContent = st.files.filter(f=>f.route==='orchestrator').length;
+  $('c-target').textContent = t('cnt.files',{n:d.files.length});
+  $('nav-target').classList.remove('off');
+  const reuse = d.cached.length>0 && d.plan.length<d.files.length;
+  $('pillWrap').classList.toggle('hide', !reuse);
+  if (reuse) $('pill').textContent = t('tgt.reuse',{n:d.cached.length});
+  const all = !d.plan.length;
+  $('scanBtn').textContent = all
+    ? t('tgt.rescan',{n:d.files.length})
+    : t(d.cached.length ? 'tgt.scanChanged' : 'tgt.scan',{n:d.plan.length});
+  $('scanBtn').disabled = false;
+  $('scanBtn').onclick = all ? rescanAll : startScan;
+  // When nothing changed the primary button already is the clean rescan.
+  $('rescanBtn').classList.toggle('hide', all || !d.cached.length);
+  $('rescanBtn').textContent = t('tgt.rescanAll',{n:d.files.length});
+}
+
+// Raw fields, not rendered text: the console has to survive a language switch.
+function logLine(f){
+  // Status alone would swallow the second analysis of a file that lands on the
+  // same status twice; the duration is what makes it a different analysis.
+  const key = f.file+f.status+f.duration_s;
+  if (SEEN.has(key) || ['queued','running','cached'].includes(f.status)) return;
+  SEEN.add(key);
+  LOG.push({at: new Date().toTimeString().slice(0,8), file: f.file,
+    route: f.route, kept: f.kept, secs: f.duration_s});
+  drawLog();
+}
+
+function drawLog(){
+  $('console').innerHTML = LOG.slice(-200).map(l =>
+    `${l.at} <b>${esc(l.file)}</b> · ${
+      t(l.route==='orchestrator' ? 'log.cross' : 'log.direct')} · ${
+      l.kept ? `<i>${t('log.confirmed',{n:l.kept})}</i>` : t('log.none')} · ${l.secs}s`
+    ).join('<br>');
+  $('console').scrollTop = 1e9;
+}
+
+function resetLog(){ LOG = []; SEEN = new Set(); drawLog(); }
+
+function paint(s){
+  // /api/stop returns before the child is down; idle is the backend telling us
+  // the kill, the state purge and the re-plan have all landed.
+  if (STOPPING && s.phase==='idle') { STOPPING = false; discard(); }
+  LAST = s;
+  const running = s.phase==='running';
+  const loading = running && s.cold_remaining>0 && !STOPPING;
+  const adv = (s.advisories||[]).length;
+  const started = s.files_done>0 || running || s.phase==='paused';
+  if (BUSY !== running){ BUSY = running; if (VIEW==='catalog') renderCatalog(); }
+  if (s.files_total>0) ['jur','catalog','target']
+    .forEach(x=>$('nav-'+x).classList.remove('off'));
+
+  const finished = s.files_total>0 && !running
+    && (s.phase==='done' || s.files_done===s.files_total);
+  if (started || s.phase==='done') $('nav-scan').classList.remove('off');
+  if (s.findings.length || adv || finished) $('nav-results').classList.remove('off');
+  $('c-scan').textContent = running ? `${s.files_done}/${s.files_total}`
+    : s.phase==='paused' ? t('cnt.paused') : s.files_done ? t('cnt.done') : '';
+  $('c-results').textContent = s.findings.length || (finished ? t('cnt.clean') : '');
+  $('tbsub').textContent = VIEW==='scan' && running
+    ? t('scan.tbsub',{done:s.files_done, total:s.files_total}) : '';
+  $('sidefoot').innerHTML = (CATALOG
+    ? (CATALOG.packs.find(x=>x.id===PACK)||{}).reference || ''
+    : '') + `<br><b>${t('side.foot')}</b>`;
+
+  if (loading){
+    $('etaBig').textContent = t('scan.loading');
+    $('etaSub').textContent = s.adapter
+      ? t('scan.attaching',{pack:packName(s.regulation), adapter:s.adapter})
+      : t('scan.loadingBase');
+    $('clock').textContent = '';
+    $('fill').style.width = Math.min(97,Math.max(4,
+      100*(1-s.cold_remaining/(s.cold_total||40)))) + '%';
+  } else {
+    $('fill').style.width = (s.files_total?100*s.files_done/s.files_total:0)+'%';
+    $('fill').style.background = s.phase==='failed' ? 'var(--red)' : '';
+    $('etaBig').textContent = STOPPING ? t('scan.stopping')
+      : running ? t('scan.remaining',{t:mmss(s.eta_s)})
+      : s.phase==='paused' ? t('scan.paused')
+      : s.phase==='failed' ? t('scan.failed')
+      : s.files_done ? t('scan.complete') : t('scan.ready');
+    $('etaSub').textContent = running
+      ? t('scan.sub.running',{done:s.files_done, total:s.files_total,
+                              adapter:s.adapter||''})
+      : s.phase==='failed' ? t('scan.sub.failed')
+      : !s.files_done ? t('scan.sub.idle')
+      : s.phase==='paused'
+        ? t('scan.sub.paused',{done:s.files_done, total:s.files_total})
+        : t('cnt.files',{n:s.files_total})
+          + (s.elapsed_s>0 ? ` · ${mmss(s.elapsed_s)}` : '');
+    $('clock').textContent = running
+      ? t('scan.doneby',{t:new Date(Date.now()+(s.eta_s||0)*1000)
+          .toTimeString().slice(0,5)})
+      : '';
+  }
+
+  $('sFiles').textContent = `${s.files_done}/${s.files_total}`;
+  $('sChunks').textContent = s.chunks_done;
+  $('sHits').textContent = s.findings.length;
+  $('sAdv').textContent = adv;
+  $('stHits').className = 'stat' + (s.findings.length ? ' hot' : '');
+  $('stAdv').className = 'stat' + (adv ? ' warm' : '');
+
+  $('files').innerHTML = (s.files.length ? '' :
+    `<div class="f"><span class="dot"></span>
+     <span class="nm" style="color:var(--grey-3)">${t('scan.empty')}</span></div>`)
+    + s.files.map(f=>{
+    const cls = f.kept ? 'hit' : f.status;
+    const tag = t(f.route==='orchestrator' ? 'tag.cross' : 'tag.direct');
+    const note = f.kept ? t('note.findings',{n:f.kept})
+      : f.status==='partial' ? t('note.partial')
+      : f.status==='interrupted' ? t('note.interrupted')
+      : f.status==='error' ? esc(f.error)
+      : f.status==='cached' ? t('note.cached')
+      : f.status==='running' ? t('note.running')
+      : f.status==='queued' ? ''
+      : f.duration_s ? t('note.clearTime',{n:f.duration_s}) : t('note.clear');
+    return `<div class="f ${cls}"><span class="dot"></span>
+      <span class="nm">${esc(f.file)}</span><span class="tag">${tag}</span>
+      <span class="note">${note}</span></div>`;
+  }).join('');
+  s.files.forEach(logLine);
+
+  $('pauseBtn').classList.toggle('hide', !running && !STOPPING);
+  $('stopBtn').classList.toggle('hide', !running && !STOPPING);
+  $('pauseBtn').disabled = $('stopBtn').disabled = STOPPING;
+  $('resumeBtn').classList.toggle('hide', s.phase!=='paused' || STOPPING);
+  $('retryBtn').classList.toggle('hide', s.phase!=='failed');
+  $('resultsBtn').classList.toggle('hide', running || !(s.findings.length || finished));
+  $('resultsBtn').textContent =
+    t(s.findings.length ? 'scan.viewFindings' : 'scan.viewReport');
+  $('backScan').classList.toggle('hide', running);
+  $('err').classList.toggle('hide', !s.error);
+  if (s.error) $('err').textContent = s.error;
+}
+
+function render(s){
+  const adv = s.advisories||[];
+  const arts = [...new Set(s.findings.map(f=>artNo(f.probable_article_id)))]
+    .sort((a,b)=>a-b);
+  // Article 5 is a prohibition in the AI Act alone; elsewhere it is an ordinary
+  // article and counting it as a prohibited practice is simply wrong.
+  const aiAct = PACK==='eu_ai_act';
+  const prohibited = aiAct
+    ? s.findings.filter(f=>artNo(f.probable_article_id)==='5').length : 0;
+  const st = (v,k,c) => `<div class="stat ${v?c:''}"><div class="n">${v}</div>
+    <div class="k">${k}</div></div>`;
+
+  if (!s.findings.length && !adv.length){
+    $('rLede').textContent = t('res.cleanLede');
+    $('rSub').textContent = `${packName(PACK)} · ${t('cnt.files',{n:s.files_total})}`
+      + (s.elapsed_s>0 ? t('res.scannedIn',{t:mmss(s.elapsed_s)}) : '')
+      + t('res.noEgress');
+    $('rStats').innerHTML = st(s.files_total,t('scan.files'),'warm')
+      + st(s.chunks_done,t('scan.chunks'),'') + st(0,t('scan.hits'),'')
+      + st(0,t('scan.adv'),'');
+    $('cards').innerHTML = `<div class="card clean"><span class="tick">✓</span>
+      <div><div class="h">${t('res.cleanH',{n:s.files_total})}</div>
+      <div class="p">${t('res.cleanP',{pack:packName(PACK)})}</div></div></div>`;
+    return;
+  }
+
+  $('rLede').textContent = s.findings.length
+    ? t('res.lede',{n:s.findings.length, m:t('res.articles',{n:arts.length})})
+    : t('res.ledeNone');
+  $('rSub').textContent = t('cnt.files',{n:s.files_total})
+    + (s.elapsed_s>0 ? t('res.scannedIn',{t:mmss(s.elapsed_s)}) : '')
+    + t('res.evidence');
+  $('rStats').innerHTML = st(s.findings.length,t('res.stat.confirmed'),'hot')
+    + st(adv.length,t('res.stat.advisory'),'warm')
+    + st(arts.length,t('res.stat.articles'),'')
+    + (aiAct ? st(prohibited,t('res.stat.prohibited'),'hot') : '');
+
+  const card = (f,isAdv) => `<div class="card ${isAdv?'adv':''}">
+    <div class="top">
+      <span class="badge ${isAdv?'adv':''}">${
+        t(isAdv?'badge.advisory':'badge.confirmed')}</span>
+      <span class="art">${
+        isAdv ? t('res.raised') : artLabel(f.probable_article_id)}</span>
+      <span class="loc">${esc(f.file)}${f.start_line?':'+f.start_line:''}</span>
+    </div>
+    <div class="desc">${esc((f.description||'')
+      .replace(/\s*\[matches a known violation pattern:[^\]]*\]/g,''))}</div>
+    ${f.code_evidence?`<pre>${esc(f.code_evidence)}</pre>`:''}</div>`;
+
+  $('cards').innerHTML =
+    (s.findings.length ? s.findings.slice()
+      .sort((a,b)=>artNo(a.probable_article_id)-artNo(b.probable_article_id))
+      .map(f=>card(f,false)).join('')
+      : `<div class="panel" style="padding:34px;text-align:center">
+         <div style="font-size:19px;font-weight:700">${
+           t('res.emptyH',{n:s.files_total})}</div>
+         <div style="color:var(--grey);margin-top:7px">${t('res.emptyP')}</div>
+         </div>`)
+    + (adv.length ? `<div class="note-line">${t('res.advNote')}</div>`
+        + adv.map(a=>card(a,true)).join('') : '');
+}
+
+async function startScan(){
+  if (BUSY) return;
+  resetLog();
+  $('nav-scan').classList.remove('off'); go('scan'); await post('/api/start');
+}
+
+function discard(){
+  LAST = null; resetLog();
+  $('nav-results').classList.add('off');
+  go('target');
+}
+
+async function stopScan(){
+  const done = LAST ? LAST.files_done : 0;
+  if (!confirm(t('stop.confirm',{n:done, pack:packName(PACK)})
+    + t('stop.confirmTail'))) return;
+  STOPPING = true;
+  if (LAST) paint(LAST);
+  await post('/api/stop');
+}
+
+async function clearResults(){
+  if (BUSY) return;
+  if (!confirm(t('res.clearConfirm'))) return;
+  await post('/api/reset');
+  discard();
+}
+
+// The target screen stays reachable mid-scan and nothing disables scanBtn, so
+// this needs its own guard before it discards anything.
+async function rescanAll(){
+  if (BUSY) return;
+  if (!confirm(t('res.rescanConfirm')
+    + t('tgt.rescanCost',{n:PLAN.files.length}))) return;
+  await post('/api/reset');
+  return startScan();
+}
+
+async function forgetCache(){
+  if (BUSY) return;
+  if (!confirm(t('tgt.forgetConfirm',{n:PLAN.cached.length}))) return;
+  const r = await post('/api/ledger/clear');
+  await loadPlan();
+  $('tHint').textContent = r.detail ? t('busy.scan')
+    : t(r.cleared ? 'tgt.forgotten' : 'tgt.nothingCached');
+}
+
+async function loadSettings(){
+  SETTINGS = await get('/api/settings');
+  renderSettings();
+}
+
+function renderSettings(){
+  if (!SETTINGS) return;
+  const n = SETKEYS.filter(k=>SETTINGS[k].custom).length;
+  $('c-settings').textContent = n ? t('cnt.custom',{n}) : '';
+  $('setBody').innerHTML = SETKEYS.map(k=>{
+    const s = SETTINGS[k];
+    return `<div class="src">
+      <div class="lab">${t('set.'+k)}</div>
+      <div class="help">${t('set.'+k+'.help')}</div>
+      <input id="in-${k}" spellcheck="false" value="${esc(s.value)}"
+        onkeydown="if(event.key==='Enter')saveSetting('${k}')">
+      <div class="srcbar">
+        <span class="chipst ${s.custom?'custom':'dflt'}">${
+          t(s.custom?'set.custom':'set.default')}</span>
+        ${PICKER ? `<button class="ghost"
+          onclick="pickInto('in-${k}',()=>saveSetting('${k}'))">${
+          t('tgt.browse')}</button>` : ''}
+        <button class="ghost" onclick="saveSetting('${k}')">${t('set.save')}</button>
+        ${s.custom ? `<button class="ghost" onclick="saveSetting('${k}',true)">${
+          t('set.reset')}</button>` : ''}
+        <span class="hint" id="msg-${k}"></span>
+      </div>
+      ${s.custom ? `<div class="hint">${t('set.defaultIs')}
+        <code class="cmd">${esc(s.default)}</code></div>` : ''}</div>`;
+  }).join('');
+}
+
+async function saveSetting(key, reset){
+  const say = (cls, text) => {
+    $('msg-'+key).className = 'hint ' + cls;
+    $('msg-'+key).textContent = text;
+  };
+  say('', t('set.saving'));
+  const r = await post('/api/settings',
+    {[key]: reset ? null : $('in-'+key).value.trim() || null});
+  if (r.detail){
+    say('bad', /is running/.test(r.detail)
+      ? t(r.detail.includes('download') ? 'busy.download' : 'busy.scan')
+      : t('set.rejected',{why:r.detail}));
+    return;
+  }
+  SETTINGS = r;
+  renderSettings();
+  say('ok', t('set.saved'));
+  // A moved bundle changes what is installed, a moved cache changes the plan.
+  await loadCatalog();
+  preflight();
+  loadPlan();
+}
+
+$('scanBtn').onclick = startScan;
+async function setTarget(call){
+  $('tHint').textContent = '';
+  const r = await call;
+  if (r.detail) { $('tHint').textContent = r.detail; return; }
+  await loadPlan();
+}
+const useTyped = () => setTarget(post('/api/target', {path: $('tpath').value.trim()}));
+
+async function pickInto(field, after){
+  const r = await post('/api/pick-folder');
+  if (!r.path) return;
+  $(field).value = r.path;
+  if (after) after();
+}
+
+function setSource(kind){
+  const git = kind === 'git';
+  $('srcLocal').classList.toggle('ghost', git);
+  $('srcGit').classList.toggle('ghost', !git);
+  $('paneLocal').classList.toggle('hide', git);
+  $('paneGit').classList.toggle('hide', !git);
+  $('tHint').textContent = '';
+}
+
+async function cloneRepo(){
+  const url = $('gitUrl').value.trim(), dest = $('gitDest').value.trim();
+  if (!/^(https:\/\/|ssh:\/\/|git@)/.test(url)){
+    $('tHint').textContent = t('tgt.git.badurl');
+    return;
+  }
+  $('cloneBtn').disabled = true;
+  $('tHint').textContent = t('tgt.git.cloning');
+  await setTarget(post('/api/clone', {url, dest}));
+  $('cloneBtn').disabled = false;
+}
+
+get('/api/branding').then(b=>{
+  PICKER = b.picker;
+  $('browseBtn').classList.toggle('hide', !b.picker);
+  $('browseDest').classList.toggle('hide', !b.picker);
+  renderSettings();
+  if (!b.logo) return;
+  const img = new Image();
+  img.onload = () => { $('logo').classList.add('set'); $('logo').prepend(img); };
+  img.src = '/logo';
+});
+
+// Nothing may render before the dictionary is in, or the first frame is English.
+get('/i18n.json').then(d=>{
+  LANGS = d;
+  EN = d.en;
+  setLang(localStorage.getItem('precommiteu.lang') || navigator.language.slice(0,2));
+  loadSettings();
+  setInterval(()=>get('/api/state').then(
+    s=>{ $('offline').classList.add('hide'); paint(s); },
+    ()=>$('offline').classList.remove('hide')), 1000);
+  // Article titles and pack names come from the catalogue, so load it first.
+  loadCatalog().then(()=>{ preflight(); if (VIEW==='results' && LAST) render(LAST); });
+  // A reload during a download has to find the panel and its Cancel button again.
+  get('/api/install').then(d=>{ if (d.phase !== 'idle') pollInstall(); });
+});
+</script>
+</body>
+</html>

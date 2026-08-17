@@ -11,6 +11,7 @@ precommitEU installs as three separate pieces.
 |---|---|---|
 | `llama-server` | The local inference server binary from llama.cpp | Homebrew, a release archive, or a source build |
 | `precommiteu` | The scanner, a pure-Python wheel | `pip install precommiteu` |
+| `precommiteu[ui]` | Optional, adds the local web UI | `pip install "precommiteu[ui]"` |
 | Model bundle | One shared base GGUF plus one LoRA adapter per regulation | Hugging Face, downloaded once |
 
 The wheel does not contain the models. The models do not contain the runtime.
@@ -346,7 +347,7 @@ Details worth knowing:
 precommiteu --version
 ```
 
-Prints `precommiteu 0.1.0`.
+Prints `precommiteu 0.2.0`.
 
 ### 2. File discovery works
 
@@ -409,6 +410,19 @@ and shows `base model (degraded)` when none was found.
 
 A timestamped log is appended to `precommiteu_scan.log` in the working
 directory. Change the path with `--log-file`.
+
+Run the same command again and the files that did not change are reused rather
+than analysed:
+
+```
+Reused 3 unchanged file(s) for gdpr from /home/you/.precommiteu/scans/gdpr-4f1c9ab2e7d05631.json
+```
+
+That record is why a repository which took hours the first time takes minutes
+afterwards. It is one small JSON file per scanned folder and regulation under
+`~/.precommiteu/scans/`; nothing is written into the folder you scanned.
+`--rescan-all` forces a full pass, for example after upgrading the model
+bundle. See [Incremental rescans](cli.md#incremental-rescans).
 
 ### 5. The exit code
 
@@ -519,9 +533,13 @@ Two more things people hit on day one:
 
 ```bash
 pip uninstall precommiteu
-rm -rf ~/.precommiteu/models
+rm -rf ~/.precommiteu ~/.precommiteu-ui
 rm -f precommiteu_scan.log precommiteu_validator_debug.jsonl
 ```
+
+`~/.precommiteu` holds the model bundle and the scan records; `~/.precommiteu-ui`
+is the local UI's own state and its reports, and exists only if you ran
+`precommiteu ui`.
 
 Then remove the runtime, only if nothing else uses it:
 
@@ -539,10 +557,11 @@ Finally, remove the `PRECOMMITEU_MODELS_DIR` export from your shell profile or
 CI configuration, and delete `~/.cache/huggingface` if you downloaded the
 bundle without `--local-dir`.
 
-Nothing else is left behind. The scanner writes only the paths you pass
-explicitly (`--json-out`, `--sarif`, `--out`, `--report`) plus the scan log at
-`--log-file`, which defaults to `precommiteu_scan.log` in the working
-directory.
+Nothing else is left behind. Outside those two directories the scanner writes
+only the paths you pass explicitly (`--json-out`, `--sarif`, `--out`,
+`--report`) plus the scan log at `--log-file`, which defaults to
+`precommiteu_scan.log` in the working directory. It never writes into the
+folder it scans.
 
 ## Next steps
 

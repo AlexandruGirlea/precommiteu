@@ -9,12 +9,33 @@ nav_order: 3
 precommiteu scan src/ --fail-on-findings --sarif findings.sarif
 ```
 
-`precommiteu` is a local-first EU regulatory compliance scanner for source code. All inference runs on your machine; no source code leaves it. The `scan` subcommand is the entire CLI surface (plus a top-level `--version`).
+`precommiteu` is a local-first EU regulatory compliance scanner for source code. All inference runs on your machine; no source code leaves it. `scan` carries every flag; `ui` opens a local web interface over the same scanner.
 
 ```sh
 precommiteu --version
 precommiteu scan --help
+precommiteu ui --help
 ```
+
+## The local UI: `precommiteu ui`
+
+```sh
+pip install "precommiteu[ui]"
+precommiteu ui
+```
+
+Starts a loopback server on port 8787 and opens a browser. Nothing is scanned
+until you choose a folder in the UI. From there you can install what is missing,
+download a regulation pack, run a scan and read the findings. One pack is active
+at a time.
+
+| Flag | Meaning |
+|---|---|
+| `--port N` | Serve on another port (default `8787`). |
+| `--no-browser` | Do not open a browser window. |
+
+The extra pulls `fastapi`, `uvicorn` and `huggingface_hub`; a plain
+`pip install precommiteu` for CI stays unaffected.
 
 ## Flag reference: `precommiteu scan`
 
@@ -43,6 +64,8 @@ precommiteu scan --help
 | `--fail-on-error` | flag | off (on under `--ci`) | Exit 3 when any file could not be scanned, so an incomplete scan never reports a clean pass. |
 | `--show-advisories` | flag | off | Print unconfirmed detector candidates (informational, never blocking). |
 | `--max-file-bytes` | integer (bytes) | `1000000` | Skip files larger than this (`0` = no limit). |
+| `--rescan-all` | flag | off | Ignore the scan ledger and analyse every selected file, rewriting its ledger entry. See [Incremental rescans](#incremental-rescans). |
+| `--scan-log` | file path | `~/.precommiteu/scans/<regulation>-<hash>.json` | Where the scan ledger of analysed files is kept. One regulation per ledger. |
 | `--force` | flag | off | Overwrite existing output files instead of refusing to run. See [Never overwriting your files](#never-overwriting-your-files). |
 | `--dry-run` | flag | off | Print the files that would be scanned and exit without loading any model. |
 
@@ -82,6 +105,62 @@ GIT_MERGE_TARGET_BRANCH=${GITHUB_BASE_REF:-main} precommiteu scan --ci --fail-on
 ```
 
 `--ci` is CI-platform-agnostic: it reads only `$GIT_MERGE_TARGET_BRANCH` (default `main`), resolves it locally or as `origin/<branch>`, and scans files added or modified in `git diff <target>...HEAD`. Wire your CI platform's variable through `GIT_MERGE_TARGET_BRANCH` yourself. Passing positional paths together with `--ci` is an error.
+
+## Incremental rescans
+
+A scan records every file it analysed cleanly. The next scan of the same folder
+with the same regulation skips the files whose bytes did not change and replays
+their results from that record, so a repository that took hours the first time
+takes minutes when a handful of files moved.
+
+```sh
+precommiteu scan src/     # first run: analyses everything
+precommiteu scan src/     # later run: only what changed
+```
+
+```
+Reused 143 unchanged file(s) for gdpr from /home/you/.precommiteu/scans/gdpr-4f1c9ab2e7d05631.json
+```
+
+Reused files are reported as reused, never as analysed again: each emits a
+`file_reused` progress event, adds nothing to `chunks_scanned`, and the
+regulation's `detail` in `--json-out` says how many were reused. Their findings
+and advisories are replayed into every report, so an incremental run still
+produces a complete one.
+
+**Where the record lives.** `~/.precommiteu/scans/<regulation>-<hash>.json`,
+one file per scanned folder and regulation, named from a hash of the absolute
+path so two projects never collide. Nothing is written into the folder being
+scanned. `--scan-log PATH` puts it wherever you want, including inside the
+repository if that is your choice.
+
+**What counts as analysed.** Only a file the scanner took end to end. Anything
+that ran out of per-file budget, errored, or was cut short by Ctrl-C is left
+out of the ledger and analysed again next time.
+
+| Situation | Next run |
+| --- | --- |
+| Same bytes | Reused |
+| Content changed | Rescanned |
+| mtime changed but bytes identical (checkout, touch, cloud sync) | Reused, after a sha256 confirms it |
+| Budget exhausted, error or interrupt last time | Rescanned |
+| File deleted | Dropped from the ledger and from the results |
+| No ledger, unreadable ledger, or a ledger for another regulation or folder | Full scan |
+
+Change detection is size plus mtime first, and a sha256 whenever either
+differs. A `git checkout` that rewrites every timestamp therefore costs one
+hash per file instead of a full rescan, and the ledger records the new
+timestamps so the next run is back on the fast path.
+
+Force a complete pass, for example after upgrading the model bundle:
+
+```sh
+precommiteu scan src/ --rescan-all
+```
+
+`--ci` keeps no ledger: it already scans only what changed against the merge
+target, and CI runners are meant to carry no state between runs. Passing
+`--rescan-all` or `--scan-log` together with `--ci` is an error.
 
 ## Output reports
 

@@ -39,6 +39,7 @@ from precommiteu.regulations import (
     pack_article_ids,
 )
 from precommiteu.retrieval import CaseIndex
+from precommiteu.scan_ledger import ScanLedger
 from precommiteu.src.chunk_view import ChunkConsultLog
 from precommiteu.src.eu_ignore_marker import (
     match_eu_ignore_marker_in_range,
@@ -86,6 +87,11 @@ class _RegCounters:
 
 _ANALYSIS_FAILURE_REASONS = frozenset({"loop_step_failed", "direct_partial"})
 
+# The file was analysed end to end. Every other ending (budget exhausted, a
+# failed step, an unreadable file) leaves work undone, so it is never recorded
+# in the scan ledger and the next run scans it again.
+_CLEAN_EXIT_REASONS = frozenset({"direct", "emit"})
+
 # Orchestrator endings that leave a file unanalysed while budget remains.
 # loop_step_failed is absent on purpose: it already reports as a failed file.
 # budget_exhausted_time is absent because it means the wall clock is spent,
@@ -93,13 +99,13 @@ _ANALYSIS_FAILURE_REASONS = frozenset({"loop_step_failed", "direct_partial"})
 _UNANALYSED_REASONS = frozenset({"emit", "budget_exhausted_iters"})
 
 
-def _maybe_call(cb: Callable[..., Any] | None, payload: dict[str, Any]) -> None:
+def _maybe_call(cb: Callable[..., Any] | None, payload: Any) -> None:
     if cb is None:
         return
     try:
         cb(payload)
     except Exception as exc:
-        _LOG.warning("progress callback raised: %r", exc)
+        _LOG.warning("callback raised: %r", exc)
 
 
 def _file_label(path: pathlib.Path, repo_root: pathlib.Path) -> str:
@@ -380,7 +386,7 @@ def _scan_one_file(
     on_advisory: AdvisoryCallback | None = None,
     case_index: CaseIndex | None = None,
     agent_mode: str = "auto",
-) -> list[Finding]:
+) -> tuple[list[Finding], bool]:
     try:
         text = file_path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
@@ -395,7 +401,7 @@ def _scan_one_file(
                 "error": f"unreadable: {exc!r}",
             },
         )
-        return []
+        return [], False
 
     file_label = _file_label(file_path, repo_root)
     filtered_text = apply_prompt_ignore_directives(text)
@@ -404,7 +410,7 @@ def _scan_one_file(
             on_progress,
             {"event": "file_ignored", "file": file_label, "regulation": regulation},
         )
-        return []
+        return [], False
 
     inline_markers = parse_eu_ignore_markers_for_scan_text(text)
     chunks = token_chunks(file_path, filtered_text)
@@ -567,7 +573,7 @@ def _scan_one_file(
         },
     )
 
-    return findings_out
+    return findings_out, run.exit_reason in _CLEAN_EXIT_REASONS
 
 
 def scan_paths(
@@ -589,6 +595,9 @@ def scan_paths(
     repo_root: pathlib.Path | None = None,
     regulation_docs_dir: pathlib.Path | None = None,
     max_file_bytes: int | None = MAX_SCAN_FILE_BYTES,
+    incremental: bool = True,
+    rescan_all: bool = False,
+    scan_log: pathlib.Path | None = None,
 ) -> ScanResult:
     started_at = time.monotonic()
     repo_root = (repo_root or pathlib.Path.cwd()).resolve()
@@ -644,121 +653,187 @@ def scan_paths(
     files_total = len(selected_files)
     interrupted_after: dict[str, int] = {}
 
-    base_model = pathlib.Path(orchestrator_model_path)
-    explicit_adapter = (
-        pathlib.Path(detector_adapter_path) if detector_adapter_path is not None else None
-    )
-    with ExitStack() as base_stack:
-        try:
-            base_handle = base_stack.enter_context(
-                launch_llama_server(
-                    base_model,
-                    n_ctx=n_ctx,
-                    n_gpu_layers=n_gpu_layers,
-                    n_threads=threads,
-                )
+    ledgers: dict[str, ScanLedger] = {}
+    pending = {r: list(selected_files) for r in regulations}
+    reused = dict.fromkeys(regulations, 0)
+    if incremental:
+        if scan_log is not None and len(regulations) > 1:
+            raise ValueError(
+                "one scan_log cannot serve several regulations; a ledger "
+                "records one regulation only"
             )
-        except Exception as exc:  # pragma: no cover - server startup failures
-            _LOG.error("scan: failed to launch llama-servers: %s", exc)
-            raise
-
-        orchestrator_loop_model = build_chat_model(base_handle, grammar=LOOP_STEP_GBNF)
-        validator_model = build_chat_model(base_handle, grammar=VALIDATOR_GBNF)
-
-        for reg_index, regulation in enumerate(regulations):
-            reg_adapter = explicit_adapter
-            if reg_adapter is None:
-                candidate = default_detector_adapter(regulation, base_model.parent)
-                reg_adapter = candidate if candidate and candidate.exists() else None
-            if reg_adapter is None:
-                _LOG.warning(
-                    "no detector adapter for %r; scanning with the base model only "
-                    "(degraded mode)",
-                    regulation,
+        for regulation in regulations:
+            ledger = ScanLedger.load(repo_root, regulation, scan_log)
+            ledgers[regulation] = ledger
+            todo: list[pathlib.Path] = []
+            for file_path in selected_files:
+                label = _file_label(file_path, repo_root)
+                hit = None if rescan_all else ledger.reuse(label)
+                if hit is None:
+                    todo.append(file_path)
+                    continue
+                past_findings, past_advisories = hit
+                all_findings.extend(past_findings)
+                all_advisories.extend(past_advisories)
+                _maybe_call(
+                    on_progress,
+                    {
+                        "event": "file_reused",
+                        "file": label,
+                        "regulation": regulation,
+                        "kept": len(past_findings),
+                    },
                 )
+                for finding in past_findings:
+                    _maybe_call(on_finding, finding)
+                for advisory in past_advisories:
+                    _maybe_call(on_advisory, advisory)
+            pending[regulation] = todo
+            reused[regulation] = files_total - len(todo)
+            ledger.save()
             _maybe_call(
                 on_progress,
                 {
-                    "event": "detector_adapter",
+                    "event": "ledger_loaded",
                     "regulation": regulation,
-                    "adapter": (
-                        f"{reg_adapter.parent.name}/{reg_adapter.name}"
-                        if reg_adapter is not None
-                        else "base model (degraded)"
-                    ),
+                    "path": str(ledger.path),
+                    "reused": reused[regulation],
+                    "to_scan": len(pending[regulation]),
                 },
             )
 
-            with ExitStack() as detector_stack:
-                if reg_adapter is not None:
-                    detector_handle = detector_stack.enter_context(
-                        launch_llama_server(
-                            base_model,
-                            n_ctx=n_ctx,
-                            n_gpu_layers=n_gpu_layers,
-                            n_threads=threads,
-                            lora_path=reg_adapter,
-                        )
+    if any(pending.values()):
+        base_model = pathlib.Path(orchestrator_model_path)
+        explicit_adapter = (
+            pathlib.Path(detector_adapter_path)
+            if detector_adapter_path is not None
+            else None
+        )
+        with ExitStack() as base_stack:
+            try:
+                base_handle = base_stack.enter_context(
+                    launch_llama_server(
+                        base_model,
+                        n_ctx=n_ctx,
+                        n_gpu_layers=n_gpu_layers,
+                        n_threads=threads,
                     )
-                else:
-                    detector_handle = base_handle
-                detector_model = build_chat_model(
-                    detector_handle, grammar=detector_grammar
+                )
+            except Exception as exc:
+                _LOG.error("scan: failed to launch llama-servers: %s", exc)
+                raise
+
+            orchestrator_loop_model = build_chat_model(base_handle, grammar=LOOP_STEP_GBNF)
+            validator_model = build_chat_model(base_handle, grammar=VALIDATOR_GBNF)
+
+            for reg_index, regulation in enumerate(regulations):
+                if not pending[regulation]:
+                    continue
+                ledger = ledgers.get(regulation)
+                reg_adapter = explicit_adapter
+                if reg_adapter is None:
+                    candidate = default_detector_adapter(regulation, base_model.parent)
+                    reg_adapter = candidate if candidate and candidate.exists() else None
+                if reg_adapter is None:
+                    _LOG.warning(
+                        "no detector adapter for %r; scanning with the base model only "
+                        "(degraded mode)",
+                        regulation,
+                    )
+                _maybe_call(
+                    on_progress,
+                    {
+                        "event": "detector_adapter",
+                        "regulation": regulation,
+                        "adapter": (
+                            f"{reg_adapter.parent.name}/{reg_adapter.name}"
+                            if reg_adapter is not None
+                            else "base model (degraded)"
+                        ),
+                    },
                 )
 
-                files_done = 0
-                for file_path in selected_files:
-                    try:
-                        findings_out = _scan_one_file(
-                            case_index=case_indexes[regulation],
-                            agent_mode=agent_mode,
-                            file_path=file_path,
-                            regulation=regulation,
-                            repo_root=repo_root,
-                            regulation_docs_dir=regulation_docs_dir,
-                            loop_model=orchestrator_loop_model,
-                            detector_model=detector_model,
-                            validator_model=validator_model,
-                            max_iterations=max_iterations,
-                            wall_seconds_per_file=wall_seconds_per_file,
-                            counters=counters[regulation],
-                            on_progress=on_progress,
-                            on_finding=on_finding,
-                            advisories=all_advisories,
-                            on_advisory=on_advisory,
-                        )
-                    except KeyboardInterrupt:
-                        interrupted_after[regulation] = files_done
-                        for later in regulations[reg_index + 1:]:
-                            interrupted_after[later] = 0
-                        _maybe_call(
-                            on_progress,
-                            {
-                                "event": "scan_interrupted",
-                                "files_done": files_done,
-                                "files_total": files_total,
-                            },
-                        )
-                        break
-                    except Exception as exc:
-                        _LOG.exception(
-                            "scan: %s failed under %s", file_path, regulation
-                        )
-                        counters[regulation].files_errored += 1
-                        _maybe_call(
-                            on_progress,
-                            {
-                                "event": "file_error",
-                                "file": _file_label(file_path, repo_root),
-                                "regulation": regulation,
-                                "error": repr(exc),
-                            },
+                with ExitStack() as detector_stack:
+                    if reg_adapter is not None:
+                        detector_handle = detector_stack.enter_context(
+                            launch_llama_server(
+                                base_model,
+                                n_ctx=n_ctx,
+                                n_gpu_layers=n_gpu_layers,
+                                n_threads=threads,
+                                lora_path=reg_adapter,
+                            )
                         )
                     else:
-                        all_findings.extend(findings_out)
-                    files_done += 1
-            if interrupted_after:
-                break
+                        detector_handle = base_handle
+                    detector_model = build_chat_model(
+                        detector_handle, grammar=detector_grammar
+                    )
+
+                    files_done = reused[regulation]
+                    for file_path in pending[regulation]:
+                        label = _file_label(file_path, repo_root)
+                        stamp = ledger.stamp(label) if ledger is not None else None
+                        advisory_mark = len(all_advisories)
+                        try:
+                            findings_out, analysed = _scan_one_file(
+                                case_index=case_indexes[regulation],
+                                agent_mode=agent_mode,
+                                file_path=file_path,
+                                regulation=regulation,
+                                repo_root=repo_root,
+                                regulation_docs_dir=regulation_docs_dir,
+                                loop_model=orchestrator_loop_model,
+                                detector_model=detector_model,
+                                validator_model=validator_model,
+                                max_iterations=max_iterations,
+                                wall_seconds_per_file=wall_seconds_per_file,
+                                counters=counters[regulation],
+                                on_progress=on_progress,
+                                on_finding=on_finding,
+                                advisories=all_advisories,
+                                on_advisory=on_advisory,
+                            )
+                        except KeyboardInterrupt:
+                            interrupted_after[regulation] = files_done
+                            for later in regulations[reg_index + 1:]:
+                                interrupted_after[later] = reused[later]
+                            _maybe_call(
+                                on_progress,
+                                {
+                                    "event": "scan_interrupted",
+                                    "files_done": files_done,
+                                    "files_total": files_total,
+                                },
+                            )
+                            break
+                        except Exception as exc:
+                            _LOG.exception(
+                                "scan: %s failed under %s", file_path, regulation
+                            )
+                            counters[regulation].files_errored += 1
+                            _maybe_call(
+                                on_progress,
+                                {
+                                    "event": "file_error",
+                                    "file": label,
+                                    "regulation": regulation,
+                                    "error": repr(exc),
+                                },
+                            )
+                        else:
+                            all_findings.extend(findings_out)
+                            if ledger is not None and analysed:
+                                ledger.record(
+                                    label,
+                                    stamp,
+                                    findings_out,
+                                    all_advisories[advisory_mark:],
+                                )
+                                ledger.save()
+                        files_done += 1
+                if interrupted_after:
+                    break
 
     for regulation in regulations:
         c = counters[regulation]
@@ -772,6 +847,11 @@ def scan_paths(
             detail_parts.append(
                 f"{c.files_errored} file(s) could not be scanned. "
                 "results incomplete"
+            )
+        if reused[regulation]:
+            detail_parts.append(
+                f"{reused[regulation]} of {files_total} file(s) reused "
+                "unchanged from the scan ledger"
             )
         statuses.append(
             ScanStatus(
@@ -791,6 +871,7 @@ def scan_paths(
             "event": "scan_done",
             "findings_total": len(unique),
             "advisories_total": len(all_advisories),
+            "files_reused": sum(reused.values()),
             "elapsed_ms": int((time.monotonic() - started_at) * 1000),
         },
     )
@@ -947,4 +1028,7 @@ def scan_diff(
         repo_root=cwd,
         regulation_docs_dir=regulation_docs_dir,
         max_file_bytes=max_file_bytes,
+        # Every file here is changed vs the merge target, so a ledger would
+        # never hit; and CI runners are meant to keep no state between runs.
+        incremental=False,
     )

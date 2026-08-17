@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import json
+import logging
 import os
 import re
 import shutil
@@ -31,7 +32,10 @@ LOOPBACK_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 PROC_NAME = "precommiteu-llama-server"
 
-BUILD_RE = re.compile(r"(?:\bb|version:\s*)(\d{4,6})\b")
+_LOG = logging.getLogger(__name__)
+
+# Three shapes in the wild: "build 10450", "version: 9570" and "b4400".
+BUILD_RE = re.compile(r"(?:build\s+|version:\s*|\bb)(\d{4,6})\b")
 MIN_BUILD = 4400
 HEALTH_TIMEOUT_S = SERVER_HEALTH_TIMEOUT_S
 HEALTH_POLL_INTERVAL_S = SERVER_HEALTH_POLL_INTERVAL_S
@@ -274,13 +278,16 @@ def launch_llama_server(
         try:
             build = parse_build(version_raw)
         except RuntimeError:
-            _cleanup()
-            raise
-        if build < MIN_BUILD:
-            _cleanup()
-            raise RuntimeError(
-                f"llama-server build b{build} is older than required b{MIN_BUILD}"
+            _LOG.warning(
+                "could not read the llama-server build from %r; continuing",
+                version_raw,
             )
+        else:
+            if build < MIN_BUILD:
+                _cleanup()
+                raise RuntimeError(
+                    f"llama-server build b{build} is older than required b{MIN_BUILD}"
+                )
 
         for stream in (proc.stdout, proc.stderr):
             if stream is not None:

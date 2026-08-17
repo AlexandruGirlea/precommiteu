@@ -128,6 +128,14 @@ callbacks: **[Python library](https://alexandrugirlea.github.io/precommiteu/libr
   confirmed findings can fail a build.
 - **Deterministic where it matters.** Grammar-constrained model output,
   fixed budgets per file, suppression rules with auditable reasons.
+- **Only what changed.** Every file that completes cleanly is recorded, and the
+  next scan of the same folder replays it instead of analysing it again, so a
+  repository that took hours the first time takes minutes when a handful of
+  files moved. The record is one small JSON file per folder and regulation
+  under `~/.precommiteu/scans/`; nothing is written into the folder you scan.
+  `--rescan-all` forces a full pass. Reuse rules, change detection and CI
+  behaviour:
+  [Incremental rescans](https://alexandrugirlea.github.io/precommiteu/cli.html#incremental-rescans).
 
 ## Model bundle
 
@@ -215,7 +223,7 @@ LoRA adapter, loaded at runtime, exactly as a normal scan runs them.
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
-- uses: AlexandruGirlea/precommiteu@v0.1.0
+- uses: AlexandruGirlea/precommiteu@v0.2.0
   with:
     regulations: gdpr,eu_ai_act
 ```
@@ -224,6 +232,36 @@ LoRA adapter, loaded at runtime, exactly as a normal scan runs them.
 `1` on confirmed findings with `--fail-on-findings`, `0` when clean. GitLab,
 Azure DevOps, the full input list and every exit code are in
 [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
+
+## Local UI
+
+A local web UI ships with the package. Point it at a folder and watch the run:
+readiness checks, the plan, per-file progress and ETA, then confirmed findings
+and advisories. It drives the same scanner as a subprocess and writes nothing
+into the folder being scanned.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexandruGirlea/precommiteu/main/docs/assets/img/local-ui.png" alt="The local UI showing the EU regulation packs" width="900">
+</p>
+
+```bash
+pip install "precommiteu[ui]"
+precommiteu ui
+```
+
+That starts the UI and nothing else. You pick the folder to scan from the Target
+screen; the scanner never touches anything until you do.
+
+Nothing else to install by hand either. The readiness screen installs
+`llama.cpp` where it can, and the regulation screen downloads adapter packs on
+demand, verifying each against the bundle checksums. One pack is active at a
+time; picking another switches it.
+
+The Target screen knows what was already analysed: scan only the changed files,
+start clean and rescan everything, or forget the cached findings for that
+folder. The Settings screen shows where this machine keeps the model bundle,
+the scan cache and the reports, and moves any of the three without a restart.
+
 
 ## Documentation
 

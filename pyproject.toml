@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "precommiteu"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first EU regulatory compliance scanner for source code."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,6 +49,11 @@ Issues = "https://github.com/AlexandruGirlea/precommiteu/issues"
 Changelog = "https://github.com/AlexandruGirlea/precommiteu/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
+ui = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "huggingface_hub>=0.30",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.9.10",
@@ -84,6 +89,7 @@ line-length = 100
 target-version = "py311"
 # Lint all files regardless of ambient gitignore rules.
 respect-gitignore = false
+extend-exclude = ["example-local-ui"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "C4", "UP", "RUF", "PLE", "PLW", "ERA"]

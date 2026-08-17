@@ -42,7 +42,7 @@ def harness(tmp_path, monkeypatch):
         monkeypatch.setattr(scan_mod, "run_direct", fake_direct)
 
         progress: list[dict] = []
-        findings = scan_mod._scan_one_file(
+        findings, _analysed = scan_mod._scan_one_file(
             file_path=target,
             regulation="gdpr",
             repo_root=tmp_path,

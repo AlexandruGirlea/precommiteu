@@ -332,7 +332,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.1.0
+      - uses: AlexandruGirlea/precommiteu@v0.2.0
         with:
           regulations: gdpr
           fail-on-findings: "true"

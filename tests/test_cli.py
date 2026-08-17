@@ -50,5 +50,18 @@ def test_dry_run_lists_files_without_loading_a_model(risky_code, tmp_path, capsy
     }
 
 
+@pytest.mark.parametrize("flag", [["--rescan-all"], ["--scan-log", "l.json"]])
+def test_ci_rejects_the_ledger_flags(capsys, flag):
+    assert main(["scan", "--ci", *flag]) == 2
+    assert "--ci keeps no scan ledger" in capsys.readouterr().err
+
+
+def test_one_scan_log_cannot_serve_several_regulations(capsys, tmp_path):
+    argv = ["scan", str(tmp_path), "--scan-log", "l.json", "--regulations", "gdpr,dora"]
+
+    assert main(argv) == 2
+    assert "a single --scan-log" in capsys.readouterr().err
+
+
 def test_this_command_succeeds():
     assert main(["this"]) == 0

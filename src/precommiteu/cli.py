@@ -176,6 +176,20 @@ def _build_parser() -> argparse.ArgumentParser:
         f"to this file (default: {DEFAULT_LOG_FILE}).",
     )
     scan.add_argument(
+        "--rescan-all",
+        action="store_true",
+        help="Scan every selected file even if the scan ledger says it is "
+        "unchanged, and rewrite its ledger entry.",
+    )
+    scan.add_argument(
+        "--scan-log",
+        type=pathlib.Path,
+        default=None,
+        help="Path of the scan ledger recording which files were analysed "
+        "(default: ~/.precommiteu/scans/<regulation>-<hash of the scanned "
+        "path>.json). One regulation per ledger.",
+    )
+    scan.add_argument(
         "--force",
         action="store_true",
         help="Overwrite existing output files instead of refusing to run.",
@@ -228,6 +242,17 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the files that would be scanned and exit without loading "
         "any model.",
+    )
+
+    ui = sub.add_parser(
+        "ui",
+        help="Start the local web UI. Needs precommiteu[ui].",
+    )
+    ui.add_argument(
+        "--port", type=int, default=8787, help="Loopback port (default: 8787)."
+    )
+    ui.add_argument(
+        "--no-browser", action="store_true", help="Do not open a browser window."
     )
 
     sub.add_parser(
@@ -285,6 +310,13 @@ def _run_scan(args: argparse.Namespace) -> int:
         args.log_file = pathlib.Path(DEFAULT_LOG_FILE)
 
     regulations = _parse_regulations(args.regulations)
+    if args.scan_log is not None and len(regulations) > 1:
+        print(
+            "error: a single --scan-log can't be combined with multiple "
+            "regulations; a ledger records one regulation only",
+            file=sys.stderr,
+        )
+        return 2
 
     orchestrator_model = args.orchestrator_model or default_orchestrator_model(
         args.models_dir
@@ -332,6 +364,8 @@ def _run_scan(args: argparse.Namespace) -> int:
             "sarif": str(args.sarif) if args.sarif is not None else None,
             "out": str(args.out) if args.out is not None else None,
             "report": str(args.report) if args.report is not None else None,
+            "scan_log": str(args.scan_log) if args.scan_log is not None else None,
+            "rescan_all": args.rescan_all,
         }
     )
 
@@ -352,6 +386,7 @@ def _run_scan(args: argparse.Namespace) -> int:
 
     progress_emitter = make_progress_emitter(args.progress)
     interrupted = False
+    reuse_notes: list[str] = []
 
     with ExitStack() as stack:
         ledger = None
@@ -363,6 +398,11 @@ def _run_scan(args: argparse.Namespace) -> int:
             event = payload.get("event", "progress")
             if event == "scan_interrupted":
                 interrupted = True
+            if event == "ledger_loaded" and payload.get("reused"):
+                reuse_notes.append(
+                    f"Reused {payload['reused']} unchanged file(s) for "
+                    f"{payload['regulation']} from {payload['path']}"
+                )
             if progress_emitter is not None:
                 progress_emitter(payload)
             if ledger is not None:
@@ -418,6 +458,8 @@ def _run_scan(args: argparse.Namespace) -> int:
                     on_finding=_on_finding,
                     on_advisory=_on_advisory,
                     max_file_bytes=args.max_file_bytes if args.max_file_bytes > 0 else None,
+                    rescan_all=args.rescan_all,
+                    scan_log=args.scan_log,
                 )
         except GitDiffError as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -432,6 +474,9 @@ def _run_scan(args: argparse.Namespace) -> int:
             return _finish(130)
 
     reporter.finalize(result)
+
+    for note in reuse_notes:
+        print(note)
 
     visible_findings = [f for f in result.findings if f.eu_ignore_reason is None]
     if visible_findings:
@@ -480,6 +525,11 @@ def main(argv: list[str] | None = None) -> int:
         importlib.import_module("precommiteu.this")
         return 0
 
+    if args.command == "ui":
+        from precommiteu.ui.server import serve
+
+        return serve(port=args.port, open_browser=not args.no_browser)
+
     if args.command != "scan":
         parser.print_help()
         return 0
@@ -494,6 +544,13 @@ def main(argv: list[str] | None = None) -> int:
     if not args.ci and not args.paths:
         print(
             "error: scan requires either positional paths or --ci.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.ci and (args.rescan_all or args.scan_log is not None):
+        print(
+            "error: --ci keeps no scan ledger; the files it scans are the "
+            "ones that changed. Drop --rescan-all / --scan-log.",
             file=sys.stderr,
         )
         return 2

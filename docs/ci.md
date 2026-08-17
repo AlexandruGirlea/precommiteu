@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.1.0
+      - uses: AlexandruGirlea/precommiteu@v0.2.0
         with:
           regulations: gdpr,eu_ai_act
       - uses: github/codeql-action/upload-sarif@v3
@@ -80,9 +80,9 @@ model bundle, and scans the changed files.
 Pin both for reproducible runs:
 
 ```yaml
-- uses: AlexandruGirlea/precommiteu@v0.1.0
+- uses: AlexandruGirlea/precommiteu@v0.2.0
   with:
-    version: 0.1.0
+    version: 0.2.0
     models-revision: v1.0.0
 ```
 
