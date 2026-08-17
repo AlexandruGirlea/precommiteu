@@ -93,6 +93,11 @@ def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
 
 
+@app.get("/report.html")
+def report() -> FileResponse:
+    return FileResponse(STATIC / "report.html")
+
+
 @app.get("/i18n.json")
 def i18n() -> FileResponse:
     return FileResponse(STATIC / "i18n.json", media_type="application/json")

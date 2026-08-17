@@ -35,10 +35,10 @@ id_rsa*
 .netrc
 *.credentials
 *.log
-.gstack/
 
 example-local-ui/
 
 /logo.png
 /logo.svg
 /theme.css
+.gstack/

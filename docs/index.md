@@ -39,10 +39,11 @@ Two things to know before your first run:
 - `precommiteu scan src/ --dry-run` prints the exact file selection and exits
   without loading a model. Use it whenever the scope looks wrong.
 
-The same scan is available from a local web UI. `pip install "precommiteu[ui]"`,
-then `precommiteu ui` serves it on `http://127.0.0.1:8787` and opens a browser.
-From there you can install what is missing, download a regulation pack, run a
-scan and read the findings, one pack at a time. Flags: [cli.md](cli.md).
+The same scan is available from a local web UI, new in 0.2.
+`pip install "precommiteu[ui]"`, then `precommiteu ui` serves it on
+`http://127.0.0.1:8787` and opens a browser. From there you can install what is
+missing, download a regulation pack, run a scan and read the findings, one pack
+at a time. Full guide: [Local UI](ui.md).
 
 ## Two artifacts, downloaded separately
 
@@ -123,6 +124,7 @@ scan uses the new location without a restart.
 | Guide | Contents |
 |---|---|
 | [Installation](install.md) | Requirements, per-platform install, model bundle download, CPU vs GPU, verify, uninstall |
+| [Local UI](ui.md) | The six steps, downloading packs, pause vs stop, settings, what leaves the machine |
 | [CLI](cli.md) | `precommiteu scan`, `precommiteu ui`, complete flag reference, agent routing, exit codes |
 | [Regulation packs](regulations.md) | The six packs, application dates, choosing packs, multi-regulation runs |
 | [Suppressions](suppressions.md) | `.eu-ignore`, inline `eu-ignore` directives, audited `precommiteu-ignore` markers |

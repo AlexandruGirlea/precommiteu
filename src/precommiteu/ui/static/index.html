@@ -474,7 +474,10 @@ button:disabled,button.ghost:disabled{background:var(--disabled-bg);
         <div class="stats" id="rStats"></div>
         <div id="cards"></div>
         <div class="bar">
-          <button onclick="post('/api/reveal')" data-t="res.export">Export report</button>
+          <button onclick="window.open('/report.html')" data-t="res.pdf">
+            Print · PDF</button>
+          <button class="ghost" onclick="post('/api/reveal')" data-t="res.export">
+            Report files</button>
           <button class="ghost" onclick="go('scan')" data-t="res.backScan">
             Back to scan</button>
           <button class="ghost" onclick="clearResults()" data-t="res.clear">

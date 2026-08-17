@@ -23,6 +23,8 @@
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/install.html">Install</a>
   &nbsp;&middot;&nbsp;
+  <a href="https://alexandrugirlea.github.io/precommiteu/ui.html">Local UI</a>
+  &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/cli.html">CLI reference</a>
   &nbsp;&middot;&nbsp;
   <a href="https://huggingface.co/AlexandruGirlea/precommiteu-models">Model bundle</a>
@@ -49,6 +51,40 @@ nothing to upload.
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/ --fail-on-findings
 ```
+
+## Local UI
+
+**New in 0.2.** A local web UI ships with the package. Point it at a folder and
+watch the run: readiness checks, the plan, per-file progress and ETA, then
+confirmed findings and advisories. It drives the same scanner as a subprocess
+and writes nothing into the folder being scanned.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexandruGirlea/precommiteu/main/docs/assets/img/ui-6-findings.png" alt="Findings from a local EU AI Act scan in the precommitEU UI" width="900">
+</p>
+
+```bash
+pip install "precommiteu[ui]"
+precommiteu ui
+```
+
+That serves `http://127.0.0.1:8787` and nothing else. You pick what to scan
+from the Target screen: a folder on this machine, or a repository URL it
+clones for you. The scanner never touches anything until you do.
+
+Nothing else to install by hand either. The readiness screen installs what is
+missing where it can, and the regulation screen downloads adapter packs on
+demand, verifying each against the bundle checksums. One pack is active at a
+time; picking another switches it.
+
+The Target screen knows what was already analysed: scan only the changed files,
+start clean and rescan everything, or forget the cached findings for that
+folder. The Settings screen shows where this machine keeps the model bundle,
+the scan cache and the reports, and moves any of the three without a restart.
+Available in English, Romanian, German, French and Italian.
+
+Every screen, the download flow, pause versus stop, and what the UI sends over
+the network: **[Local UI](https://alexandrugirlea.github.io/precommiteu/ui.html)**.
 
 ## The Zen of EU Code
 
@@ -233,41 +269,12 @@ LoRA adapter, loaded at runtime, exactly as a normal scan runs them.
 Azure DevOps, the full input list and every exit code are in
 [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
 
-## Local UI
-
-A local web UI ships with the package. Point it at a folder and watch the run:
-readiness checks, the plan, per-file progress and ETA, then confirmed findings
-and advisories. It drives the same scanner as a subprocess and writes nothing
-into the folder being scanned.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/AlexandruGirlea/precommiteu/main/docs/assets/img/local-ui.png" alt="The local UI showing the EU regulation packs" width="900">
-</p>
-
-```bash
-pip install "precommiteu[ui]"
-precommiteu ui
-```
-
-That starts the UI and nothing else. You pick the folder to scan from the Target
-screen; the scanner never touches anything until you do.
-
-Nothing else to install by hand either. The readiness screen installs
-`llama.cpp` where it can, and the regulation screen downloads adapter packs on
-demand, verifying each against the bundle checksums. One pack is active at a
-time; picking another switches it.
-
-The Target screen knows what was already analysed: scan only the changed files,
-start clean and rescan everything, or forget the cached findings for that
-folder. The Settings screen shows where this machine keeps the model bundle,
-the scan cache and the reports, and moves any of the three without a restart.
-
-
 ## Documentation
 
 | Guide | Contents |
 |---|---|
 | [Installation](https://alexandrugirlea.github.io/precommiteu/install.html) | Requirements, per-platform install, model bundle download, CPU vs GPU, verify, uninstall |
+| [Local UI](https://alexandrugirlea.github.io/precommiteu/ui.html) | The six steps, downloading packs, pause vs stop, settings, what leaves the machine |
 | [CLI reference](https://alexandrugirlea.github.io/precommiteu/cli.html) | CLI usage, complete flag reference, reports, suppressions |
 | [Regulation packs](https://alexandrugirlea.github.io/precommiteu/regulations.html) | The six packs, application dates, choosing packs, multi-regulation runs |
 | [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html) | GitHub Actions, GitLab, exit codes, caching the model bundle |

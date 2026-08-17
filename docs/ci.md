@@ -1,6 +1,6 @@
 ---
 title: CI integration
-nav_order: 8
+nav_order: 9
 ---
 
 # CI integration

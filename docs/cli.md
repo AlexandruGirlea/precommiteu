@@ -1,6 +1,6 @@
 ---
 title: CLI reference
-nav_order: 3
+nav_order: 4
 ---
 
 # precommiteu CLI
@@ -36,6 +36,9 @@ at a time.
 
 The extra pulls `fastapi`, `uvicorn` and `huggingface_hub`; a plain
 `pip install precommiteu` for CI stays unaffected.
+
+The screens, the download flow, pause versus stop, settings and what the UI
+sends over the network: [Local UI](ui.md).
 
 ## Flag reference: `precommiteu scan`
 

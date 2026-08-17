@@ -1,6 +1,6 @@
 ---
 title: Ignoring and suppressing
-nav_order: 6
+nav_order: 7
 ---
 
 # Ignoring code and suppressing findings

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Compliance report</title>
+<style>
+@page{size:A4;margin:14mm 14mm 15mm}
+:root{
+  --ink:#12152a;
+  --body:#3c4260;
+  --grey:#6d7593;
+  --line:#d9ddea;
+  --paper:#fff;
+  --code:#f4f5f9;
+  --accent:#ffcc00;
+  --red:#c0392b;
+  --rose:#a8577a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#e9ecf3;color:var(--body);font-size:10.5pt;line-height:1.5;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",sans-serif;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{background:var(--paper);width:210mm;min-height:297mm;margin:12mm auto;
+  padding:14mm;box-shadow:0 2px 18px rgba(10,15,40,.18)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+#bar{position:fixed;top:0;left:0;right:0;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:12px;padding:9px;
+  font-size:12px;z-index:9}
+#bar button{font:inherit;font-weight:600;border:0;border-radius:6px;padding:6px 16px;
+  background:var(--accent);color:var(--ink);cursor:pointer}
+#bar+.sheet{margin-top:22mm}
+
+.head{display:flex;align-items:flex-start;gap:16px;border-bottom:3px solid var(--accent);
+  padding-bottom:11px;margin-bottom:16px}
+#logo{max-height:46px;max-width:150px;object-fit:contain}
+.head .t{flex:1}
+.head h1{font-size:19pt;font-weight:700;color:var(--ink);letter-spacing:-.02em;
+  line-height:1.2}
+.head .sub{font-size:9.5pt;color:var(--grey);margin-top:3px}
+.meta{font-size:9pt;color:var(--grey);text-align:right;white-space:nowrap}
+.meta b{display:block;color:var(--ink);font-size:10pt}
+
+.tiles{display:flex;gap:9px;margin-bottom:18px}
+.tile{flex:1;border:1px solid var(--line);border-radius:7px;padding:9px 12px}
+.tile .n{font-size:20pt;font-weight:700;color:var(--ink);line-height:1.1}
+.tile .k{font-size:7.5pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--grey);margin-top:2px}
+.tile.hot .n{color:var(--red)}
+
+h2.sect{font-size:9pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--grey);margin:22px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+
+.card{border:1px solid var(--line);border-left:3px solid var(--red);border-radius:7px;
+  padding:12px 14px;margin-bottom:9px;break-inside:avoid;page-break-inside:avoid}
+.card.adv{border-left-color:var(--rose)}
+.card .top{display:flex;align-items:baseline;gap:9px;margin-bottom:6px}
+.badge{font-size:7pt;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;background:var(--red);color:#fff}
+.badge.adv{background:var(--rose)}
+.card .art{font-size:11.5pt;font-weight:700;color:var(--ink);letter-spacing:-.01em;flex:1}
+.card .loc{font-size:8.5pt;color:var(--grey)}
+.card .desc{margin-bottom:8px}
+.card pre{background:var(--code);border:1px solid var(--line);border-radius:5px;
+  padding:9px 11px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:8.5pt;
+  line-height:1.45;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.note{font-size:9pt;color:var(--grey);margin-bottom:9px}
+
+.clean{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:7px;
+  padding:18px 20px}
+.clean h3{font-size:13pt;color:var(--ink);margin-bottom:4px}
+
+.foot{margin-top:22px;padding-top:10px;border-top:1px solid var(--line);
+  font-size:8.5pt;color:var(--grey);display:flex;justify-content:space-between;gap:14px}
+
+@media print{
+  body{background:none}
+  #bar{display:none}
+  .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div id="bar">
+  <span id="barnote"></span><button onclick="window.print()" id="barbtn">Print</button>
+</div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const esc = s => (s||'').replace(/[<>&"]/g,
+  c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const get = u => fetch(u).then(r=>r.json());
+const artNo = id => (/art(\d+)/.exec(id||'')||[])[1];
+
+let DICT = {}, EN = {}, PLURAL = new Intl.PluralRules('en');
+const t = (k, v = {}) => {
+  const s = DICT[k] ?? EN[k] ?? k;
+  return (typeof s === 'string' ? s : s[PLURAL.select(v.n)] ?? s.other)
+    .replace(/\{(\w+)\}/g, (_, name) => v[name]);
+};
+
+const mmss = s => s<60 ? t('time.sec',{n:Math.max(5,Math.round(s/5)*5)})
+  : t('time.min',{m:Math.floor(s/60), s:String(Math.round(s%60)).padStart(2,'0')});
+
+function card(f, pack, isAdv){
+  const n = artNo(f.probable_article_id);
+  const title = n && pack.titles ? pack.titles[String(f.probable_article_id).toLowerCase()] : null;
+  const art = !n ? t('res.regulation')
+    : title ? `${t('res.article',{n})}: ${title}` : t('res.article',{n});
+  return `<div class="card ${isAdv?'adv':''}">
+    <div class="top">
+      <span class="badge ${isAdv?'adv':''}">${t(isAdv?'badge.advisory':'badge.confirmed')}</span>
+      <span class="art">${isAdv ? t('res.raised') : art}</span>
+      <span class="loc mono">${esc(f.file)}${f.start_line?':'+f.start_line:''}</span>
+    </div>
+    <div class="desc">${esc((f.description||'')
+      .replace(/\s*\[matches a known violation pattern:[^\]]*\]/g,''))}</div>
+    ${f.code_evidence?`<pre>${esc(f.code_evidence)}</pre>`:''}</div>`;
+}
+
+async function build(){
+  const [dict, state, catalog, branding] =
+    await Promise.all([get('/i18n.json'), get('/api/state'), get('/api/catalog'),
+                       get('/api/branding')]);
+  const lang = localStorage.getItem('precommiteu.lang') || 'en';
+  EN = dict.en;
+  DICT = dict[lang] || dict.en;
+  PLURAL = new Intl.PluralRules(dict[lang] ? lang : 'en');
+  document.documentElement.lang = dict[lang] ? lang : 'en';
+  document.title = `${t('app.title')} ${new Date().toISOString().slice(0,10)}`;
+
+  const pack = catalog.packs.find(p=>p.id===state.regulation) || {};
+  const findings = state.findings || [], adv = state.advisories || [];
+  const arts = [...new Set(findings.map(f=>artNo(f.probable_article_id)))].sort((a,b)=>a-b);
+  const when = new Date().toLocaleDateString(document.documentElement.lang,
+    {year:'numeric', month:'long', day:'numeric'});
+
+  const tile = (n, k, hot) =>
+    `<div class="tile ${hot&&n?'hot':''}"><div class="n">${n}</div><div class="k">${k}</div></div>`;
+
+  document.getElementById('sheet').innerHTML = `
+    <div class="head">
+      ${branding.logo?'<img id="logo" src="/logo" alt="">':''}
+      <div class="t">
+        <h1>${findings.length
+          ? t('res.lede',{n:findings.length, m:t('res.articles',{n:arts.length})})
+          : t('res.cleanLede')}</h1>
+        <div class="sub">${esc(pack.name||state.regulation)} · ${esc(pack.reference||'')}</div>
+      </div>
+      <div class="meta"><b>${esc(t('app.title'))}</b>${when}</div>
+    </div>
+
+    <div class="tiles">
+      ${tile(findings.length, t('res.stat.confirmed'), true)}
+      ${tile(adv.length, t('res.stat.advisory'))}
+      ${tile(arts.length, t('res.stat.articles'))}
+      ${tile(state.files_total, t('scan.files'))}
+    </div>
+
+    <div class="note mono">${esc(state.target||'')}${
+      state.elapsed_s>0 ? ' · '+mmss(state.elapsed_s) : ''}</div>
+
+    ${findings.length ? `<h2 class="sect">${t('res.stat.confirmed')}</h2>`
+      + findings.slice().sort((a,b)=>artNo(a.probable_article_id)-artNo(b.probable_article_id))
+          .map(f=>card(f,pack,false)).join('')
+      : `<div class="clean"><h3>${t('res.cleanH',{n:state.files_total})}</h3>
+         <div>${t('res.cleanP',{pack:esc(pack.name||state.regulation)})}</div></div>`}
+
+    ${adv.length ? `<h2 class="sect">${t('res.stat.advisory')}</h2>
+      <div class="note">${t('res.advNote')}</div>
+      ${adv.map(a=>card(a,pack,true)).join('')}` : ''}
+
+    <div class="foot">
+      <span>${t('app.title')} · ${t('side.foot')}</span>
+      <span>${when}</span>
+    </div>`;
+
+  document.getElementById('barbtn').textContent = t('res.pdf');
+  document.getElementById('barnote').textContent = t('res.printHint');
+  const logo = document.getElementById('logo');
+  if (logo && !logo.complete) await new Promise(r=>{ logo.onload = logo.onerror = r; });
+  window.print();
+}
+
+build();
+</script>
+</body>
+</html>
