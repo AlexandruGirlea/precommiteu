@@ -21,6 +21,8 @@ Tests need no model bundle. Scanning does, see [docs/install.md](docs/install.md
 
 - One change per PR, with a note on why.
 - `pytest` and `ruff check .` must pass; CI runs both on Python 3.11 to 3.13.
+- New functionality ships with its tests. A PR that adds a flag, an output
+  format or a code path adds the tests covering it in the same PR.
 - Detection quality changes (prompts, adapters, thresholds) are gated on an
   evaluation run, not unit tests. Open an issue before starting one.
 
