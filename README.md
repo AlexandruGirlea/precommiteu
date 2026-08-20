@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Alexandru Girlea
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/AlexandruGirlea/precommiteu/main/docs/assets/img/bat-hero-dark.png">
@@ -16,6 +22,10 @@
   One local scanner, eight EU regulations: GDPR, the EU AI Act, NIS2, DORA, the
   Cyber Resilience Act, the Digital Services Act, the Digital Markets Act and
   the Data Act.
+</p>
+
+<p align="center">
+  <a href="https://api.reuse.software/info/github.com/AlexandruGirlea/precommiteu"><img src="https://api.reuse.software/badge/github.com/AlexandruGirlea/precommiteu" alt="REUSE status"></a>
 </p>
 
 <p align="center">

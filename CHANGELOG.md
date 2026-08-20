@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Alexandru Girlea
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Changelog
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).

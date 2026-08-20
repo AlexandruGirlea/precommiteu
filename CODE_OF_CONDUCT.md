@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Alexandru Girlea
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Code of Conduct
 
 This project follows the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).

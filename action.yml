@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Alexandru Girlea
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: precommitEU compliance scan
 description: Scan changed code for EU regulatory compliance violations, locally.
 author: Alexandru Girlea

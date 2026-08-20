@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Alexandru Girlea
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"

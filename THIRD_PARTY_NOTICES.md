@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Alexandru Girlea
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Third-party notices
 
 precommitEU is released under the Apache License 2.0 (see LICENSE). It is

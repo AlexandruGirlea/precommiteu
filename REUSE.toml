@@ -1,0 +1,9 @@
+version = 1
+SPDX-PackageName = "precommiteu"
+SPDX-PackageSupplier = "Alexandru Girlea <alex@girlea.ro>"
+SPDX-PackageDownloadLocation = "https://github.com/AlexandruGirlea/precommiteu"
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2026 Alexandru Girlea"
+SPDX-License-Identifier = "Apache-2.0"
