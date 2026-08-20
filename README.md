@@ -25,6 +25,7 @@ SPDX-License-Identifier: Apache-2.0
 </p>
 
 <p align="center">
+  <a href="https://www.bestpractices.dev/projects/14178"><img src="https://www.bestpractices.dev/projects/14178/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://api.reuse.software/info/github.com/AlexandruGirlea/precommiteu"><img src="https://api.reuse.software/badge/github.com/AlexandruGirlea/precommiteu" alt="REUSE status"></a>
 </p>
 
