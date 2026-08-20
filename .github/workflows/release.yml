@@ -10,6 +10,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     steps:
@@ -25,6 +27,22 @@ jobs:
         id: hash
         working-directory: dist
         run: echo "hashes=$(sha256sum * | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate the SBOM
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python -m venv /tmp/sbomenv
+          /tmp/sbomenv/bin/pip install -q dist/*.whl
+          pipx run --spec cyclonedx-bom cyclonedx-py environment \
+            /tmp/sbomenv --of JSON --output-reproducible \
+            -o "precommiteu-${TAG#v}.cdx.json"
+
+      - name: Attach the SBOM to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" "precommiteu-${TAG#v}.cdx.json"
 
       - uses: actions/upload-artifact@v4
         with:
