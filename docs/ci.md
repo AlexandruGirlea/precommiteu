@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.2.0
+      - uses: AlexandruGirlea/precommiteu@v0.2.1
         with:
           regulations: gdpr,eu_ai_act
       - uses: github/codeql-action/upload-sarif@v3
@@ -80,10 +80,10 @@ model bundle, and scans the changed files.
 Pin both for reproducible runs:
 
 ```yaml
-- uses: AlexandruGirlea/precommiteu@v0.2.0
+- uses: AlexandruGirlea/precommiteu@v0.2.1
   with:
-    version: 0.2.0
-    models-revision: v1.0.0
+    version: 0.2.1
+    models-revision: v0.1.0
 ```
 
 `fetch-depth: 0` is still worth setting: the action un-shallows the clone

@@ -9,6 +9,15 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.2.1
+
+- Releases are built in CI and published to PyPI through Trusted Publishing,
+  with SLSA level 3 provenance attached to the GitHub release and PEP 740
+  attestations on the published artifacts.
+- The repository is REUSE 3.3 compliant: every file carries copyright and
+  licensing information, and the Apache-2.0 text is in `LICENSES/`.
+- No changes to the scanner itself.
+
 ## 0.2.0
 
 - Incremental rescans: a scan records every file it analysed cleanly, and the

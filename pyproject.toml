@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "precommiteu"
-version = "0.2.0"
+version = "0.2.1"
 description = "Local-first EU regulatory compliance scanner for source code."
 readme = "README.md"
 requires-python = ">=3.11"
