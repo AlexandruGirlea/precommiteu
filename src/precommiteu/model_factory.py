@@ -48,7 +48,7 @@ class LocalChatModel:
         self._retries = retries
 
     def invoke(
-        self, messages: list[Any], timeout_s: float | None = None
+        self, messages: list[Any], timeout_s: float | None = None, *, grammar: str | None = None
     ) -> ChatResponse:
         body: dict[str, Any] = {
             "model": "precommiteu-local",
@@ -56,8 +56,9 @@ class LocalChatModel:
             "temperature": self._temperature,
             "max_tokens": self._max_tokens,
         }
-        if self._grammar:
-            body["grammar"] = self._grammar
+        active_grammar = self._grammar if grammar is None else grammar
+        if active_grammar:
+            body["grammar"] = active_grammar
         request = urllib.request.Request(
             self._endpoint,
             data=json.dumps(body).encode("utf-8"),

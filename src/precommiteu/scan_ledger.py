@@ -13,7 +13,8 @@ from precommiteu.src.schemas import Advisory, Finding
 
 __all__ = ["FORMAT_VERSION", "ScanLedger", "default_ledger_path"]
 
-FORMAT_VERSION = 1
+# Invalidate results from before source-constrained evidence and URL routing fixes.
+FORMAT_VERSION = 3
 
 _LOG = logging.getLogger(__name__)
 

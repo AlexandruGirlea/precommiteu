@@ -289,7 +289,9 @@ def _references_siblings(text: str, file_path: pathlib.Path) -> bool:
     pattern = re.compile(
         r"\b(?:" + "|".join(map(re.escape, sorted(stems))) + r")\b"
     )
-    return bool(pattern.search(text))
+    # URL path components (e.g. /models/) are not local module references.
+    code_without_urls = re.sub(r"https?://[^\s\"'<>]+", "", text)
+    return bool(pattern.search(code_without_urls))
 
 
 def _load_case_index(regulation: str) -> CaseIndex | None:

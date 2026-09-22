@@ -9,7 +9,7 @@ import pytest
 
 from precommiteu import scan as scan_mod
 from precommiteu.agents.orchestrator import OrchestratorRun
-from precommiteu.scan_ledger import ScanLedger, default_ledger_path
+from precommiteu.scan_ledger import FORMAT_VERSION, ScanLedger, default_ledger_path
 
 CODE = "def save(user):\n    db.write(user.email)\n    return True\n"
 EVIDENCE = "db.write(user.email)"
@@ -94,7 +94,7 @@ def test_first_scan_records_every_analysed_file(harness):
     assert harness.analysed == ["one.py", "two.py"]
     assert len(result.findings) == 2
     doc = _ledger_doc(harness.repo)
-    assert doc["version"] == 1
+    assert doc["version"] == FORMAT_VERSION
     assert doc["regulation"] == "gdpr"
     assert doc["target"] == str(harness.repo)
     assert sorted(doc["files"]) == ["one.py", "two.py"]
@@ -213,6 +213,18 @@ def test_rescan_all_scans_everything_and_rewrites_the_entries(harness):
 def test_an_unusable_ledger_means_a_full_scan(harness, corrupt):
     harness.run()
     default_ledger_path(harness.repo, "gdpr").write_text(corrupt, encoding="utf-8")
+
+    harness.run()
+
+    assert harness.analysed == ["one.py", "two.py"]
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_results_from_before_applicability_fixes_are_not_reused(harness, version):
+    harness.run()
+    doc = _ledger_doc(harness.repo)
+    doc["version"] = version
+    default_ledger_path(harness.repo, "gdpr").write_text(json.dumps(doc), encoding="utf-8")
 
     harness.run()
 

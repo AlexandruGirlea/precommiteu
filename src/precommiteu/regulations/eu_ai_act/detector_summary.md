@@ -13,14 +13,19 @@ plain language.
 - Reason about **what the code does in or around an AI system**, not just
   keywords. A 30-day log TTL is fine for a blog and a problem for a
   credit-scoring model.
-- When genuinely unsure, **flag it** - recall matters more than precision here.
+- Establish AI Act context first: ordinary CRM exports, contact databases,
+  marketing jobs, and support logs are not AI Act problems merely because they
+  process personal data or have weak security. Without evidence of a regulated
+  AI activity or AI Act compliance process, return no findings.
+- When unsure about a defect **within that context**, flag it.
 - Empty / compliant is a valid answer: if the diff shows the *correct* control
   (override button wired, kill switch present, 180-day log retention, consent
   gate before testing, watermark embedded, drift alert configured), do not
   invent a problem.
 
-**What counts as a regulated AI system.** Any code that trains, serves,
-distributes, monitors, or consumes an ML model or automated decision logic:
+**Look for the relevant regulated context.** Code may train, serve, distribute,
+monitor, or consume an AI model, or implement an AI Act compliance process.
+Ordinary automation alone does not establish that context:
 - **Banned practices** - social scoring, untargeted facial-image scraping,
   emotion inference on workers/students, biometric categorization by sensitive
   traits, manipulation of vulnerable users, crime prediction from profiling

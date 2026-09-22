@@ -32,7 +32,7 @@ BM25_B = 0.75
 RETRIEVAL_TOP_K = 12
 RETRIEVAL_DESCRIPTION_WEIGHT = 0.5
 
-# Promotion gate - calibrated offline against labeled evaluation data.
+# Keep retrieval advisory-only: lexical matches do not establish legal applicability.
 # Values above 1.0 disable promotion (annotation-only mode).
-PROMOTE_CONFIDENCE = 0.85
+PROMOTE_CONFIDENCE = 1.01
 PROMOTE_SIMILARITY = 0.10

@@ -347,7 +347,7 @@ Details worth knowing:
 precommiteu --version
 ```
 
-Prints `precommiteu 0.2.1`.
+Prints `precommiteu 0.2.2`.
 
 ### 2. File discovery works
 

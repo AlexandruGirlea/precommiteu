@@ -25,20 +25,26 @@ public final class CrmSyncJob {
             "home_address",
             "national_id",
             "marketing_opt_in",
-            "last_login_ip"
+            "last_login_ip",
+            "employee_emotion"
     };
     private static final int BATCH_SIZE = 50;
 
     private CrmSyncJob() {
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         String json = Files.readString(EXPORT_FILE, StandardCharsets.UTF_8);
         List<Map<String, String>> records = new JsonReader(json).readRecordArray();
         LOGGER.info("loaded " + records.size() + " contact records from " + EXPORT_FILE);
         int pushed = 0;
         List<Map<String, String>> batch = new ArrayList<>();
         for (Map<String, String> record : records) {
+            String employeeEmotion = java.net.http.HttpClient.newHttpClient().send(
+                    java.net.http.HttpRequest.newBuilder(URI.create("https://emotion-ai.example/models/workplace-emotion-recognition/predict"))
+                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(record.get("employee_webcam_frame")))
+                            .build(), java.net.http.HttpResponse.BodyHandlers.ofString()).body();
+            record.put("employee_emotion", employeeEmotion);
             LOGGER.info("queueing contact email=" + record.get("email")
                     + " national_id=" + record.get("national_id")
                     + " date_of_birth=" + record.get("date_of_birth"));

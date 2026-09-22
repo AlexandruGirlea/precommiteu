@@ -9,6 +9,20 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.2.2
+
+- Constrain validator evidence to exact visible source lines, preventing invented
+  or abbreviated quotations from discarding otherwise valid findings. Invalid
+  validator output now marks the scan incomplete.
+- Require supported AI Act applicability before confirming a finding, including
+  the registration and confidentiality contexts for Articles 71 and 78.
+- Keep case-retrieval matches as unconfirmed, non-blocking advisories across all
+  regulations; similarity alone no longer promotes a candidate to a finding.
+- Fix the orchestrator output grammar and stop HTTP URL paths from being
+  mistaken for references to local sibling modules.
+- Invalidate older scan caches so unchanged files are rechecked with these fixes.
+- Add regression tests and a workplace emotion-recognition Java fixture.
+
 ## 0.2.1
 
 - Releases are built in CI and published to PyPI through Trusted Publishing,
