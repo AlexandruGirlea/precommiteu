@@ -14,6 +14,7 @@ from precommiteu.grammar import (
     VALIDATOR_GBNF,
     validator_evidence_grammar,
 )
+from precommiteu.validator_call import _AI_ACT_ACTIVITY_GRAMMAR
 
 
 @pytest.mark.parametrize(
@@ -22,6 +23,7 @@ from precommiteu.grammar import (
         LOOP_STEP_GBNF,
         DETECTOR_GBNF,
         VALIDATOR_GBNF,
+        _AI_ACT_ACTIVITY_GRAMMAR,
         validator_evidence_grammar(
             [
                 'record.put("employee_emotion", employeeEmotion);',
@@ -31,7 +33,7 @@ from precommiteu.grammar import (
             ]
         ),
     ],
-    ids=["orchestrator", "detector", "validator", "source-evidence"],
+    ids=["orchestrator", "detector", "validator", "ai-act-activity", "source-evidence"],
 )
 def test_grammar_compiles_without_loading_a_model(grammar):
     library = ctypes.util.find_library("llama")

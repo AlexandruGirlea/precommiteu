@@ -13,8 +13,8 @@ from precommiteu.src.schemas import Advisory, Finding
 
 __all__ = ["FORMAT_VERSION", "ScanLedger", "default_ledger_path"]
 
-# Invalidate results from before source-constrained evidence and URL routing fixes.
-FORMAT_VERSION = 3
+# Invalidate results from before the AI Act activity checks.
+FORMAT_VERSION = 4
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,6 +71,9 @@ class ScanLedger:
             doc = json.loads(ledger.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return ledger
+        # Version 4 changes AI Act validation only; other version-3 results remain valid.
+        if isinstance(doc, dict) and doc.get("version") == 3 and regulation != "eu_ai_act":
+            doc["version"] = 4
         if (
             not isinstance(doc, dict)
             or doc.get("version") != FORMAT_VERSION

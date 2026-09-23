@@ -231,6 +231,28 @@ def test_results_from_before_applicability_fixes_are_not_reused(harness, version
     assert harness.analysed == ["one.py", "two.py"]
 
 
+@pytest.mark.parametrize(
+    "regulation", ["eu_ai_act", "gdpr", "eu_data_act", "dora", "dsa", "cra_dma_nis2"]
+)
+def test_activity_check_invalidates_only_ai_act_version3_results(harness, regulation):
+    first, _ = harness.run(regulations=(regulation,))
+    doc = _ledger_doc(harness.repo, regulation)
+    doc["version"] = 3
+    default_ledger_path(harness.repo, regulation).write_text(json.dumps(doc), encoding="utf-8")
+    servers = harness.servers
+
+    second, _ = harness.run(regulations=(regulation,))
+
+    if regulation == "eu_ai_act":
+        assert harness.analysed == ["one.py", "two.py"]
+        assert harness.servers == servers + 1
+    else:
+        assert harness.analysed == []
+        assert harness.servers == servers
+        assert second.findings == first.findings
+        assert second.advisories == first.advisories
+
+
 def test_a_ledger_from_another_target_is_not_reused(harness, tmp_path):
     harness.run()
     other = ScanLedger.load(tmp_path / "elsewhere", "gdpr")

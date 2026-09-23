@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.2.3
+
+Fixed false positives for AI Act Articles 59 and 78 in customer storage and
+support logs. Other regulation checks are unchanged.
+
 ## 0.2.2
 
 - Constrain validator evidence to exact visible source lines, preventing invented
