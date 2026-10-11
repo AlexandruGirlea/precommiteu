@@ -133,6 +133,7 @@ scan uses the new location without a restart.
 | [Python library](library.md) | `scan_paths`, `scan_diff`, result schemas, streaming callbacks |
 | [Reports](reports.md) | JSON field reference, SARIF, markdown summary, event ledger |
 | [Troubleshooting](troubleshooting.md) | Model paths, `llama-server` startup, empty scans, error messages |
+| [Detection evaluation](detection-evaluation.md) | Measuring detection changes and preserving release evidence |
 
 ## Ignoring code and suppressing findings
 

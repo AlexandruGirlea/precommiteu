@@ -1,0 +1,88 @@
+[
+  {
+    "id": "ts_gatekeeper_merge_denied",
+    "article": "dma_art5",
+    "expected_articles": [],
+    "file": "accounts.ts",
+    "code": "export function combineGatekeeperAccounts(user, accounts) {\n  if (!user.crossServiceConsent) throw new Error(\"Consent required\");\n  return accounts.merge(user.searchId, user.socialId);\n}\n",
+    "rationale": "A rejecting consent guard protects the gatekeeper cross-service merge.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ts_gatekeeper_merge_bypassed",
+    "article": "dma_art5",
+    "expected_articles": [
+      "dma_art5"
+    ],
+    "file": "accounts.ts",
+    "code": "export function combineGatekeeperAccounts(user, accounts) {\n  if (!user.crossServiceConsent) return accounts.merge(user.searchId, user.socialId);\n  return accounts.merge(user.searchId, user.socialId);\n}\n",
+    "rationale": "A syntactic consent check does not protect a merge when refusal takes the merging path.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "trust_service_full_report",
+    "article": "nis2_art23",
+    "expected_articles": [
+      "nis2_art23"
+    ],
+    "file": "service.py",
+    "code": "def qualified_trust_service_significant_incident(incident, csirt):\n    csirt.send_early_warning_now(incident)\n    csirt.schedule_full_notification(incident, delay_hours=48)\n",
+    "rationale": "Trust service providers have a 24-hour notification deadline for significant incidents, not the ordinary 72 hours.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ordinary_entity_full_report",
+    "article": "nis2_art23",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def electricity_operator_significant_incident(incident, csirt):\n    csirt.send_early_warning_now(incident)\n    csirt.schedule_full_notification(incident, delay_hours=48)\n",
+    "rationale": "The in-scope electricity operator has an ordinary notification timeline; a prompt early warning is also present.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "signed_firmware_http",
+    "article": "cra_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def commercial_device_update(updater, trusted_key):\n    signed_image = updater.fetch(\"http://public-mirror.example/firmware.img\")\n    updater.verify_signature_or_raise(signed_image, trusted_key)\n    updater.install_verified_image(signed_image)\n",
+    "rationale": "Authenticity and integrity of public firmware are enforced before installation; HTTP alone does not demonstrate unsigned execution.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "internal_water_backup_disabled",
+    "article": "nis2_art21",
+    "expected_articles": [
+      "nis2_art21"
+    ],
+    "file": "service.py",
+    "code": "def essential_water_supplier_backup(schedule, records):\n    schedule.backup(records, enabled=False, alternative_recovery=None)\n",
+    "rationale": "The essential entity explicitly disables backup with no recovery alternative.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "nonessential_uninstall_enabled",
+    "article": "dma_art6",
+    "expected_articles": [],
+    "file": "app.ts",
+    "code": "export const gatekeeperOptionalApp = {canUninstall: true, requiredForOperatingSystem: false};\n",
+    "rationale": "The covered optional app is uninstallable.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "domain_verified_personal_redacted",
+    "article": "nis2_art28",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def public_rdap_response(domain, registry):\n    record = registry.verified_record(domain)\n    return {\"domain\": record.domain_name, \"registrar\": record.registrar, \"created\": record.created_at}\n",
+    "rationale": "The public domain lookup does not expose registrant personal data.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "holdout"
+  }
+]

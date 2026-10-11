@@ -1,0 +1,88 @@
+[
+  {
+    "id": "tls_typescript_on",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "records.ts",
+    "code": "export async function sendCustomer(customer, client) {\n  return client.post(\"https://processor.example/records\", customer, {rejectUnauthorized: true});\n}\n",
+    "rationale": "Certificate verification remains enabled.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "tls_typescript_off",
+    "article": "gdpr_art32",
+    "expected_articles": [
+      "gdpr_art32"
+    ],
+    "file": "records.ts",
+    "code": "export async function sendCustomer(customer, client) {\n  return client.post(\"https://processor.example/records\", customer, {rejectUnauthorized: false});\n}\n",
+    "rationale": "Certificate verification is explicitly disabled for a personal-data transfer.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "objection_sql_control",
+    "article": "gdpr_art21",
+    "expected_articles": [],
+    "file": "campaign.sql",
+    "code": "SELECT email FROM customers WHERE marketing_opt_out = FALSE AND email_verified = TRUE;\n",
+    "rationale": "The campaign selection excludes objectors.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "objection_sql_violation",
+    "article": "gdpr_art21",
+    "expected_articles": [
+      "gdpr_art21"
+    ],
+    "file": "campaign.sql",
+    "code": "SELECT email FROM customers WHERE marketing_opt_out = TRUE;\n",
+    "rationale": "The campaign selection deliberately targets objectors.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "credential_guard_enabled",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def account_password(value, kdf):\n    use_strong_hash = True\n    if use_strong_hash:\n        return kdf.argon2id(value)\n    raise ValueError(\"Hashing required\")\n",
+    "rationale": "A true branch enforces the credential safeguard.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "erasure_legal_hold",
+    "article": "gdpr_art17",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def erase_customer(subject, database, statutory_retention):\n    if statutory_retention.required_by_tax_law(subject):\n        database.restrict_to_tax_purpose(subject)\n        return \"retained under legal obligation\"\n    database.erase_subject(subject)\n",
+    "rationale": "Article 17(3)(b) permits necessary retention for a legal obligation.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "retention_unbounded",
+    "article": "gdpr_art5",
+    "expected_articles": [
+      "gdpr_art5"
+    ],
+    "file": "service.py",
+    "code": "def retain_customer_sessions(session, db):\n    db.store(session.user_email, session.ip_address, retention_days=None, purpose=\"temporary troubleshooting\")\n",
+    "rationale": "Indefinite identified troubleshooting retention conflicts with the stated temporary purpose.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "breach_low_risk",
+    "article": "gdpr_art33",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def notify_breach(incident, dpa):\n    if incident.assessed_unlikely_risk_to_rights:\n        incident.document_risk_assessment()\n        return\n    dpa.notify_now(incident.complete_report())\n",
+    "rationale": "The notification exception is tied to a documented low-risk assessment.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "holdout"
+  }
+]

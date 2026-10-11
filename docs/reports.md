@@ -185,7 +185,7 @@ before it.
 
 ```json
 {
-  "version": 1,
+  "version": 5,
   "regulation": "gdpr",
   "target": "/home/you/work/api",
   "updated_at": "2026-08-17T09:12:44+00:00",
@@ -204,7 +204,7 @@ before it.
 
 | Field | Meaning |
 |---|---|
-| `version` | Ledger format version. Anything but `1` is ignored and the scan is full |
+| `version` | Ledger format version. Anything but `5` is ignored and the scan is full |
 | `regulation` | The pack these results belong to. A file cleared for GDPR says nothing about another regulation, so a mismatch is ignored |
 | `target` | Absolute scanned root. A mismatch is ignored |
 | `files` | Keys are file paths relative to `target`, the same labels used in `findings[].file` |

@@ -1,0 +1,328 @@
+[
+  {
+    "id": "product_update_violation",
+    "article": "cra_art6",
+    "expected_articles": [
+      "cra_art6"
+    ],
+    "file": "service.py",
+    "code": "def shipped_router_firmware_update(image, updater):\n    updater.install(image, signature_check=False, allow_untrusted_image=True)\n",
+    "rationale": "The commercially shipped product must protect update integrity. CRA product requirements are assessed for an in-scope release after general application.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "product_update_control",
+    "article": "cra_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def shipped_router_firmware_update(image, updater):\n    updater.install(image, signature_check=True, allow_untrusted_image=False)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The commercially shipped product must protect update integrity. CRA product requirements are assessed for an in-scope release after general application.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "product_admin_violation",
+    "article": "cra_art6",
+    "expected_articles": [
+      "cra_art6"
+    ],
+    "file": "service.py",
+    "code": "def shipped_camera_admin_endpoint(request, device):\n    return device.admin_action(request, auth_required=False)\n",
+    "rationale": "An in-scope shipped digital product cannot deliberately expose unauthenticated administrative control.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "product_admin_control",
+    "article": "cra_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def shipped_camera_admin_endpoint(request, device):\n    return device.admin_action(request, auth_required=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. An in-scope shipped digital product cannot deliberately expose unauthenticated administrative control.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "manufacturer_sbom_violation",
+    "article": "cra_art13",
+    "expected_articles": [
+      "cra_art13"
+    ],
+    "file": "service.py",
+    "code": "def commercial_firmware_release(build, release):\n    release.generate_sbom(build, enabled=False)\n    release.ship(build)\n",
+    "rationale": "The manufacturer vulnerability-handling process requires a machine-readable software bill of materials.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "manufacturer_sbom_control",
+    "article": "cra_art13",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def commercial_firmware_release(build, release):\n    release.generate_sbom(build, enabled=True, format=\"cyclonedx\")\n    release.ship(build)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The manufacturer vulnerability-handling process requires a machine-readable software bill of materials.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "exploited_product_reporting_violation",
+    "article": "cra_art14",
+    "expected_articles": [
+      "cra_art14"
+    ],
+    "file": "service.py",
+    "code": "def report_actively_exploited_product_vulnerability(vuln, csirt_enisa):\n    csirt_enisa.schedule_early_warning(vuln, delay_hours=96)\n",
+    "rationale": "A manufacturer aware of an actively exploited vulnerability must provide an early warning without undue delay and within 24 hours.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "exploited_product_reporting_control",
+    "article": "cra_art14",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def report_actively_exploited_product_vulnerability(vuln, csirt_enisa):\n    csirt_enisa.submit_early_warning_now(vuln)\n",
+    "rationale": "The visible safeguard addresses the tested defect. A manufacturer aware of an actively exploited vulnerability must provide an early warning without undue delay and within 24 hours.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "conformity_document_violation",
+    "article": "cra_art28",
+    "expected_articles": [
+      "cra_art28"
+    ],
+    "file": "service.py",
+    "code": "def package_commercial_software_release(artifact, packaging):\n    packaging.attach_eu_declaration_of_conformity(artifact, enabled=False)\n    packaging.ship(artifact)\n",
+    "rationale": "An in-scope product release requires the EU declaration of conformity.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "conformity_document_control",
+    "article": "cra_art28",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def package_commercial_software_release(artifact, packaging):\n    packaging.attach_eu_declaration_of_conformity(artifact, enabled=True)\n    packaging.ship(artifact)\n",
+    "rationale": "The visible safeguard addresses the tested defect. An in-scope product release requires the EU declaration of conformity.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_profile_merge_violation",
+    "article": "dma_art5",
+    "expected_articles": [
+      "dma_art5"
+    ],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_cross_service_ads(user, search, social):\n    if not user.cross_service_consent:\n        return search.merge_profiles(user.id, social.profile(user.id))\n",
+    "rationale": "A designated gatekeeper must respect the consent condition for combining data across covered services.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_profile_merge_control",
+    "article": "dma_art5",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_cross_service_ads(user, search, social):\n    if not user.cross_service_consent:\n        return None\n    return search.merge_profiles(user.id, social.profile(user.id))\n",
+    "rationale": "The visible safeguard addresses the tested defect. A designated gatekeeper must respect the consent condition for combining data across covered services.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_uninstall_violation",
+    "article": "dma_art6",
+    "expected_articles": [
+      "dma_art6"
+    ],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_optional_app_settings():\n    return {\"uninstall_disabled\": True, \"essential_for_os\": False}\n",
+    "rationale": "End users must be able to uninstall nonessential covered gatekeeper applications.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_uninstall_control",
+    "article": "dma_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_optional_app_settings():\n    return {\"uninstall_disabled\": False, \"essential_for_os\": False}\n",
+    "rationale": "The visible safeguard addresses the tested defect. End users must be able to uninstall nonessential covered gatekeeper applications.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "messaging_interop_violation",
+    "article": "dma_art7",
+    "expected_articles": [
+      "dma_art7"
+    ],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_messaging_bridge(message, federation):\n    federation.relay(message, e2ee=False, plaintext_relay=True)\n",
+    "rationale": "Interoperability must preserve the applicable end-to-end encryption protections.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "messaging_interop_control",
+    "article": "dma_art7",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_messaging_bridge(message, federation):\n    federation.relay(message, e2ee=True, plaintext_relay=False)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Interoperability must preserve the applicable end-to-end encryption protections.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_consent_ui_violation",
+    "article": "dma_art13",
+    "expected_articles": [
+      "dma_art13"
+    ],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_consent_choices(ui):\n    ui.button(\"Accept\", visible=True)\n    ui.button(\"Decline\", visible=False)\n",
+    "rationale": "Gatekeeper choice interfaces must not circumvent informed user choice by hiding refusal.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_consent_ui_control",
+    "article": "dma_art13",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def designated_gatekeeper_consent_choices(ui):\n    ui.button(\"Accept\", visible=True, prominence=\"equal\")\n    ui.button(\"Decline\", visible=True, prominence=\"equal\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Gatekeeper choice interfaces must not circumvent informed user choice by hiding refusal.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_audit_violation",
+    "article": "dma_art15",
+    "expected_articles": [
+      "dma_art15"
+    ],
+    "file": "service.py",
+    "code": "def gatekeeper_profiling_audit_page(audit, web):\n    return web.publish(audit.nonconfidential_overview(), public_access=False)\n",
+    "rationale": "The gatekeeper must make a nonconfidential overview of the profiling audit publicly available.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_audit_control",
+    "article": "dma_art15",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def gatekeeper_profiling_audit_page(audit, web):\n    return web.publish(audit.nonconfidential_overview(), public_access=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The gatekeeper must make a nonconfidential overview of the profiling audit publicly available.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "essential_entity_mfa_violation",
+    "article": "nis2_art21",
+    "expected_articles": [
+      "nis2_art21"
+    ],
+    "file": "service.py",
+    "code": "def essential_electricity_operator_admin(auth, operator):\n    return auth.login(operator, mfa_enabled=False, password_only=True)\n",
+    "rationale": "Appropriate cybersecurity risk measures for privileged essential-entity access include strong authentication.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "essential_entity_mfa_control",
+    "article": "nis2_art21",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def essential_electricity_operator_admin(auth, operator):\n    return auth.login(operator, mfa_enabled=True, password_only=False)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Appropriate cybersecurity risk measures for privileged essential-entity access include strong authentication.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "significant_incident_warning_violation",
+    "article": "nis2_art23",
+    "expected_articles": [
+      "nis2_art23"
+    ],
+    "file": "service.py",
+    "code": "def essential_hospital_significant_incident(incident, csirt):\n    csirt.schedule_early_warning(incident, delay_hours=72)\n",
+    "rationale": "An in-scope significant-incident early warning is due without undue delay and within 24 hours.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "significant_incident_warning_control",
+    "article": "nis2_art23",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def essential_hospital_significant_incident(incident, csirt):\n    csirt.send_early_warning_now(incident)\n",
+    "rationale": "The visible safeguard addresses the tested defect. An in-scope significant-incident early warning is due without undue delay and within 24 hours.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "domain_data_verification_violation",
+    "article": "nis2_art28",
+    "expected_articles": [
+      "nis2_art28"
+    ],
+    "file": "service.py",
+    "code": "def register_domain(registrant, registrar):\n    registrar.register(registrant, verify_contact=False)\n",
+    "rationale": "Domain-name registration-data policies must provide for verification of the relevant information.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "domain_data_verification_control",
+    "article": "nis2_art28",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def register_domain(registrant, registrar):\n    registrar.register(registrant, verify_contact=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Domain-name registration-data policies must provide for verification of the relevant information.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  },
+  {
+    "id": "ordinary_app_uninstall",
+    "article": "dma_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def small_independent_app_settings():\n    return {\"uninstall_disabled\": True, \"kiosk_owner_setting\": True}\n",
+    "rationale": "An ordinary app developer is not automatically a designated DMA gatekeeper.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "ordinary_merger",
+    "article": "dma_art5",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def merge_public_weather_feeds(feed_a, feed_b):\n    return sorted(feed_a + feed_b, key=lambda reading: reading.timestamp)\n",
+    "rationale": "Combining public environmental feeds is not gatekeeper cross-service personal-data combining.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj",
+    "split": "development"
+  },
+  {
+    "id": "guarded_product_admin",
+    "article": "cra_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def commercial_router_admin(request, security, device):\n    if not security.authorise_admin(request):\n        raise PermissionError()\n    return device.admin_action(request)\n",
+    "rationale": "The visible authorisation guard protects the product administrative operation.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+    "split": "development"
+  },
+  {
+    "id": "security_schema",
+    "article": "nis2_art21",
+    "expected_articles": [],
+    "file": "types.ts",
+    "code": "interface SecurityConfig { mfaEnabled: boolean; backupEnabled: boolean; }\n",
+    "rationale": "A type declaration does not disable any control.",
+    "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "split": "development"
+  }
+]

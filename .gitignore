@@ -22,6 +22,9 @@ env/
 # Testing
 .pytest_cache/
 
+# Internal model runs, experiment sources and release evaluation reports.
+/tests/evaluation_results/
+
 # Linting/Formatting
 .ruff_cache/
 

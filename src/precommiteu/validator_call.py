@@ -15,6 +15,13 @@ from precommiteu.config import CANDIDATE_FINDINGS_TOKEN_BUDGET
 from precommiteu.debuglog import validator_debug
 from precommiteu.grammar import validator_evidence_grammar
 from precommiteu.regulations import RegulationPack
+from precommiteu.regulations.adapter_checks import check_findings as check_adapter_findings
+from precommiteu.regulations.eu_ai_act.article_checks import check_findings
+from precommiteu.regulations.eu_ai_act.validation_context import (
+    FACTS_INSTRUCTIONS,
+    AIActValidatorOutput,
+    facts_first_grammar,
+)
 from precommiteu.src.scanner import (
     _current_code_from_chunk,
     _normalize_validator_article_id,
@@ -26,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 _DEBUG_ENRICH = bool(os.environ.get("PRECOMMITEU_DEBUG_ENRICH"))
 _RAW_PREVIEW_CHARS = 400
+_FACTS_FIRST_PACKS = {"eu_ai_act", "cra_dma_nis2"}
 
 _ARTICLE78_ACTIVITY = (
     "Describe the business activity implemented by the code. "
@@ -115,8 +123,13 @@ def call_validator(
         f"<candidate_findings>\n{candidates_json}\n</candidate_findings>"
     )
 
+    system_message = pack.validator_system + "\n" + _EVIDENCE_INSTRUCTIONS
+    grammar = validator_evidence_grammar(evidence_options)
+    if pack.name in _FACTS_FIRST_PACKS:
+        system_message += FACTS_INSTRUCTIONS
+        grammar = facts_first_grammar(grammar)
     messages = [
-        {"role": "system", "content": pack.validator_system + "\n" + _EVIDENCE_INSTRUCTIONS},
+        {"role": "system", "content": system_message},
         {"role": "user", "content": user_message},
     ]
 
@@ -143,12 +156,13 @@ def call_validator(
 
     started = time.monotonic()
     response = model.invoke(
-        messages, timeout_s=timeout_s, grammar=validator_evidence_grammar(evidence_options)
+        messages, timeout_s=timeout_s, grammar=grammar
     )
     raw = getattr(response, "content", "") or ""
 
     try:
-        parsed = ValidatorOutput.model_validate_json(raw)
+        schema = AIActValidatorOutput if pack.name in _FACTS_FIRST_PACKS else ValidatorOutput
+        parsed = schema.model_validate_json(raw)
         kept = []
         for finding in parsed.findings:
             if finding.code_evidence not in evidence_options:
@@ -159,6 +173,17 @@ def call_validator(
                     "code_evidence": finding.code_evidence,
                     "description": finding.description,
                 }
+            )
+        if pack.name == "eu_ai_act":
+            kept = check_findings(
+                kept, _current_code_from_chunk(enriched_code), model, file_label=file_label,
+                deadline=None if timeout_s is None else started + timeout_s,
+            )
+        else:
+            kept = check_adapter_findings(
+                kept, _current_code_from_chunk(enriched_code), model, regulation=pack.name,
+                file_label=file_label,
+                deadline=None if timeout_s is None else started + timeout_s,
             )
         checks = _AI_ACT_ACTIVITY_CHECKS if pack.name == "eu_ai_act" else {}
         for article_no, activity_prompt in checks.items():

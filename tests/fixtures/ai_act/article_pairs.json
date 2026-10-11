@@ -1,0 +1,682 @@
+[
+  {
+    "id": "art5_staff_camera_violation",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "staff_camera.py",
+    "code": "def monitor_staff(camera, emotion_model, staff_records):\n    for employee_id, face in camera.employee_faces():\n        emotion = emotion_model.predict(face)\n        staff_records.update(employee_id, mood=emotion)\n",
+    "rationale": "Infers employee emotions from workplace biometric images for routine staff monitoring.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "art5_staff_camera_control",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "staff_camera.py",
+    "code": "def monitor_staff(camera, emotion_model, staff_records):\n    for employee_id, face in camera.employee_faces():\n        camera.discard(face)\n        staff_records.update(employee_id, camera_online=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "art9_release_risk_violation",
+    "article": "eu_ai_act_art9",
+    "expected_articles": [
+      "eu_ai_act_art9"
+    ],
+    "file": "release_risk.py",
+    "code": "def release_credit_scoring_ai(model, risk_tests, releases):\n    results = risk_tests.evaluate(model)\n    enforce_risk_thresholds = False\n    if enforce_risk_thresholds and not results.acceptable:\n        raise ValueError(\"Unacceptable credit decision risks\")\n    releases.publish(model)\n",
+    "rationale": "Provider releases creditworthiness AI even when mandatory risk tests fail.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-9"
+  },
+  {
+    "id": "art9_release_risk_control",
+    "article": "eu_ai_act_art9",
+    "expected_articles": [],
+    "file": "release_risk.py",
+    "code": "def release_credit_scoring_ai(model, risk_tests, releases):\n    results = risk_tests.evaluate(model)\n    enforce_risk_thresholds = True\n    if enforce_risk_thresholds and not results.acceptable:\n        raise ValueError(\"Unacceptable credit decision risks\")\n    releases.publish(model)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-9"
+  },
+  {
+    "id": "art10_training_data_violation",
+    "article": "eu_ai_act_art10",
+    "expected_articles": [
+      "eu_ai_act_art10"
+    ],
+    "file": "training_data.py",
+    "code": "def train_hiring_ai(applications, bias_audit, trainer):\n    training_data = applications.training_dataset()\n    run_bias_checks = False\n    if run_bias_checks:\n        bias_audit.check_and_mitigate(training_data)\n    return trainer.fit(training_data)\n",
+    "rationale": "Explicitly disables bias examination and mitigation on high-risk hiring training data.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-10"
+  },
+  {
+    "id": "art10_training_data_control",
+    "article": "eu_ai_act_art10",
+    "expected_articles": [],
+    "file": "training_data.py",
+    "code": "def train_hiring_ai(applications, bias_audit, trainer):\n    training_data = applications.training_dataset()\n    run_bias_checks = True\n    if run_bias_checks:\n        bias_audit.check_and_mitigate(training_data)\n    return trainer.fit(training_data)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-10"
+  },
+  {
+    "id": "art11_release_docs_violation",
+    "article": "eu_ai_act_art11",
+    "expected_articles": [
+      "eu_ai_act_art11"
+    ],
+    "file": "release_docs.py",
+    "code": "def release_hiring_ai(model, technical_documentation, releases):\n    generate_technical_documentation = False\n    if generate_technical_documentation:\n        technical_documentation.build_annex_iv(model)\n    releases.publish(model)\n",
+    "rationale": "Disables pre-market technical documentation generation for hiring AI.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-11"
+  },
+  {
+    "id": "art11_release_docs_control",
+    "article": "eu_ai_act_art11",
+    "expected_articles": [],
+    "file": "release_docs.py",
+    "code": "def release_hiring_ai(model, technical_documentation, releases):\n    generate_technical_documentation = True\n    if generate_technical_documentation:\n        technical_documentation.build_annex_iv(model)\n    releases.publish(model)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-11"
+  },
+  {
+    "id": "art12_credit_audit_violation",
+    "article": "eu_ai_act_art12",
+    "expected_articles": [
+      "eu_ai_act_art12"
+    ],
+    "file": "credit_audit.py",
+    "code": "class CreditScoringAIProvider:\n    def predict(self, application):\n        decision = self.model.predict(application)\n        automatic_event_logging = False\n        if automatic_event_logging:\n            self.audit.record(decision, application.id)\n        return decision\n",
+    "rationale": "Disables automatic logging of high-risk credit decisions.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-12"
+  },
+  {
+    "id": "art12_credit_audit_control",
+    "article": "eu_ai_act_art12",
+    "expected_articles": [],
+    "file": "credit_audit.py",
+    "code": "class CreditScoringAIProvider:\n    def predict(self, application):\n        decision = self.model.predict(application)\n        automatic_event_logging = True\n        if automatic_event_logging:\n            self.audit.record(decision, application.id)\n        return decision\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-12"
+  },
+  {
+    "id": "art13_deployer_instructions_violation",
+    "article": "eu_ai_act_art13",
+    "expected_articles": [
+      "eu_ai_act_art13"
+    ],
+    "file": "deployer_instructions.py",
+    "code": "def deliver_hiring_ai_to_deployer(model, documentation, delivery):\n    instructions_for_use = None\n    delivery.send(model, instructions_for_use=instructions_for_use)\n",
+    "rationale": "Provider explicitly supplies no instructions for use to a hiring AI deployer.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-13"
+  },
+  {
+    "id": "art13_deployer_instructions_control",
+    "article": "eu_ai_act_art13",
+    "expected_articles": [],
+    "file": "deployer_instructions.py",
+    "code": "def deliver_hiring_ai_to_deployer(model, documentation, delivery):\n    instructions_for_use = documentation.current_instructions(model)\n    delivery.send(model, instructions_for_use=instructions_for_use)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-13"
+  },
+  {
+    "id": "art14_human_control_violation",
+    "article": "eu_ai_act_art14",
+    "expected_articles": [
+      "eu_ai_act_art14"
+    ],
+    "file": "human_control.py",
+    "code": "def configure_credit_scoring_ai(provider, model, oversight):\n    provider.serve(model, human_override_enabled=False,\n                   oversight=oversight, safe_stop_enabled=False)\n",
+    "rationale": "High-risk credit AI provider explicitly disables human override and safe stopping.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-14"
+  },
+  {
+    "id": "art14_human_control_control",
+    "article": "eu_ai_act_art14",
+    "expected_articles": [],
+    "file": "human_control.py",
+    "code": "def configure_credit_scoring_ai(provider, model, oversight):\n    provider.serve(model, human_override_enabled=True,\n                   oversight=oversight, safe_stop_enabled=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-14"
+  },
+  {
+    "id": "art15_model_integrity_violation",
+    "article": "eu_ai_act_art15",
+    "expected_articles": [
+      "eu_ai_act_art15"
+    ],
+    "file": "model_integrity.py",
+    "code": "def update_medical_triage_ai(registry, signed_artifact, loader):\n    registry.require_authorized_release(signed_artifact)\n    return loader.load(signed_artifact, verify_signature=False)\n",
+    "rationale": "Disables integrity verification when loading a medical triage AI artifact.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-15"
+  },
+  {
+    "id": "art15_model_integrity_control",
+    "article": "eu_ai_act_art15",
+    "expected_articles": [],
+    "file": "model_integrity.py",
+    "code": "def update_medical_triage_ai(registry, signed_artifact, loader):\n    registry.require_authorized_release(signed_artifact)\n    return loader.load(signed_artifact, verify_signature=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-15"
+  },
+  {
+    "id": "art16_provider_identity_violation",
+    "article": "eu_ai_act_art16",
+    "expected_articles": [
+      "eu_ai_act_art16"
+    ],
+    "file": "provider_identity.py",
+    "code": "def hiring_ai_provider_information(company, product):\n    product.set_provider_identity(name=\"\", contact=\"\")\n",
+    "rationale": "Explicitly clears the high-risk AI provider identity and contact details.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-16"
+  },
+  {
+    "id": "art16_provider_identity_control",
+    "article": "eu_ai_act_art16",
+    "expected_articles": [],
+    "file": "provider_identity.py",
+    "code": "def hiring_ai_provider_information(company, product):\n    product.set_provider_identity(name=company.registered_name, contact=company.contact_address)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-16"
+  },
+  {
+    "id": "art17_quality_records_violation",
+    "article": "eu_ai_act_art17",
+    "expected_articles": [
+      "eu_ai_act_art17"
+    ],
+    "file": "quality_records.py",
+    "code": "def configure_hiring_ai_provider(quality_management, approved_procedures):\n    quality_management.configure(\n        design_control=None, change_control=None, validation_procedure=None)\n",
+    "rationale": "Provider explicitly removes documented design, change and validation procedures from its QMS.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-17"
+  },
+  {
+    "id": "art17_quality_records_control",
+    "article": "eu_ai_act_art17",
+    "expected_articles": [],
+    "file": "quality_records.py",
+    "code": "def configure_hiring_ai_provider(quality_management, approved_procedures):\n    quality_management.configure(\n        design_control=approved_procedures.design, change_control=approved_procedures.change,\n        validation_procedure=approved_procedures.validation)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-17"
+  },
+  {
+    "id": "art18_document_archive_violation",
+    "article": "eu_ai_act_art18",
+    "expected_articles": [
+      "eu_ai_act_art18"
+    ],
+    "file": "document_archive.py",
+    "code": "def archive_hiring_ai_provider_documents(archive, technical_docs, market_date):\n    archive.store(technical_docs, retention_years=2, starting_at=market_date)\n",
+    "rationale": "Provider retains technical documentation for only two years after placement on the market.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-18"
+  },
+  {
+    "id": "art18_document_archive_control",
+    "article": "eu_ai_act_art18",
+    "expected_articles": [],
+    "file": "document_archive.py",
+    "code": "def archive_hiring_ai_provider_documents(archive, technical_docs, market_date):\n    archive.store(technical_docs, retention_years=10, starting_at=market_date)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-18"
+  },
+  {
+    "id": "art19_provider_logs_violation",
+    "article": "eu_ai_act_art19",
+    "expected_articles": [
+      "eu_ai_act_art19"
+    ],
+    "file": "provider_logs.py",
+    "code": "class CreditScoringAIProvider:\n    def configure_decision_logs(self, audit_store):\n        audit_store.set_retention(months=1)\n",
+    "rationale": "Provider-controlled high-risk decision logs are deleted before six months.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-19"
+  },
+  {
+    "id": "art19_provider_logs_control",
+    "article": "eu_ai_act_art19",
+    "expected_articles": [],
+    "file": "provider_logs.py",
+    "code": "class CreditScoringAIProvider:\n    def configure_decision_logs(self, audit_store):\n        audit_store.set_retention(months=6)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-19"
+  },
+  {
+    "id": "art20_provider_recall_violation",
+    "article": "eu_ai_act_art20",
+    "expected_articles": [
+      "eu_ai_act_art20"
+    ],
+    "file": "provider_recall.py",
+    "code": "def recall_nonconforming_hiring_ai(system, affected_deployers, notifier):\n    system.disable()\n    notify_deployers = False\n    if notify_deployers:\n        notifier.send_recall(affected_deployers, system.version)\n",
+    "rationale": "Provider disables a nonconforming system but explicitly suppresses notices to deployers.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-20"
+  },
+  {
+    "id": "art20_provider_recall_control",
+    "article": "eu_ai_act_art20",
+    "expected_articles": [],
+    "file": "provider_recall.py",
+    "code": "def recall_nonconforming_hiring_ai(system, affected_deployers, notifier):\n    system.disable()\n    notify_deployers = True\n    if notify_deployers:\n        notifier.send_recall(affected_deployers, system.version)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-20"
+  },
+  {
+    "id": "art21_authority_logs_violation",
+    "article": "eu_ai_act_art21",
+    "expected_articles": [
+      "eu_ai_act_art21"
+    ],
+    "file": "authority_logs.py",
+    "code": "def provider_handle_reasoned_authority_request(request, credit_ai, transport):\n    request.require_competent_authority()\n    transport.send_securely(request, documentation=credit_ai.conformity_documents,\n                          automatic_logs=None)\n",
+    "rationale": "Provider withholds controlled automatic logs from a reasoned authority request.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-21"
+  },
+  {
+    "id": "art21_authority_logs_control",
+    "article": "eu_ai_act_art21",
+    "expected_articles": [],
+    "file": "authority_logs.py",
+    "code": "def provider_handle_reasoned_authority_request(request, credit_ai, transport):\n    request.require_competent_authority()\n    transport.send_securely(request, documentation=credit_ai.conformity_documents,\n                          automatic_logs=credit_ai.controlled_automatic_logs)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-21"
+  },
+  {
+    "id": "art23_import_documents_violation",
+    "article": "eu_ai_act_art23",
+    "expected_articles": [
+      "eu_ai_act_art23"
+    ],
+    "file": "import_documents.py",
+    "code": "class HiringAIImporter:\n    def keep_conformity_documents(self, certificates, archive, market_date):\n        archive.store(certificates, retention_years=3, starting_at=market_date)\n",
+    "rationale": "Importer retains conformity certificates for only three years after market placement.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-23"
+  },
+  {
+    "id": "art23_import_documents_control",
+    "article": "eu_ai_act_art23",
+    "expected_articles": [],
+    "file": "import_documents.py",
+    "code": "class HiringAIImporter:\n    def keep_conformity_documents(self, certificates, archive, market_date):\n        archive.store(certificates, retention_years=10, starting_at=market_date)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-23"
+  },
+  {
+    "id": "art24_distributor_gate_violation",
+    "article": "eu_ai_act_art24",
+    "expected_articles": [
+      "eu_ai_act_art24"
+    ],
+    "file": "distributor_gate.py",
+    "code": "def distribute_high_risk_hiring_ai(system, marketplace, conformity):\n    verify_compliance = False\n    if verify_compliance:\n        conformity.require_ce_marking_eu_declaration_and_instructions(system)\n    marketplace.publish_listing(system)\n",
+    "rationale": "Distributor explicitly bypasses pre-listing CE, declaration and instruction checks.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-24"
+  },
+  {
+    "id": "art24_distributor_gate_control",
+    "article": "eu_ai_act_art24",
+    "expected_articles": [],
+    "file": "distributor_gate.py",
+    "code": "def distribute_high_risk_hiring_ai(system, marketplace, conformity):\n    verify_compliance = True\n    if verify_compliance:\n        conformity.require_ce_marking_eu_declaration_and_instructions(system)\n    marketplace.publish_listing(system)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-24"
+  },
+  {
+    "id": "art26_deployer_logs_violation",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [
+      "eu_ai_act_art26"
+    ],
+    "file": "deployer_logs.py",
+    "code": "class BankCreditAIDeployer:\n    def configure_operational_logs(self, audit_store):\n        audit_store.set_retention(months=1)\n",
+    "rationale": "Deployer-controlled high-risk AI logs are retained for less than six months.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "art26_deployer_logs_control",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [],
+    "file": "deployer_logs.py",
+    "code": "class BankCreditAIDeployer:\n    def configure_operational_logs(self, audit_store):\n        audit_store.set_retention(months=6)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "art43_reassessment_violation",
+    "article": "eu_ai_act_art43",
+    "expected_articles": [
+      "eu_ai_act_art43"
+    ],
+    "file": "reassessment.py",
+    "code": "def deploy_modified_hiring_ai(model, assessor, deployment):\n    substantial_modification = True\n    require_reassessment = False\n    if substantial_modification and require_reassessment:\n        assessor.require_new_conformity_assessment(model)\n    deployment.publish(model)\n",
+    "rationale": "Releases a substantially modified high-risk system while bypassing reassessment.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-43"
+  },
+  {
+    "id": "art43_reassessment_control",
+    "article": "eu_ai_act_art43",
+    "expected_articles": [],
+    "file": "reassessment.py",
+    "code": "def deploy_modified_hiring_ai(model, assessor, deployment):\n    substantial_modification = True\n    require_reassessment = True\n    if substantial_modification and require_reassessment:\n        assessor.require_new_conformity_assessment(model)\n    deployment.publish(model)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-43"
+  },
+  {
+    "id": "art46_emergency_refusal_violation",
+    "article": "eu_ai_act_art46",
+    "expected_articles": [
+      "eu_ai_act_art46"
+    ],
+    "file": "emergency_refusal.py",
+    "code": "def on_emergency_ai_authorization_refused(emergency_ai, outputs):\n    emergency_ai.stop_immediately()\n    discard_outputs = False\n    if discard_outputs:\n        outputs.discard_all(emergency_ai.authorization_id)\n",
+    "rationale": "Emergency AI authorization refusal stops operation but explicitly retains all outputs.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-46"
+  },
+  {
+    "id": "art46_emergency_refusal_control",
+    "article": "eu_ai_act_art46",
+    "expected_articles": [],
+    "file": "emergency_refusal.py",
+    "code": "def on_emergency_ai_authorization_refused(emergency_ai, outputs):\n    emergency_ai.stop_immediately()\n    discard_outputs = True\n    if discard_outputs:\n        outputs.discard_all(emergency_ai.authorization_id)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-46"
+  },
+  {
+    "id": "art47_conformity_declaration_violation",
+    "article": "eu_ai_act_art47",
+    "expected_articles": [
+      "eu_ai_act_art47"
+    ],
+    "file": "conformity_declaration.py",
+    "code": "def release_hiring_ai_declaration(model, annex_v, signer, release):\n    declaration = annex_v.machine_readable_declaration(model)\n    sign_declaration = False\n    if sign_declaration:\n        declaration = signer.electronically_sign(declaration)\n    release.attach_declaration(model, declaration)\n",
+    "rationale": "Provider releases an EU conformity declaration without signing it.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-47"
+  },
+  {
+    "id": "art47_conformity_declaration_control",
+    "article": "eu_ai_act_art47",
+    "expected_articles": [],
+    "file": "conformity_declaration.py",
+    "code": "def release_hiring_ai_declaration(model, annex_v, signer, release):\n    declaration = annex_v.machine_readable_declaration(model)\n    sign_declaration = True\n    if sign_declaration:\n        declaration = signer.electronically_sign(declaration)\n    release.attach_declaration(model, declaration)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-47"
+  },
+  {
+    "id": "art48_digital_marking_violation",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [
+      "eu_ai_act_art48"
+    ],
+    "file": "digital_marking.py",
+    "code": "def configure_hiring_ai_marking(product):\n    product.ce_marking.configure(ui_visible=False, machine_readable=False)\n",
+    "rationale": "Provider makes the digital CE marking inaccessible through both UI and machine-readable form.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "art48_digital_marking_control",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [],
+    "file": "digital_marking.py",
+    "code": "def configure_hiring_ai_marking(product):\n    product.ce_marking.configure(ui_visible=True, machine_readable=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "art49_register_release_violation",
+    "article": "eu_ai_act_art49",
+    "expected_articles": [
+      "eu_ai_act_art49"
+    ],
+    "file": "register_release.py",
+    "code": "def publish_annex_iii_hiring_ai(provider, model, eu_database, releases):\n    register_before_release = False\n    if register_before_release:\n        eu_database.register_provider_and_system(provider, model)\n    releases.place_on_market(model)\n",
+    "rationale": "Provider explicitly bypasses Annex III system registration before placing it on the market.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-49"
+  },
+  {
+    "id": "art49_register_release_control",
+    "article": "eu_ai_act_art49",
+    "expected_articles": [],
+    "file": "register_release.py",
+    "code": "def publish_annex_iii_hiring_ai(provider, model, eu_database, releases):\n    register_before_release = True\n    if register_before_release:\n        eu_database.register_provider_and_system(provider, model)\n    releases.place_on_market(model)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-49"
+  },
+  {
+    "id": "art50_chat_disclosure_violation",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [
+      "eu_ai_act_art50"
+    ],
+    "file": "chat_disclosure.py",
+    "code": "def start_customer_chat(customer, ai_agent, ui):\n    ui.set_agent_name(\"Sarah\")\n    disclose_ai = False\n    if disclose_ai:\n        ui.show_notice(\"You are interacting with an AI assistant\")\n    ui.start_conversation(customer, ai_agent)\n",
+    "rationale": "AI chat is presented as a human while first-interaction disclosure is disabled.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "art50_chat_disclosure_control",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [],
+    "file": "chat_disclosure.py",
+    "code": "def start_customer_chat(customer, ai_agent, ui):\n    ui.set_agent_name(\"Sarah\")\n    disclose_ai = True\n    if disclose_ai:\n        ui.show_notice(\"You are interacting with an AI assistant\")\n    ui.start_conversation(customer, ai_agent)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "art53_training_reservation_violation",
+    "article": "eu_ai_act_art53",
+    "expected_articles": [
+      "eu_ai_act_art53"
+    ],
+    "file": "training_reservation.py",
+    "code": "def ingest_foundation_model_training_page(page, copyright_policy, corpus):\n    copyright_reserved = page.machine_readable_tdm_reservation()\n    respect_reservation = False\n    if copyright_reserved and respect_reservation:\n        return\n    corpus.add_for_general_purpose_model_training(page.content)\n",
+    "rationale": "GPAI provider knowingly ignores an explicit machine-readable copyright reservation.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53"
+  },
+  {
+    "id": "art53_training_reservation_control",
+    "article": "eu_ai_act_art53",
+    "expected_articles": [],
+    "file": "training_reservation.py",
+    "code": "def ingest_foundation_model_training_page(page, copyright_policy, corpus):\n    copyright_reserved = page.machine_readable_tdm_reservation()\n    respect_reservation = True\n    if copyright_reserved and respect_reservation:\n        return\n    corpus.add_for_general_purpose_model_training(page.content)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53"
+  },
+  {
+    "id": "art55_systemic_evaluation_violation",
+    "article": "eu_ai_act_art55",
+    "expected_articles": [
+      "eu_ai_act_art55"
+    ],
+    "file": "systemic_evaluation.py",
+    "code": "def release_systemic_risk_general_purpose_model(model, evaluations, release):\n    run_adversarial_testing = False\n    if run_adversarial_testing:\n        evaluations.require_documented_red_team_pass(model)\n    release.publish(model)\n",
+    "rationale": "Systemic-risk GPAI provider explicitly disables adversarial evaluation before release.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-55"
+  },
+  {
+    "id": "art55_systemic_evaluation_control",
+    "article": "eu_ai_act_art55",
+    "expected_articles": [],
+    "file": "systemic_evaluation.py",
+    "code": "def release_systemic_risk_general_purpose_model(model, evaluations, release):\n    run_adversarial_testing = True\n    if run_adversarial_testing:\n        evaluations.require_documented_red_team_pass(model)\n    release.publish(model)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-55"
+  },
+  {
+    "id": "art59_sandbox_exit_violation",
+    "article": "eu_ai_act_art59",
+    "expected_articles": [
+      "eu_ai_act_art59"
+    ],
+    "file": "sandbox_exit.py",
+    "code": "def finish_ai_regulatory_sandbox(participation, reused_personal_data):\n    participation.close()\n    delete_personal_data = False\n    if delete_personal_data:\n        reused_personal_data.delete_all(participation.id)\n",
+    "rationale": "Reused personal data is explicitly retained after AI regulatory sandbox participation ends.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-59"
+  },
+  {
+    "id": "art59_sandbox_exit_control",
+    "article": "eu_ai_act_art59",
+    "expected_articles": [],
+    "file": "sandbox_exit.py",
+    "code": "def finish_ai_regulatory_sandbox(participation, reused_personal_data):\n    participation.close()\n    delete_personal_data = True\n    if delete_personal_data:\n        reused_personal_data.delete_all(participation.id)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-59"
+  },
+  {
+    "id": "art60_trial_withdrawal_violation",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [
+      "eu_ai_act_art60"
+    ],
+    "file": "trial_withdrawal.py",
+    "code": "def withdraw_and_request_erasure_from_hiring_ai_trial(subject, trial, collected_data):\n    trial.stop_testing_subject(subject)\n    delete_subject_data = False\n    if delete_subject_data:\n        collected_data.delete_all(subject.id)\n",
+    "rationale": "An explicit erasure request on withdrawal from real-world high-risk AI testing leaves collected personal data intact.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "art60_trial_withdrawal_control",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [],
+    "file": "trial_withdrawal.py",
+    "code": "def withdraw_and_request_erasure_from_hiring_ai_trial(subject, trial, collected_data):\n    trial.stop_testing_subject(subject)\n    delete_subject_data = True\n    if delete_subject_data:\n        collected_data.delete_all(subject.id)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "art61_trial_consent_violation",
+    "article": "eu_ai_act_art61",
+    "expected_articles": [
+      "eu_ai_act_art61"
+    ],
+    "file": "trial_consent.py",
+    "code": "def enroll_real_world_hiring_ai_test(subject, trial, consent_service):\n    consent_service.present_trial_information(subject, trial)\n    consent = consent_service.read_subject_response(subject, trial)\n    require_consent = False\n    if require_consent and not consent.signed_and_dated:\n        raise ValueError(\"No informed consent\")\n    consent_service.deliver_copy(subject, consent)\n    trial.enroll(subject)\n",
+    "rationale": "Enrollment proceeds even when informed consent has not been signed and dated.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-61"
+  },
+  {
+    "id": "art61_trial_consent_control",
+    "article": "eu_ai_act_art61",
+    "expected_articles": [],
+    "file": "trial_consent.py",
+    "code": "def enroll_real_world_hiring_ai_test(subject, trial, consent_service):\n    consent_service.present_trial_information(subject, trial)\n    consent = consent_service.read_subject_response(subject, trial)\n    require_consent = True\n    if require_consent and not consent.signed_and_dated:\n        raise ValueError(\"No informed consent\")\n    consent_service.deliver_copy(subject, consent)\n    trial.enroll(subject)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-61"
+  },
+  {
+    "id": "art71_registration_privacy_violation",
+    "article": "eu_ai_act_art71",
+    "expected_articles": [
+      "eu_ai_act_art71"
+    ],
+    "file": "registration_privacy.py",
+    "code": "def register_hiring_ai(provider, system, employee_records, eu_database):\n    registration_data = system.required_annex_viii_data(provider)\n    registration_data[\"employee_medical_records\"] = employee_records.all_medical_histories()\n    eu_database.submit(registration_data)\n",
+    "rationale": "Submits unnecessary employee medical histories to the EU AI registration database.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-71"
+  },
+  {
+    "id": "art71_registration_privacy_control",
+    "article": "eu_ai_act_art71",
+    "expected_articles": [],
+    "file": "registration_privacy.py",
+    "code": "def register_hiring_ai(provider, system, employee_records, eu_database):\n    registration_data = system.required_annex_viii_data(provider)\n    registration_data.pop(\"employee_medical_records\", None)\n    eu_database.submit(registration_data)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-71"
+  },
+  {
+    "id": "art72_post_market_violation",
+    "article": "eu_ai_act_art72",
+    "expected_articles": [
+      "eu_ai_act_art72"
+    ],
+    "file": "post_market.py",
+    "code": "class HiringAIProvider:\n    def configure_post_market_monitoring(self, monitoring, approved_plan):\n        monitoring.start(plan=approved_plan, collect_performance=False, analyze_performance=False)\n",
+    "rationale": "Provider explicitly disables both collection and analysis of post-market performance.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-72"
+  },
+  {
+    "id": "art72_post_market_control",
+    "article": "eu_ai_act_art72",
+    "expected_articles": [],
+    "file": "post_market.py",
+    "code": "class HiringAIProvider:\n    def configure_post_market_monitoring(self, monitoring, approved_plan):\n        monitoring.start(plan=approved_plan, collect_performance=True, analyze_performance=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-72"
+  },
+  {
+    "id": "art73_serious_incident_violation",
+    "article": "eu_ai_act_art73",
+    "expected_articles": [
+      "eu_ai_act_art73"
+    ],
+    "file": "serious_incident.py",
+    "code": "def report_credit_ai_serious_incident(provider, incident, authority):\n    incident.preserve_model_and_logs()\n    authority.schedule_report(provider, incident, delay_days=30)\n",
+    "rationale": "Provider delays all serious-incident reports by 30 days, exceeding the longest reporting limit.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-73"
+  },
+  {
+    "id": "art73_serious_incident_control",
+    "article": "eu_ai_act_art73",
+    "expected_articles": [],
+    "file": "serious_incident.py",
+    "code": "def report_credit_ai_serious_incident(provider, incident, authority):\n    incident.preserve_model_and_logs()\n    authority.report_immediately(provider, incident)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-73"
+  },
+  {
+    "id": "art74_authority_datasets_violation",
+    "article": "eu_ai_act_art74",
+    "expected_articles": [
+      "eu_ai_act_art74"
+    ],
+    "file": "authority_datasets.py",
+    "code": "def grant_market_surveillance_dataset_access(authority, hiring_ai, access):\n    authority.verify_reasoned_request()\n    access.serve(hiring_ai.training_validation_test_data,\n                 require_authentication=False, require_tls=False)\n",
+    "rationale": "Market-surveillance remote dataset access explicitly disables authentication and TLS.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-74"
+  },
+  {
+    "id": "art74_authority_datasets_control",
+    "article": "eu_ai_act_art74",
+    "expected_articles": [],
+    "file": "authority_datasets.py",
+    "code": "def grant_market_surveillance_dataset_access(authority, hiring_ai, access):\n    authority.verify_reasoned_request()\n    access.serve(hiring_ai.training_validation_test_data,\n                 require_authentication=True, require_tls=True)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-74"
+  },
+  {
+    "id": "art78_investigation_files_violation",
+    "article": "eu_ai_act_art78",
+    "expected_articles": [
+      "eu_ai_act_art78"
+    ],
+    "file": "investigation_files.py",
+    "code": "def store_ai_act_market_surveillance_evidence(case, obtained_provider_source, storage):\n    storage.put(case.id, obtained_provider_source, public_read=True)\n",
+    "rationale": "Source code obtained for AI Act market surveillance is explicitly published to everyone.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-78"
+  },
+  {
+    "id": "art78_investigation_files_control",
+    "article": "eu_ai_act_art78",
+    "expected_articles": [],
+    "file": "investigation_files.py",
+    "code": "def store_ai_act_market_surveillance_evidence(case, obtained_provider_source, storage):\n    storage.put(case.id, obtained_provider_source, public_read=False)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-78"
+  },
+  {
+    "id": "art86_explanation_request_violation",
+    "article": "eu_ai_act_art86",
+    "expected_articles": [
+      "eu_ai_act_art86"
+    ],
+    "file": "explanation_request.py",
+    "code": "def answer_rejected_loan_explanation_request(person, credit_ai_decision, explanations):\n    person.require_subject_of(credit_ai_decision)\n    return {\"explanation\": \"We never explain automated credit decisions\"}\n",
+    "rationale": "Explicitly refuses an affected person's explanation request for an adverse AI credit decision.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-86"
+  },
+  {
+    "id": "art86_explanation_request_control",
+    "article": "eu_ai_act_art86",
+    "expected_articles": [],
+    "file": "explanation_request.py",
+    "code": "def answer_rejected_loan_explanation_request(person, credit_ai_decision, explanations):\n    person.require_subject_of(credit_ai_decision)\n    return explanations.describe_ai_role_and_main_factors(credit_ai_decision, person)\n",
+    "rationale": "The relevant control is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-86"
+  }
+]

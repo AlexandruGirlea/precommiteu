@@ -1,0 +1,88 @@
+[
+  {
+    "id": "ts_minor_contextual",
+    "article": "dsa_art28",
+    "expected_articles": [],
+    "file": "ads.ts",
+    "code": "export function chooseAd(user, ads) {\n  if (user.isMinor) return ads.contextual();\n  return ads.behavioural(user.profile);\n}\n",
+    "rationale": "The minor branch avoids behavioural profiling.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ts_minor_profiled",
+    "article": "dsa_art28",
+    "expected_articles": [
+      "dsa_art28"
+    ],
+    "file": "ads.ts",
+    "code": "export function chooseAd(user, ads) {\n  if (user.isMinor) return ads.behavioural(user.profile);\n  return ads.behavioural(user.profile);\n}\n",
+    "rationale": "The minor branch explicitly serves profiling-based ads.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "long_appeal_window",
+    "article": "dsa_art20",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def online_platform_appeal_settings():\n    return {\"appeal_months\": 8, \"fee_euros\": 0, \"human_review\": True}\n",
+    "rationale": "The internal complaint window exceeds the six-month minimum and provides free human review.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "short_appeal_window",
+    "article": "dsa_art20",
+    "expected_articles": [
+      "dsa_art20"
+    ],
+    "file": "platform.py",
+    "code": "def online_platform_appeal_settings():\n    return {\"appeal_months\": 1, \"fee_euros\": 0, \"human_review\": True}\n",
+    "rationale": "A human-review safeguard does not cure an independently too-short appeal window.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "adult_nonprofiled_feed",
+    "article": "dsa_art38",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def designated_very_large_platform_recommenders(user, feeds):\n    return [feeds.recent_posts(use_personal_data=False), feeds.personalised(user)]\n",
+    "rationale": "A genuine non-profiled option exists.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "search_index_no_ads",
+    "article": "dsa_art39",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def public_library_catalog_index(books, search):\n    return search.index(books, retention_days=30)\n",
+    "rationale": "An ordinary library search index is not a very-large-platform advertising repository.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "notices_priority_variant",
+    "article": "dsa_art22",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def dispatch_hosting_notice(notice, worker):\n    priority = 0 if notice.from_designated_trusted_flagger else 10\n    worker.enqueue_lowest_number_first(notice, priority)\n",
+    "rationale": "The trusted flagger receives priority even though its numeric priority is lower.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ad_sensitive_targeting",
+    "article": "dsa_art26",
+    "expected_articles": [
+      "dsa_art26"
+    ],
+    "file": "platform.py",
+    "code": "def platform_ad_selection(user, ad_engine):\n    return ad_engine.target(religion=user.religion, sexual_orientation=user.sexual_orientation)\n",
+    "rationale": "Platforms must not present profiling-based advertising using special-category personal data.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "holdout"
+  }
+]

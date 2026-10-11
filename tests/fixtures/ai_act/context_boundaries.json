@@ -1,0 +1,56 @@
+[
+  {
+    "id": "trial_decisions_irreversible",
+    "article": "eu_ai_act_art60",
+    "expected_articles": ["eu_ai_act_art60"],
+    "file": "operations.py",
+    "code": "def real_world_triage_ai_test(trial):\n    trial.decisions.configure(reversible=False, disregard_allowed=False)\n    trial.run_in_real_world()\n",
+    "rationale": "Real-world high-risk AI testing explicitly prevents reversing or disregarding decisions; this duty is separate from requested erasure.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "trial_decisions_reversible",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [],
+    "file": "operations.py",
+    "code": "def real_world_triage_ai_test(trial):\n    trial.decisions.configure(reversible=True, disregard_allowed=True)\n    trial.run_in_real_world()\n",
+    "rationale": "The targeted reversal and disregard safeguards are enabled; an isolated excerpt does not establish that all other protections are missing.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "typescript_ce_internal_assessment",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [],
+    "file": "mark.ts",
+    "code": "export function digitalHighRiskCreditAiMark() {\n  return {ceMark: 'CE', machineReadable: true,\n    notifiedBodyInvolved: false, notifiedBodyId: null};\n}\n",
+    "rationale": "Machine-readable digital marking with explicitly no notified body does not require that body's number.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "typescript_ce_body_number_missing",
+    "article": "eu_ai_act_art48",
+    "expected_articles": ["eu_ai_act_art48"],
+    "file": "mark.ts",
+    "code": "export function digitalHighRiskCreditAiMark() {\n  return {ceMark: 'CE', machineReadable: true,\n    notifiedBodyInvolved: true, notifiedBodyId: null};\n}\n",
+    "rationale": "The notified body participated and its required identification number is missing.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "ordinary_preference_record",
+    "article": "eu_ai_act_art10",
+    "expected_articles": [],
+    "file": "preferences.js",
+    "code": "function savePreference(account, answer, preferences) {\n  preferences.save(account.id, {religion: answer.selfDeclaredFaith});\n}\n",
+    "rationale": "A self-reported preference record does not establish AI training or inference; other privacy law is outside this test.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-10"
+  },
+  {
+    "id": "triage_training_representativeness_disabled",
+    "article": "eu_ai_act_art10",
+    "expected_articles": ["eu_ai_act_art10"],
+    "file": "training.py",
+    "code": "def prepare_triage_model_training(dataset, provider):\n    dataset.configure(require_representative_samples=False)\n    provider.triage_model.train(dataset)\n",
+    "rationale": "Training a high-risk medical triage model explicitly bypasses dataset representativeness requirements.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-10"
+  }
+]

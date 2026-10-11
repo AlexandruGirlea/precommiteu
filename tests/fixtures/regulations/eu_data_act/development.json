@@ -1,0 +1,350 @@
+[
+  {
+    "id": "user_access_charge_violation",
+    "article": "eu_data_act_art4",
+    "expected_articles": [
+      "eu_data_act_art4"
+    ],
+    "file": "service.py",
+    "code": "def owner_requested_device_data(owner, device, billing):\n    billing.charge(owner, euros=50, reason=\"access to own product data\")\n    return device.export_json(owner)\n",
+    "rationale": "A holder-mediated request for the user's own connected-product data must be free to the user.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "user_access_charge_control",
+    "article": "eu_data_act_art4",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def owner_requested_device_data(owner, device, billing):\n    return device.export_json(owner, fee_euros=0)\n",
+    "rationale": "The visible control addresses the tested duty. A holder-mediated request for the user's own connected-product data must be free to the user.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "product_design_violation",
+    "article": "eu_data_act_art3",
+    "expected_articles": [
+      "eu_data_act_art3"
+    ],
+    "file": "service.py",
+    "code": "def configure_connected_sensor(sensor):\n    sensor.user_export.configure(enabled=False, format=\"json\")\n",
+    "rationale": "New connected-product design disables the user's data-access facility.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "product_design_control",
+    "article": "eu_data_act_art3",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def configure_connected_sensor(sensor):\n    sensor.user_export.configure(enabled=True, format=\"json\", include_metadata=True, fee_euros=0)\n",
+    "rationale": "The visible control addresses the tested duty. New connected-product design disables the user's data-access facility.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_share_violation",
+    "article": "eu_data_act_art5",
+    "expected_articles": [
+      "eu_data_act_art5"
+    ],
+    "file": "service.py",
+    "code": "def share_device_data_at_user_request(device, recipient, request):\n    request.verify_user_authorisation()\n    if recipient.designated_gatekeeper:\n        return recipient.receive(device.export_json())\n",
+    "rationale": "A designated DMA gatekeeper is ineligible to receive product data through this user-request sharing right.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "gatekeeper_share_control",
+    "article": "eu_data_act_art5",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def share_device_data_at_user_request(device, recipient, request):\n    request.verify_user_authorisation()\n    if recipient.designated_gatekeeper:\n        raise PermissionError(\"Recipient is ineligible\")\n    return recipient.receive(device.export_json())\n",
+    "rationale": "The visible control addresses the tested duty. A designated DMA gatekeeper is ineligible to receive product data through this user-request sharing right.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "recipient_purpose_violation",
+    "article": "eu_data_act_art6",
+    "expected_articles": [
+      "eu_data_act_art6"
+    ],
+    "file": "service.py",
+    "code": "def receive_user_shared_device_data(data, agreement, ads):\n    if agreement.purpose == \"maintenance_only\":\n        ads.build_advertising_profile(data)\n",
+    "rationale": "A recipient may not repurpose maintenance-only shared data for unrelated profiling.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "recipient_purpose_control",
+    "article": "eu_data_act_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def receive_user_shared_device_data(data, agreement, maintenance):\n    if agreement.purpose != \"maintenance_only\":\n        raise PermissionError(\"Unexpected purpose\")\n    maintenance.process(data)\n    maintenance.erase_when_no_longer_needed(data)\n",
+    "rationale": "The visible control addresses the tested duty. A recipient may not repurpose maintenance-only shared data for unrelated profiling.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "recipient_discrimination_violation",
+    "article": "eu_data_act_art8",
+    "expected_articles": [
+      "eu_data_act_art8"
+    ],
+    "file": "service.py",
+    "code": "def data_holder_export(recipient, data):\n    quality = \"full\" if recipient.is_own_subsidiary else \"degraded\"\n    return data.to_json(quality=quality)\n",
+    "rationale": "Comparable recipients must not receive discriminatory data quality because of affiliation.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "recipient_discrimination_control",
+    "article": "eu_data_act_art8",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def data_holder_export(recipient, data):\n    return data.to_json(quality=\"full\")\n",
+    "rationale": "The visible control addresses the tested duty. Comparable recipients must not receive discriminatory data quality because of affiliation.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "sme_compensation_violation",
+    "article": "eu_data_act_art9",
+    "expected_articles": [
+      "eu_data_act_art9"
+    ],
+    "file": "service.py",
+    "code": "def data_sharing_price(recipient, direct_cost):\n    if recipient.is_sme and not recipient.part_of_large_group:\n        return direct_cost + 500\n    return direct_cost + 500\n",
+    "rationale": "Qualifying SME data-sharing compensation cannot include a profit margin above the permitted cost basis.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "sme_compensation_control",
+    "article": "eu_data_act_art9",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def data_sharing_price(recipient, direct_cost):\n    if recipient.is_sme and not recipient.part_of_large_group:\n        return direct_cost\n    return direct_cost + 500\n",
+    "rationale": "The visible control addresses the tested duty. Qualifying SME data-sharing compensation cannot include a profit margin above the permitted cost basis.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "owner_drm_violation",
+    "article": "eu_data_act_art11",
+    "expected_articles": [
+      "eu_data_act_art11"
+    ],
+    "file": "service.py",
+    "code": "def export_product_data(owner, product, drm):\n    product.verify_owner(owner)\n    return drm.block_authorised_user_export(product.data)\n",
+    "rationale": "Technical protection must not prevent the access that an authorised user is entitled to exercise.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "owner_drm_control",
+    "article": "eu_data_act_art11",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def export_product_data(owner, product, drm):\n    product.verify_owner(owner)\n    return drm.authorise_user_export(owner, product.data)\n",
+    "rationale": "The visible control addresses the tested duty. Technical protection must not prevent the access that an authorised user is entitled to exercise.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "public_request_metadata_violation",
+    "article": "eu_data_act_art14",
+    "expected_articles": [
+      "eu_data_act_art14"
+    ],
+    "file": "service.py",
+    "code": "def fulfil_exceptional_need(authority_request, dataset):\n    authority_request.validate_exceptional_need()\n    return dataset.export_json(include_interpretative_metadata=False)\n",
+    "rationale": "An exceptional-need data delivery must retain metadata needed to interpret and use it.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "public_request_metadata_control",
+    "article": "eu_data_act_art14",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def fulfil_exceptional_need(authority_request, dataset):\n    authority_request.validate_exceptional_need()\n    return dataset.export_json(include_interpretative_metadata=True)\n",
+    "rationale": "The visible control addresses the tested duty. An exceptional-need data delivery must retain metadata needed to interpret and use it.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "public_body_erasure_violation",
+    "article": "eu_data_act_art19",
+    "expected_articles": [
+      "eu_data_act_art19"
+    ],
+    "file": "service.py",
+    "code": "def close_public_emergency_data_task(task, received_dataset, holder):\n    task.mark_purpose_fulfilled()\n    received_dataset.set_retention(expires_at=None)\n    holder.notify_task_closed(task.id)\n",
+    "rationale": "A public body must erase exceptional-need data once no longer needed and inform the holder.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "public_body_erasure_control",
+    "article": "eu_data_act_art19",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def close_public_emergency_data_task(task, received_dataset, holder):\n    task.mark_purpose_fulfilled()\n    received_dataset.erase()\n    holder.notify_erasure(task.id)\n",
+    "rationale": "The visible control addresses the tested duty. A public body must erase exceptional-need data once no longer needed and inform the holder.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "switch_notice_violation",
+    "article": "eu_data_act_art25",
+    "expected_articles": [
+      "eu_data_act_art25"
+    ],
+    "file": "service.py",
+    "code": "def cloud_switching_contract():\n    return {\"notice_months\": 6, \"transition_days\": 30, \"retrieval_days\": 30}\n",
+    "rationale": "The contractual notice period for initiating switching must not exceed two months.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "switch_notice_control",
+    "article": "eu_data_act_art25",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def cloud_switching_contract():\n    return {\"notice_months\": 1, \"transition_days\": 30, \"retrieval_days\": 30}\n",
+    "rationale": "The visible control addresses the tested duty. The contractual notice period for initiating switching must not exceed two months.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "switch_fees_violation",
+    "article": "eu_data_act_art29",
+    "expected_articles": [
+      "eu_data_act_art29"
+    ],
+    "file": "service.py",
+    "code": "from datetime import date\ndef cloud_switching_charge(day, direct_cost):\n    return direct_cost + 100 if day >= date(2027, 1, 12) else direct_cost\n",
+    "rationale": "Switching charges are abolished from 12 January 2027; the date is explicit in this code.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "switch_fees_control",
+    "article": "eu_data_act_art29",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "from datetime import date\ndef cloud_switching_charge(day, direct_cost):\n    return 0 if day >= date(2027, 1, 12) else direct_cost\n",
+    "rationale": "The visible control addresses the tested duty. Switching charges are abolished from 12 January 2027; the date is explicit in this code.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "cloud_export_violation",
+    "article": "eu_data_act_art30",
+    "expected_articles": [
+      "eu_data_act_art30"
+    ],
+    "file": "service.py",
+    "code": "def switch_cloud_provider(tenant, cloud):\n    return cloud.export_all_customer_data(tenant, format=\"undocumented_proprietary_binary\", open_interface=False)\n",
+    "rationale": "Cloud switching must support the applicable open-interface and structured-export requirements.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "cloud_export_control",
+    "article": "eu_data_act_art30",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def switch_cloud_provider(tenant, cloud):\n    return cloud.export_all_customer_data(tenant, format=\"json\", open_interface=True, include_schema=True)\n",
+    "rationale": "The visible control addresses the tested duty. Cloud switching must support the applicable open-interface and structured-export requirements.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "parallel_egress_violation",
+    "article": "eu_data_act_art34",
+    "expected_articles": [
+      "eu_data_act_art34"
+    ],
+    "file": "service.py",
+    "code": "def parallel_cloud_egress_fee(bytes_sent, incurred_cost):\n    return incurred_cost * 4\n",
+    "rationale": "In-parallel data-processing-service egress charges may not exceed incurred costs.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "parallel_egress_control",
+    "article": "eu_data_act_art34",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def parallel_cloud_egress_fee(bytes_sent, incurred_cost):\n    return incurred_cost\n",
+    "rationale": "The visible control addresses the tested duty. In-parallel data-processing-service egress charges may not exceed incurred costs.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "smart_contract_stop_violation",
+    "article": "eu_data_act_art36",
+    "expected_articles": [
+      "eu_data_act_art36"
+    ],
+    "file": "agreement.sol",
+    "code": "contract DataSharingAgreement {\n    bool public terminated;\n    address public owner;\n    function terminate() external { require(msg.sender == owner); terminated = true; }\n    function share(bytes calldata payload) external { emit Shared(payload); }\n    event Shared(bytes payload);\n}\n",
+    "rationale": "A data-sharing smart contract needs effective access control and safe interruption.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "smart_contract_stop_control",
+    "article": "eu_data_act_art36",
+    "expected_articles": [],
+    "file": "agreement.sol",
+    "code": "contract DataSharingAgreement {\n    bool public terminated;\n    address public owner;\n    function terminate() external { require(msg.sender == owner); terminated = true; }\n    function share(bytes calldata payload) external {\n        require(msg.sender == owner); require(!terminated); emit Shared(payload);\n    }\n    event Shared(bytes payload);\n}\n",
+    "rationale": "The visible control addresses the tested duty. A data-sharing smart contract needs effective access control and safe interruption.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "ordinary_store_export",
+    "article": "eu_data_act_art30",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def export_grocery_stock(inventory):\n    return inventory.to_pdf()\n",
+    "rationale": "Ordinary inventory reporting is not cloud switching or connected-product data access.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "ordinary_contract",
+    "article": "eu_data_act_art25",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def gym_membership_contract():\n    return {\"notice_months\": 6, \"membership_fee\": 30}\n",
+    "rationale": "A gym subscription is not a data-processing-service switching contract.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "schema_only",
+    "article": "eu_data_act_art4",
+    "expected_articles": [],
+    "file": "types.ts",
+    "code": "interface DeviceReadout { temperature: number; timestamp: string; }\n",
+    "rationale": "A type declaration alone establishes no denied or degraded user access.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  },
+  {
+    "id": "export_helper",
+    "article": "eu_data_act_art30",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def switch_cloud_provider(tenant, migration):\n    return migration.export_with_open_standard(tenant)\n",
+    "rationale": "A helper call does not prove that required schema or metadata is missing.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "development"
+  }
+]

@@ -14,8 +14,9 @@ from precommiteu.scan import _translate_kept_findings
 from precommiteu.src.chunk_view import CanonicalChunk, ChunkConsultLog
 
 
-def _model(evidence, article_no="eu_ai_act_art5"):
+def _model(evidence, article_no="eu_ai_act_art5", *, ai_act=True):
     payload = {
+        "code_facts": "Source observations for this test.",
         "findings": [
             {
                 "article_no": article_no,
@@ -24,7 +25,25 @@ def _model(evidence, article_no="eu_ai_act_art5"):
             }
         ]
     }
-    return Mock(invoke=Mock(return_value=SimpleNamespace(content=json.dumps(payload))))
+    if not ai_act:
+        payload.pop("code_facts")
+    response = SimpleNamespace(content=json.dumps(payload))
+
+    def invoke(messages, **kwargs):
+        if "<cited_operation>" in messages[-1]["content"]:
+            return _check_response(article_no)
+        return response
+
+    return Mock(invoke=Mock(return_value=response, side_effect=invoke))
+
+
+def _check_response(article_no):
+    article = validator_call._normalize_validator_article_id(article_no, "eu_ai_act")
+    return SimpleNamespace(content=json.dumps({"article_no": article}))
+
+
+def _scope_check_responses(article_no):
+    return [_check_response(article_no)] if article_no.endswith("78") else []
 
 
 def _validate(code, model, **kwargs):
@@ -52,9 +71,9 @@ def test_line_selection_copies_exact_code_and_preserves_source_locations():
     kept = _validate(diff, model)
 
     assert kept[0]["code_evidence"] == expected
-    messages = model.invoke.call_args.args[0]
+    messages = model.invoke.call_args_list[0].args[0]
     assert "+    employeeEmotion = model.infer(employeeWebcamFrame);" in messages[1]["content"]
-    grammar = model.invoke.call_args.kwargs["grammar"]
+    grammar = model.invoke.call_args_list[0].kwargs["grammar"]
     assert json.dumps(json.dumps(expected)) in grammar
     chunk = CanonicalChunk("part", "CrmSyncJob.java", 40, 43, code)
     consulted = ChunkConsultLog()
@@ -73,7 +92,7 @@ def test_line_selection_copies_exact_code_and_preserves_source_locations():
     assert findings[0].probable_article_id == "eu_ai_act_art5"
     assert findings[0].code_evidence == expected.strip()
     assert (findings[0].start_line, findings[0].end_line) == (41, 41)
-    assert model.invoke.call_count == 1
+    assert model.invoke.call_count == 2
 
 
 @pytest.mark.parametrize(
@@ -89,6 +108,7 @@ def test_scoped_article_requires_independently_established_activity(
     model = _model(code, article_no)
     model.invoke.side_effect = [
         model.invoke.return_value,
+        *_scope_check_responses(article_no),
         SimpleNamespace(content=json.dumps({"activity": activity})),
     ]
 
@@ -104,7 +124,7 @@ def test_scoped_article_requires_independently_established_activity(
 )
 def test_activity_check_does_not_change_other_adapters(regulation, article_no):
     code = "publish(document);"
-    model = _model(code, article_no)
+    model = _model(code, article_no, ai_act=regulation == "cra_dma_nis2")
     expected = json.loads(model.invoke.return_value.content)["findings"]
     pack = get_regulation_pack(regulation)
 
@@ -122,6 +142,7 @@ def test_activity_check_does_not_change_other_adapters(regulation, article_no):
     assert model.invoke.call_args.kwargs["timeout_s"] == 9.0
     assert model.invoke.call_args.args[0][0]["content"] == (
         pack.validator_system + "\n" + validator_call._EVIDENCE_INSTRUCTIONS
+        + (validator_call.FACTS_INSTRUCTIONS if regulation == "cra_dma_nis2" else "")
     )
 
 
@@ -134,6 +155,8 @@ def test_rejecting_scoped_article_preserves_other_findings_in_the_same_chunk(art
     payload["findings"].append(other_finding)
     model.invoke.side_effect = [
         SimpleNamespace(content=json.dumps(payload)),
+        *_scope_check_responses(article_no),
+        _check_response("eu_ai_act_art5"),
         SimpleNamespace(content='{"activity":"ordinary_activity"}'),
     ]
 
@@ -145,7 +168,10 @@ def test_rejecting_scoped_article_preserves_other_findings_in_the_same_chunk(art
 def test_invalid_activity_response_fails_the_validation(response, article_no):
     code = "publish(document);"
     model = _model(code, article_no)
-    model.invoke.side_effect = [model.invoke.return_value, SimpleNamespace(content=response)]
+    model.invoke.side_effect = [
+        model.invoke.return_value, *_scope_check_responses(article_no),
+        SimpleNamespace(content=response),
+    ]
 
     with pytest.raises(ValueError, match="invalid findings or source evidence"):
         _validate(code, model)
@@ -153,12 +179,13 @@ def test_invalid_activity_response_fails_the_validation(response, article_no):
 
 @pytest.mark.parametrize("article_no", ["eu_ai_act_art78", "eu_ai_act_art59"])
 def test_activity_check_uses_remaining_time_budget(monkeypatch, article_no):
-    ticks = iter([100.0, 103.0])
+    ticks = iter([100.0, 102.0, 103.0] if article_no.endswith("78") else [100.0, 103.0])
     monkeypatch.setattr(validator_call.time, "monotonic", lambda: next(ticks))
     code = "publish(document);"
     model = _model(code, article_no)
     model.invoke.side_effect = [
         model.invoke.return_value,
+        *_scope_check_responses(article_no),
         SimpleNamespace(content='{"activity":"ai_act_duties"}'),
     ]
 
@@ -189,7 +216,7 @@ def test_activity_check_cannot_start_after_budget_expires(monkeypatch, article_n
 def test_mixed_scopes_are_checked_independently_with_one_budget(
     monkeypatch, activities, expected_articles
 ):
-    ticks = iter([100.0, 103.0, 105.0])
+    ticks = iter([100.0, 101.0, 102.0, 103.0, 105.0])
     monkeypatch.setattr(validator_call.time, "monotonic", lambda: next(ticks))
     code = "publish(document);"
     model = _model(code)
@@ -199,7 +226,11 @@ def test_mixed_scopes_are_checked_independently_with_one_budget(
         for article in ("eu_ai_act_art5", "eu_ai_act_art78", "eu_ai_act_art59")
     ]
     model.invoke.side_effect = [
-        SimpleNamespace(content=json.dumps({"findings": findings})),
+        SimpleNamespace(content=json.dumps({
+            "code_facts": "Observed operations", "findings": findings,
+        })),
+        _check_response("eu_ai_act_art5"),
+        _check_response("eu_ai_act_art78"),
         *(SimpleNamespace(content=json.dumps({"activity": a})) for a in activities),
     ]
 
@@ -207,9 +238,9 @@ def test_mixed_scopes_are_checked_independently_with_one_budget(
 
     assert [f["article_no"] for f in kept] == expected_articles
     calls = model.invoke.call_args_list
-    assert [call.kwargs["timeout_s"] for call in calls] == [10.0, 7.0, 5.0]
-    assert calls[1].args[0][0]["content"] == validator_call._ARTICLE78_ACTIVITY
-    assert calls[2].args[0][0]["content"] == validator_call._ARTICLE59_ACTIVITY
+    assert [call.kwargs["timeout_s"] for call in calls] == [10.0, 9.0, 8.0, 7.0, 5.0]
+    assert calls[3].args[0][0]["content"] == validator_call._ARTICLE78_ACTIVITY
+    assert calls[4].args[0][0]["content"] == validator_call._ARTICLE59_ACTIVITY
 
 
 @pytest.mark.parametrize(
@@ -260,7 +291,9 @@ def test_line_selection_cannot_cite_code_hidden_by_the_token_budget(monkeypatch)
 
 
 def test_validator_can_reject_candidates_without_selecting_evidence():
-    model = Mock(invoke=Mock(return_value=SimpleNamespace(content='{"findings":[]}')))
+    model = Mock(invoke=Mock(return_value=SimpleNamespace(
+        content='{"code_facts":"An ordinary contact export.","findings":[]}',
+    )))
     assert _validate("exportContacts();", model) == []
 
 

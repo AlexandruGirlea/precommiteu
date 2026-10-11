@@ -1,0 +1,88 @@
+[
+  {
+    "id": "ts_bank_mfa_on",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "bank.ts",
+    "code": "export function openBankAdminSession(user, security) {\n  return security.authenticate(user, {requireSecondFactor: true});\n}\n",
+    "rationale": "The privileged financial-service login requires a second factor.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ts_bank_mfa_off",
+    "article": "dora_art9",
+    "expected_articles": [
+      "dora_art9"
+    ],
+    "file": "bank.ts",
+    "code": "export function openBankAdminSession(user, security) {\n  return security.authenticate(user, {requireSecondFactor: false, passwordOnly: true});\n}\n",
+    "rationale": "The financial privileged-login path explicitly uses only a password.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ci_test_gate",
+    "article": "dora_art25",
+    "expected_articles": [],
+    "file": "pipeline.yml",
+    "code": "name: banking-payment-release\njobs:\n  deploy:\n    steps:\n      - run: scan_payment_dependencies\n        continue-on-error: false\n      - run: deploy_bank_payments\n",
+    "rationale": "Failed security tests block the deployment.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ci_test_bypass",
+    "article": "dora_art25",
+    "expected_articles": [
+      "dora_art25"
+    ],
+    "file": "pipeline.yml",
+    "code": "name: banking-payment-release\njobs:\n  deploy:\n    steps:\n      - run: scan_payment_dependencies\n        continue-on-error: true\n      - run: deploy_bank_payments\n",
+    "rationale": "Deployment continues after failed vulnerability testing.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "fake_backup_exception",
+    "article": "dora_art12",
+    "expected_articles": [
+      "dora_art12"
+    ],
+    "file": "banking.py",
+    "code": "def backup_bank_accounts(db, backup):\n    secure = False\n    if secure:\n        backup.encrypt(db.accounts)\n    else:\n        backup.publish_publicly(db.accounts)\n",
+    "rationale": "A safeguard name does not negate a false guard and public backup output.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "threat_redaction",
+    "article": "dora_art45",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def share_financial_threats(event, community, redact):\n    safe_indicator = redact.personal_and_confidential_fields(event)\n    community.send_authenticated(safe_indicator, require_membership=True)\n",
+    "rationale": "The protected threat-sharing path removes confidential data before transmission.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "public_exchange_rate",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def fetch_reference_fx_rates(session):\n    return session.get(\"https://public-rates.example/latest\", verify=True).json()\n",
+    "rationale": "No weakened financial runtime security control is shown.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "minor_incident_routing",
+    "article": "dora_art19",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_incident_reporting(incident, regulator):\n    incident.record_and_classify()\n    if incident.classification == \"major\":\n        regulator.submit(incident.complete_template())\n",
+    "rationale": "The authority report is correctly conditional on a major incident.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "holdout"
+  }
+]

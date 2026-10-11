@@ -1,0 +1,350 @@
+[
+  {
+    "id": "gateway_tls_violation",
+    "article": "dora_art9",
+    "expected_articles": [
+      "dora_art9"
+    ],
+    "file": "banking.py",
+    "code": "def settle_customer_payment(payment, bank_gateway):\n    return bank_gateway.post(payment, verify=False)\n",
+    "rationale": "The financial gateway disables TLS certificate authentication.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "gateway_tls_control",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def settle_customer_payment(payment, bank_gateway):\n    return bank_gateway.post(payment, verify=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The financial gateway disables TLS certificate authentication.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "privileged_auth_violation",
+    "article": "dora_art9",
+    "expected_articles": [
+      "dora_art9"
+    ],
+    "file": "banking.py",
+    "code": "def bank_admin_login(user, auth):\n    return auth.privileged_session(user, password_only=True, mfa_enabled=False)\n",
+    "rationale": "Privileged access to banking infrastructure explicitly disables strong authentication.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "privileged_auth_control",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_admin_login(user, auth):\n    return auth.privileged_session(user, password_only=False, mfa_enabled=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Privileged access to banking infrastructure explicitly disables strong authentication.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "security_detection_violation",
+    "article": "dora_art10",
+    "expected_articles": [
+      "dora_art10"
+    ],
+    "file": "banking.py",
+    "code": "def bank_security_monitor(monitor):\n    monitor.configure(anomaly_detection=True, alerts_enabled=False)\n",
+    "rationale": "Detection mechanisms must surface anomalies and alert the responsible staff.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "security_detection_control",
+    "article": "dora_art10",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_security_monitor(monitor):\n    monitor.configure(anomaly_detection=True, alerts_enabled=True, on_alert=\"incident_response\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Detection mechanisms must surface anomalies and alert the responsible staff.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "failover_violation",
+    "article": "dora_art11",
+    "expected_articles": [
+      "dora_art11"
+    ],
+    "file": "banking.py",
+    "code": "def bank_payment_outage(primary, secondary, payment):\n    try:\n        return primary.process(payment)\n    except ConnectionError:\n        raise RuntimeError(\"Secondary payment service intentionally disabled\")\n",
+    "rationale": "The live financial service explicitly disables its available recovery path.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "failover_control",
+    "article": "dora_art11",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_payment_outage(primary, secondary, payment):\n    try:\n        return primary.process(payment)\n    except ConnectionError:\n        return secondary.process(payment)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The live financial service explicitly disables its available recovery path.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "backup_isolation_violation",
+    "article": "dora_art12",
+    "expected_articles": [
+      "dora_art12"
+    ],
+    "file": "banking.py",
+    "code": "def restore_bank_accounts(backup, production):\n    return backup.restore(target=production, isolated=False, integrity_check=False)\n",
+    "rationale": "Recovery from backup requires appropriate isolation and integrity safeguards.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "backup_isolation_control",
+    "article": "dora_art12",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def restore_bank_accounts(backup, recovery_environment):\n    return backup.restore(target=recovery_environment, isolated=True, integrity_check=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Recovery from backup requires appropriate isolation and integrity safeguards.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "backup_encryption_violation",
+    "article": "dora_art12",
+    "expected_articles": [
+      "dora_art12"
+    ],
+    "file": "banking.py",
+    "code": "def bank_account_backup(accounts, backup_store):\n    backup_store.write(accounts, encrypted=False, access=\"public\")\n",
+    "rationale": "Account backups must be protected against unauthorised access.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "backup_encryption_control",
+    "article": "dora_art12",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_account_backup(accounts, backup_store):\n    backup_store.write(accounts, encrypted=True, access=\"backup_operators\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Account backups must be protected against unauthorised access.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "client_communication_violation",
+    "article": "dora_art14",
+    "expected_articles": [
+      "dora_art14"
+    ],
+    "file": "banking.py",
+    "code": "def bank_major_incident(incident, communications):\n    if incident.customer_financial_interests_affected:\n        communications.notify_clients(incident, enabled=False)\n",
+    "rationale": "The communication path to affected clients is explicitly disabled.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "client_communication_control",
+    "article": "dora_art14",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_major_incident(incident, communications):\n    if incident.customer_financial_interests_affected:\n        communications.notify_clients(incident, enabled=True, include_mitigation=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The communication path to affected clients is explicitly disabled.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "incident_lifecycle_violation",
+    "article": "dora_art17",
+    "expected_articles": [
+      "dora_art17"
+    ],
+    "file": "banking.py",
+    "code": "def record_bank_incident(incident, incident_register):\n    incident_register.configure(persist_incidents=False, track_root_cause=False)\n    incident_register.accept(incident)\n",
+    "rationale": "Detected ICT incidents require a recorded management and follow-up process.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "incident_lifecycle_control",
+    "article": "dora_art17",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def record_bank_incident(incident, incident_register):\n    incident_register.configure(persist_incidents=True, track_root_cause=True)\n    incident_register.accept(incident)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Detected ICT incidents require a recorded management and follow-up process.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "incident_classification_violation",
+    "article": "dora_art18",
+    "expected_articles": [
+      "dora_art18"
+    ],
+    "file": "banking.py",
+    "code": "def classify_bank_incident(incident, classifier):\n    return classifier.classify(affected_clients=0, downtime_seconds=0, transaction_value=0, severity=\"minor\")\n",
+    "rationale": "Classification must reflect actual impact rather than fabricated zero values.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "incident_classification_control",
+    "article": "dora_art18",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def classify_bank_incident(incident, classifier):\n    return classifier.classify(affected_clients=incident.affected_clients, downtime_seconds=incident.downtime_seconds, transaction_value=incident.transaction_value, geography=incident.geography, data_loss=incident.data_loss)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Classification must reflect actual impact rather than fabricated zero values.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "authority_notification_violation",
+    "article": "dora_art19",
+    "expected_articles": [
+      "dora_art19"
+    ],
+    "file": "banking.py",
+    "code": "def report_major_bank_incident(incident, competent_authority):\n    if incident.classification == \"major\":\n        competent_authority.submit(incident.complete_template(), enabled=False)\n",
+    "rationale": "Major ICT-related incidents must be reported to the competent authority.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "authority_notification_control",
+    "article": "dora_art19",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def report_major_bank_incident(incident, competent_authority):\n    if incident.classification == \"major\":\n        competent_authority.submit(incident.complete_template(), enabled=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Major ICT-related incidents must be reported to the competent authority.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "release_security_tests_violation",
+    "article": "dora_art25",
+    "expected_articles": [
+      "dora_art25"
+    ],
+    "file": "bank_release.py",
+    "code": "def deploy_bank_payment_service(build, pipeline):\n    pipeline.vulnerability_scan(build, allow_failure=True)\n    pipeline.deploy(build)\n",
+    "rationale": "Security and resilience testing must not be bypassed for the release.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "release_security_tests_control",
+    "article": "dora_art25",
+    "expected_articles": [],
+    "file": "bank_release.py",
+    "code": "def deploy_bank_payment_service(build, pipeline):\n    pipeline.vulnerability_scan(build, allow_failure=False)\n    pipeline.deploy(build)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Security and resilience testing must not be bypassed for the release.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "provider_exit_violation",
+    "article": "dora_art28",
+    "expected_articles": [
+      "dora_art28"
+    ],
+    "file": "banking.py",
+    "code": "def onboard_bank_cloud_provider(vendor, outsourcing):\n    outsourcing.register(vendor, critical_function=\"payments\", exit_strategy=None)\n",
+    "rationale": "Critical third-party dependency management includes a viable exit strategy.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "provider_exit_control",
+    "article": "dora_art28",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def onboard_bank_cloud_provider(vendor, outsourcing):\n    outsourcing.register(vendor, critical_function=\"payments\", exit_strategy=vendor.tested_export_and_transition_plan())\n",
+    "rationale": "The visible safeguard addresses the tested defect. Critical third-party dependency management includes a viable exit strategy.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "contract_return_violation",
+    "article": "dora_art30",
+    "expected_articles": [
+      "dora_art30"
+    ],
+    "file": "banking.py",
+    "code": "def terminate_bank_cloud_contract(bank, storage):\n    return storage.return_client_data(bank, export_enabled=False)\n",
+    "rationale": "The ICT service arrangement must support accessible return of client data on termination.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "contract_return_control",
+    "article": "dora_art30",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def terminate_bank_cloud_contract(bank, storage):\n    return storage.return_client_data(bank, export_enabled=True, format=\"json\", verify_complete=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The ICT service arrangement must support accessible return of client data on termination.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "threat_sharing_violation",
+    "article": "dora_art45",
+    "expected_articles": [
+      "dora_art45"
+    ],
+    "file": "banking.py",
+    "code": "def share_bank_threat_indicator(ioc, customer, trusted_community):\n    trusted_community.publish({\"ioc\": ioc, \"account_number\": customer.account_number, \"access_token\": customer.access_token})\n",
+    "rationale": "Threat-information sharing must protect personal and confidential information.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "threat_sharing_control",
+    "article": "dora_art45",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def share_bank_threat_indicator(ioc, customer, trusted_community):\n    trusted_community.publish({\"ioc\": ioc}, authenticated=True, encrypted=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Threat-information sharing must protect personal and confidential information.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "nonfinancial_weather",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def publish_weather_station_reading(reading, public_mirror):\n    public_mirror.post(\"http://weather.example/readings\", json={\"temperature\": reading.temperature})\n",
+    "rationale": "A public weather-data publisher establishes no financial-entity activity or confidentiality defect.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "guard_checks_value",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_customer_api(client, customer):\n    tls_verify = True\n    return client.send(customer, verify=tls_verify)\n",
+    "rationale": "The literal value keeps verification enabled despite the presence of a security keyword.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "library_helper",
+    "article": "dora_art9",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def bank_customer_api(client, customer):\n    return client.secure_send(customer)\n",
+    "rationale": "The unshown helper cannot establish a disabled runtime protection.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  },
+  {
+    "id": "marketing_microenterprise",
+    "article": "dora_art16",
+    "expected_articles": [],
+    "file": "banking.py",
+    "code": "def small_bookshop_monitor(monitor):\n    microenterprise = True\n    monitor.set_health_check_interval(minutes=5)\n",
+    "rationale": "A small nonfinancial business is not brought into DORA merely by a microenterprise label.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+    "split": "development"
+  }
+]

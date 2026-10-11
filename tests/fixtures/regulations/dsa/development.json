@@ -1,0 +1,350 @@
+[
+  {
+    "id": "contact_human_violation",
+    "article": "dsa_art12",
+    "expected_articles": [
+      "dsa_art12"
+    ],
+    "file": "platform.py",
+    "code": "def user_contact_options():\n    return {\"chatbot\": True, \"human_contact\": False, \"email\": None}\n",
+    "rationale": "Service recipients must have an accessible contact mechanism that does not rely solely on automated tools.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "contact_human_control",
+    "article": "dsa_art12",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def user_contact_options():\n    return {\"chatbot\": True, \"human_contact\": True, \"email\": \"support@platform.example\"}\n",
+    "rationale": "The visible safeguard addresses the tested defect. Service recipients must have an accessible contact mechanism that does not rely solely on automated tools.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "terms_update_violation",
+    "article": "dsa_art14",
+    "expected_articles": [
+      "dsa_art14"
+    ],
+    "file": "platform.py",
+    "code": "def publish_new_platform_terms(terms, users, publisher):\n    publisher.publish(terms)\n    users.notify_terms_change(terms, enabled=False)\n",
+    "rationale": "Users must be informed of significant terms changes.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "terms_update_control",
+    "article": "dsa_art14",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def publish_new_platform_terms(terms, users, publisher):\n    publisher.publish(terms)\n    users.notify_terms_change(terms, enabled=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Users must be informed of significant terms changes.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "notice_intake_violation",
+    "article": "dsa_art16",
+    "expected_articles": [
+      "dsa_art16"
+    ],
+    "file": "platform.py",
+    "code": "def illegal_content_notice(form, notices):\n    return notices.accept(url=form.url, explanation=None, good_faith=None, email=form.email)\n",
+    "rationale": "Illegal-content notice mechanisms must permit sufficiently substantiated notices and the required statement.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "notice_intake_control",
+    "article": "dsa_art16",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def illegal_content_notice(form, notices):\n    form.require(\"url\", \"explanation\", \"good_faith\", \"email\")\n    return notices.accept(url=form.url, explanation=form.explanation, good_faith=form.good_faith, email=form.email)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Illegal-content notice mechanisms must permit sufficiently substantiated notices and the required statement.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "decision_reasons_violation",
+    "article": "dsa_art17",
+    "expected_articles": [
+      "dsa_art17"
+    ],
+    "file": "platform.py",
+    "code": "def remove_platform_post(post, moderator, notifications):\n    moderator.remove(post)\n    notifications.send_decision(post.author, reasons=None, redress_url=None)\n",
+    "rationale": "A moderation restriction requires a clear statement of reasons and redress information.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "decision_reasons_control",
+    "article": "dsa_art17",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def remove_platform_post(post, moderator, notifications):\n    moderator.remove(post)\n    notifications.send_decision(post.author, reasons=moderator.full_reasons(post), redress_url=\"/appeal\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. A moderation restriction requires a clear statement of reasons and redress information.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "life_threat_report_violation",
+    "article": "dsa_art18",
+    "expected_articles": [
+      "dsa_art18"
+    ],
+    "file": "platform.py",
+    "code": "def hosting_life_threat_report(credible_threat, police):\n    if credible_threat.criminal_offence_threatening_life:\n        police.notify(credible_threat, enabled=False)\n",
+    "rationale": "Credible suspicions of criminal offences threatening life or safety require prompt notification.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "life_threat_report_control",
+    "article": "dsa_art18",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def hosting_life_threat_report(credible_threat, police):\n    if credible_threat.criminal_offence_threatening_life:\n        police.notify(credible_threat, enabled=True, member_state=credible_threat.location)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Credible suspicions of criminal offences threatening life or safety require prompt notification.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "appeal_automation_violation",
+    "article": "dsa_art20",
+    "expected_articles": [
+      "dsa_art20"
+    ],
+    "file": "platform.py",
+    "code": "def decide_content_appeal(complaint, classifier, review):\n    result = classifier.predict(complaint)\n    return review.final_decision(result, human_review=False)\n",
+    "rationale": "Internal complaint decisions must not rely solely on automated means.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "appeal_automation_control",
+    "article": "dsa_art20",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def decide_content_appeal(complaint, classifier, review):\n    result = classifier.predict(complaint)\n    return review.human_queue(complaint, recommendation=result, can_override=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Internal complaint decisions must not rely solely on automated means.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "appeal_fee_violation",
+    "article": "dsa_art20",
+    "expected_articles": [
+      "dsa_art20"
+    ],
+    "file": "platform.py",
+    "code": "def platform_content_appeal(user, complaint, billing, appeal_queue):\n    billing.charge(user, euros=20)\n    return appeal_queue.accept(complaint)\n",
+    "rationale": "Internal complaint access must be free of charge.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "appeal_fee_control",
+    "article": "dsa_art20",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def platform_content_appeal(user, complaint, billing, appeal_queue):\n    return appeal_queue.accept(complaint, fee=0)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Internal complaint access must be free of charge.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "trusted_priority_violation",
+    "article": "dsa_art22",
+    "expected_articles": [
+      "dsa_art22"
+    ],
+    "file": "platform.py",
+    "code": "def queue_platform_notice(notice, queue):\n    if notice.trusted_flagger:\n        queue.enqueue(notice, priority=\"lowest\")\n",
+    "rationale": "Notices from designated trusted flaggers must be prioritised.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "trusted_priority_control",
+    "article": "dsa_art22",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def queue_platform_notice(notice, queue):\n    queue.enqueue(notice, priority=\"high\" if notice.trusted_flagger else \"normal\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Notices from designated trusted flaggers must be prioritised.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "misuse_warning_violation",
+    "article": "dsa_art23",
+    "expected_articles": [
+      "dsa_art23"
+    ],
+    "file": "platform.py",
+    "code": "def suspend_frequent_manifestly_unfounded_notices(user, enforcement):\n    enforcement.suspend_notice_processing(user, prior_warning=False, duration_days=14)\n",
+    "rationale": "Misuse suspensions require a prior warning and a reasonable period.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "misuse_warning_control",
+    "article": "dsa_art23",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def suspend_frequent_manifestly_unfounded_notices(user, enforcement):\n    enforcement.warn(user)\n    enforcement.suspend_notice_processing(user, prior_warning=True, duration_days=14)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Misuse suspensions require a prior warning and a reasonable period.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "ad_disclosure_violation",
+    "article": "dsa_art26",
+    "expected_articles": [
+      "dsa_art26"
+    ],
+    "file": "platform.py",
+    "code": "def render_platform_ad(ad, ui):\n    return ui.ad(ad.creative, advertisement_label=None, sponsor=None, payer=None)\n",
+    "rationale": "Recipients must be able to identify advertisements and who is behind them.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "ad_disclosure_control",
+    "article": "dsa_art26",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def render_platform_ad(ad, ui):\n    return ui.ad(ad.creative, advertisement_label=\"Advertisement\", sponsor=ad.sponsor, payer=ad.payer, targeting_parameters=ad.parameters)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Recipients must be able to identify advertisements and who is behind them.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "minor_ads_violation",
+    "article": "dsa_art28",
+    "expected_articles": [
+      "dsa_art28"
+    ],
+    "file": "platform.py",
+    "code": "def serve_platform_ad(user, ad_server):\n    if user.age < 18:\n        return ad_server.personalised(user.behaviour_profile)\n",
+    "rationale": "A platform aware with reasonable certainty of minority must not serve profiling-based advertisements.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "minor_ads_control",
+    "article": "dsa_art28",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def serve_platform_ad(user, ad_server):\n    if user.age < 18:\n        return ad_server.contextual()\n    return ad_server.personalised(user.behaviour_profile)\n",
+    "rationale": "The visible safeguard addresses the tested defect. A platform aware with reasonable certainty of minority must not serve profiling-based advertisements.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "trader_identity_violation",
+    "article": "dsa_art30",
+    "expected_articles": [
+      "dsa_art30"
+    ],
+    "file": "platform.py",
+    "code": "def onboard_marketplace_trader(trader, marketplace):\n    marketplace.activate(trader, identity_verification=False, trader_contact=None)\n",
+    "rationale": "Marketplace trader traceability requires the specified identity information and best-effort verification.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "trader_identity_control",
+    "article": "dsa_art30",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def onboard_marketplace_trader(trader, marketplace):\n    marketplace.verify_identity_and_contact(trader)\n    marketplace.activate(trader, identity_verification=True, trader_contact=trader.verified_contact)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Marketplace trader traceability requires the specified identity information and best-effort verification.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "recommender_option_violation",
+    "article": "dsa_art38",
+    "expected_articles": [
+      "dsa_art38"
+    ],
+    "file": "platform.py",
+    "code": "def designated_very_large_platform_feed_options():\n    return {\"personalised\": {\"uses_profiling\": True}}\n",
+    "rationale": "A designated very large platform must provide a recommender option not based on profiling.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "recommender_option_control",
+    "article": "dsa_art38",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def designated_very_large_platform_feed_options():\n    return {\"personalised\": {\"uses_profiling\": True}, \"chronological\": {\"uses_profiling\": False}}\n",
+    "rationale": "The visible safeguard addresses the tested defect. A designated very large platform must provide a recommender option not based on profiling.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "ad_repository_violation",
+    "article": "dsa_art39",
+    "expected_articles": [
+      "dsa_art39"
+    ],
+    "file": "platform.py",
+    "code": "def designated_very_large_platform_ad_archive(repository, ad):\n    repository.store(ad.public_metadata(), delete_after_days=30, searchable=True)\n",
+    "rationale": "The very-large-platform ad repository must retain entries for a year after the last display.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "ad_repository_control",
+    "article": "dsa_art39",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def designated_very_large_platform_ad_archive(repository, ad):\n    repository.store(ad.public_metadata(), delete_one_year_after_last_display=True, searchable=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The very-large-platform ad repository must retain entries for a year after the last display.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "small_shop_recommender",
+    "article": "dsa_art38",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def independent_small_shop_recommendations(customer, catalog):\n    return catalog.rank_by_preferences(customer.preferences)\n",
+    "rationale": "No designated very large platform or search-engine status is established; Article 38 does not apply to every recommender.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "private_staff_chat",
+    "article": "dsa_art16",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def internal_staff_chat(message, private_queue):\n    private_queue.send(message, recipients=\"employees_only\")\n",
+    "rationale": "A private internal staff tool does not establish the public hosting-service context of this notice duty.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "unseen_notification_helper",
+    "article": "dsa_art17",
+    "expected_articles": [],
+    "file": "platform.py",
+    "code": "def remove_platform_post(post, moderation):\n    return moderation.remove_and_notify_with_reasons(post)\n",
+    "rationale": "The snippet does not establish missing fields inside the notification helper.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  },
+  {
+    "id": "static_display_data",
+    "article": "dsa_art26",
+    "expected_articles": [],
+    "file": "advertisement.ts",
+    "code": "interface Advertisement { sponsor: string; payer: string; targetingParameters: string[]; }\n",
+    "rationale": "A type declaration establishes no advertisement served without disclosure.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj",
+    "split": "development"
+  }
+]

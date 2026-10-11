@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.2.4
+
+- Check AI Act findings against the actor, activity and literal configuration
+  values in the source. Correct provider/deployer article assignments and handle
+  CE-marking and trial-erasure exceptions.
+- Add scope and article checks for GDPR, EU Data Act, DORA and DSA. Require the
+  validator to describe source facts before classifying CRA/DMA/NIS2 findings.
+- Recheck cached files after upgrading so the new validation runs on unchanged
+  code too.
+- Add opt-in local-model evaluation tools and regression fixtures for article
+  selection and scope checks.
+
 ## 0.2.3
 
 Fixed false positives for AI Act Articles 59 and 78 in customer storage and

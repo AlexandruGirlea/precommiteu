@@ -1,0 +1,183 @@
+[
+  {
+    "id": "deployer_oversight_enforced",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "class BankCreditAIDeployer:\n    def launch(self, credit_ai, oversight_team):\n        credit_ai.deploy(human_oversight=oversight_team, assign_trained_personnel=True)\n",
+    "rationale": "The deployer duty targeted by the paired case is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_workers_notice_enforced",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "class EmployerAIDeployer:\n    def start_employee_performance_scoring(self, high_risk_ai, staff, representatives):\n        inform_affected_workers = True\n        if inform_affected_workers:\n            staff.notify_ai_use(high_risk_ai)\n            representatives.notify_ai_use(high_risk_ai)\n        high_risk_ai.deploy_for_employee_performance_reviews()\n",
+    "rationale": "The deployer duty targeted by the paired case is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_input_relevance_enforced",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "class BankCreditAIDeployer:\n    def run(self, applicant_data, credit_ai):\n        require_relevant_representative_inputs = True\n        if require_relevant_representative_inputs:\n            applicant_data.check_relevance_and_representativeness(credit_ai.intended_purpose)\n        return credit_ai.predict(applicant_data)\n",
+    "rationale": "The deployer duty targeted by the paired case is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_serious_incident_reporting_enforced",
+    "article": "eu_ai_act_art26",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "class HospitalTriageAIDeployer:\n    def handle_serious_incident(self, incident, provider, authority):\n        incident.confirm_death_caused_by_ai()\n        report_serious_incident = True\n        if report_serious_incident:\n            provider.notify(incident)\n            authority.notify(incident)\n        incident.archive()\n",
+    "rationale": "The deployer duty targeted by the paired case is explicitly enforced.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "self_reported_religion",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "flow.ts",
+    "code": "function audiencePreferences(customer, form, segments) {\n  const religion = form.selfReportedReligiousPreference;\n  segments.save(customer.id, {religion});\n}\n",
+    "rationale": "Self-reported preferences are not biometric AI inference. Other legislation is outside this test.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "social_score_without_service_treatment",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "def preview_social_activity(person, reputation_model):\n    rating = reputation_model.predict(person.social_media_activity_history)\n    return {\"engagement_preview\": rating}\n",
+    "rationale": "An engagement preview alone does not show prohibited unrelated or disproportionate detrimental treatment.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "withdrawal_without_erasure_request",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "def withdraw_from_real_world_hiring_ai_trial(subject, trial):\n    trial.stop_testing_subject(subject)\n",
+    "rationale": "Withdrawal alone does not establish a request to erase already collected personal data.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "trial_erasure_completed",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "def process_real_world_hiring_ai_trial_withdrawal(request, trial, data):\n    trial.stop_testing(request.subject_id)\n    if request.permanent_erasure_requested:\n        data.erase_permanently(request.subject_id)\n",
+    "rationale": "The explicit permanent-erasure request is fulfilled after stopping participation.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "ce_machine_readable_only",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "def digital_hiring_ai_mark(product):\n    product.ce_marking.configure(ui_visible=False, machine_readable=True)\n",
+    "rationale": "An easily accessible machine-readable CE mark is allowed without a second UI display.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "ce_notified_body_missing_id",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [
+      "eu_ai_act_art48"
+    ],
+    "file": "flow.py",
+    "code": "def hiring_ai_ce_metadata(system, conformity):\n    conformity.require_completed_notified_body_assessment(system)\n    return {\"ce_marking\": \"CE\", \"machine_readable\": True,\n            \"notified_body_involved\": True, \"notified_body_id\": None}\n",
+    "rationale": "A notified body participated, so its identification number must accompany the mark.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "ce_notified_body_identified",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [],
+    "file": "flow.py",
+    "code": "def hiring_ai_ce_metadata(system, conformity):\n    conformity.require_completed_notified_body_assessment(system)\n    return {\"ce_marking\": \"CE\", \"machine_readable\": True,\n            \"notified_body_involved\": True, \"notified_body_id\": \"0413\"}\n",
+    "rationale": "A notified body participated, so its identification number must accompany the mark.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "typescript_copyright_bypassed",
+    "article": "eu_ai_act_art53",
+    "expected_articles": [
+      "eu_ai_act_art53"
+    ],
+    "file": "flow.ts",
+    "code": "export function ingestFoundationTrainingPage(page, corpus) {\n  const rejectReserved = false;\n  if (page.tdmReservation && rejectReserved) return;\n  corpus.addToGeneralPurposeTraining(page.content);\n}\n",
+    "rationale": "The constant determines whether reserved material is excluded from GPAI training.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53"
+  },
+  {
+    "id": "typescript_trial_consent_bypassed",
+    "article": "eu_ai_act_art61",
+    "expected_articles": [
+      "eu_ai_act_art61"
+    ],
+    "file": "flow.ts",
+    "code": "function enrollRealWorldHiringAiTrial(subject, trial, consentService) {\n  consentService.presentTrialInformation(subject, trial);\n  const consent = consentService.readSubjectResponse(subject, trial);\n  const requireDocumentedConsent = false;\n  if (requireDocumentedConsent && !consent.signedAndDated) throw Error(\"Missing consent\");\n  consentService.deliverCopy(subject, consent);\n  trial.enroll(subject);\n}\n",
+    "rationale": "Trial enrollment must enforce valid prior dated and documented consent.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-61"
+  },
+  {
+    "id": "numeric_post_market_disabled",
+    "article": "eu_ai_act_art72",
+    "expected_articles": [
+      "eu_ai_act_art72"
+    ],
+    "file": "flow.js",
+    "code": "class EmploymentModelVendor {\n  configurePostMarketMonitoring(monitoring, approvedPlan) {\n    monitoring.start({plan: approvedPlan, collectPerformance: 0,\n                      analyzePerformance: 0});\n  }\n}\n",
+    "rationale": "Provider post-market collection and analysis use numeric on/off flags.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-72"
+  },
+  {
+    "id": "typescript_copyright_guarded",
+    "article": "eu_ai_act_art53",
+    "expected_articles": [],
+    "file": "flow.ts",
+    "code": "export function ingestFoundationTrainingPage(page, corpus) {\n  const rejectReserved = true;\n  if (page.tdmReservation && rejectReserved) return;\n  corpus.addToGeneralPurposeTraining(page.content);\n}\n",
+    "rationale": "The constant determines whether reserved material is excluded from GPAI training.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53"
+  },
+  {
+    "id": "typescript_trial_consent_guarded",
+    "article": "eu_ai_act_art61",
+    "expected_articles": [],
+    "file": "flow.ts",
+    "code": "function enrollRealWorldHiringAiTrial(subject, trial, consentService) {\n  consentService.presentTrialInformation(subject, trial);\n  const consent = consentService.readSubjectResponse(subject, trial);\n  const requireDocumentedConsent = true;\n  if (requireDocumentedConsent && !consent.signedAndDated) throw Error(\"Missing consent\");\n  consentService.deliverCopy(subject, consent);\n  trial.enroll(subject);\n}\n",
+    "rationale": "Trial enrollment must enforce valid prior dated and documented consent.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-61"
+  },
+  {
+    "id": "numeric_post_market_enabled",
+    "article": "eu_ai_act_art72",
+    "expected_articles": [],
+    "file": "flow.js",
+    "code": "class EmploymentModelVendor {\n  configurePostMarketMonitoring(monitoring, approvedPlan) {\n    monitoring.start({plan: approvedPlan, collectPerformance: 1,\n                      analyzePerformance: 1});\n  }\n}\n",
+    "rationale": "Provider post-market collection and analysis use numeric on/off flags.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-72"
+  },
+  {
+    "id": "typescript_sensitive_self_reported",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "flow.ts",
+    "code": "function shopperPreference(personId, face, biometricAI, survey, segments) {\n  const religion = survey.selfReportedPreference(personId);\n  segments.assign(personId, {religion});\n}\n",
+    "rationale": "Inferring religion from biometrics is prohibited; merely storing a self-reported preference is outside that prohibition.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "typescript_sensitive_inferred",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "flow.ts",
+    "code": "function shopperPreference(personId, face, biometricAI, survey, segments) {\n  const religion = biometricAI.inferReligiousBeliefs(face);\n  segments.assign(personId, {religion});\n}\n",
+    "rationale": "Inferring religion from biometrics is prohibited; merely storing a self-reported preference is outside that prohibition.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  }
+]

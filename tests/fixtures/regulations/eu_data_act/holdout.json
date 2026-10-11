@@ -1,0 +1,88 @@
+[
+  {
+    "id": "typescript_switch_periods_ok",
+    "article": "eu_data_act_art25",
+    "expected_articles": [],
+    "file": "migration.ts",
+    "code": "export function migrationTerms() {\n  return {noticeMonths: 2, transitionDays: 30, retrievalDays: 45};\n}\n",
+    "rationale": "The cloud migration periods meet the ordinary statutory bounds.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "typescript_switch_periods_bad",
+    "article": "eu_data_act_art25",
+    "expected_articles": [
+      "eu_data_act_art25"
+    ],
+    "file": "migration.ts",
+    "code": "export function migrationTerms() {\n  return {noticeMonths: 8, transitionDays: 30, retrievalDays: 45};\n}\n",
+    "rationale": "The cloud switching notice exceeds two months.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "direct_product_csv",
+    "article": "eu_data_act_art3",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def sensor_owner_export(sensor, response):\n    return response.csv(sensor.readings_and_metadata(), charge=0)\n",
+    "rationale": "CSV is a machine-readable format; JSON is not mandatory.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "recipient_cleanup_bad",
+    "article": "eu_data_act_art6",
+    "expected_articles": [
+      "eu_data_act_art6"
+    ],
+    "file": "service.py",
+    "code": "def end_requested_service(shared_device_data, recipient_store):\n    recipient_store.archive(shared_device_data, retention=\"forever\", agreed_purpose_finished=True)\n",
+    "rationale": "The recipient retains user-shared data after the agreed purpose has ended.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "recipient_cleanup_good",
+    "article": "eu_data_act_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def end_requested_service(shared_device_data, recipient_store):\n    recipient_store.erase(shared_device_data, include_replicas=True)\n",
+    "rationale": "The recipient erases the no-longer-needed shared data.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "nonprofit_cost",
+    "article": "eu_data_act_art9",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def data_holder_quote(recipient, direct_cost):\n    if recipient.not_for_profit_research and recipient.independent:\n        return {\"amount\": direct_cost, \"calculation\": \"data formatting and delivery costs\"}\n    return {\"amount\": direct_cost + 80}\n",
+    "rationale": "The qualifying nonprofit research recipient is charged only the relevant costs.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "ordinary_smart_contract",
+    "article": "eu_data_act_art36",
+    "expected_articles": [],
+    "file": "counter.sol",
+    "code": "contract Counter { uint public count; function increment() public { count++; } }\n",
+    "rationale": "Article 36 concerns smart contracts executing data-sharing agreements, not every smart contract.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  },
+  {
+    "id": "switch_transit_throttled",
+    "article": "eu_data_act_art27",
+    "expected_articles": [
+      "eu_data_act_art27"
+    ],
+    "file": "service.py",
+    "code": "def migrate_cloud_customer(customer, source, destination):\n    source.set_export_rate(customer, bytes_per_second=1, reason=\"discourage switching\")\n    destination.import_stream(source.stream(customer))\n",
+    "rationale": "Artificially throttling a switch to discourage exit breaches good-faith cooperation.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+    "split": "holdout"
+  }
+]

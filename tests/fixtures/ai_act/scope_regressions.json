@@ -1,0 +1,74 @@
+[
+  {
+    "id": "deployer_oversight_disabled",
+    "article": "eu_ai_act_art26",
+    "expected_articles": ["eu_ai_act_art26"],
+    "file": "operations.py",
+    "code": "class BankCreditAIDeployer:\n    def launch(self, credit_ai, oversight_team):\n        credit_ai.deploy(human_oversight=None, assign_trained_personnel=False)\n",
+    "rationale": "Deployer explicitly disables assignment of competent human oversight personnel.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_workers_notice_disabled",
+    "article": "eu_ai_act_art26",
+    "expected_articles": ["eu_ai_act_art26"],
+    "file": "operations.py",
+    "code": "class EmployerAIDeployer:\n    def start_employee_performance_scoring(self, high_risk_ai, staff, representatives):\n        inform_affected_workers = False\n        if inform_affected_workers:\n            staff.notify_ai_use(high_risk_ai)\n            representatives.notify_ai_use(high_risk_ai)\n        high_risk_ai.deploy_for_employee_performance_reviews()\n",
+    "rationale": "Employer deploys high-risk workplace AI with prior notices to affected workers and representatives explicitly disabled.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_input_relevance_disabled",
+    "article": "eu_ai_act_art26",
+    "expected_articles": ["eu_ai_act_art26"],
+    "file": "operations.py",
+    "code": "class BankCreditAIDeployer:\n    def run(self, applicant_data, credit_ai):\n        require_relevant_representative_inputs = False\n        if require_relevant_representative_inputs:\n            applicant_data.check_relevance_and_representativeness(credit_ai.intended_purpose)\n        return credit_ai.predict(applicant_data)\n",
+    "rationale": "Deployer explicitly disables checks for relevant and sufficiently representative input data under its control.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "deployer_serious_incident_reporting_disabled",
+    "article": "eu_ai_act_art26",
+    "expected_articles": ["eu_ai_act_art26"],
+    "file": "operations.py",
+    "code": "class HospitalTriageAIDeployer:\n    def handle_serious_incident(self, incident, provider, authority):\n        incident.confirm_death_caused_by_ai()\n        report_serious_incident = False\n        if report_serious_incident:\n            provider.notify(incident)\n            authority.notify(incident)\n        incident.archive()\n",
+    "rationale": "High-risk AI deployer explicitly disables notification of a serious incident to provider and competent authority.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26"
+  },
+  {
+    "id": "untargeted_face_database_scraping",
+    "article": "eu_ai_act_art5",
+    "expected_articles": ["eu_ai_act_art5"],
+    "file": "collection.py",
+    "code": "def expand_face_recognition_database(public_web_crawler, face_recognition_database):\n    for image in public_web_crawler.scrape_all_face_images_without_targeting():\n        face_recognition_database.add_training_image(image)\n",
+    "rationale": "Builds a facial-recognition database through untargeted scraping of online facial images; no model inference is necessary at collection time.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "biometric_sensitive_category_inference",
+    "article": "eu_ai_act_art5",
+    "expected_articles": ["eu_ai_act_art5"],
+    "file": "collection.py",
+    "code": "def categorise_shoppers(camera, biometric_categorisation_ai, advertising):\n    for face in camera.shopper_faces():\n        religion = biometric_categorisation_ai.infer_religious_beliefs(face)\n        advertising.assign_segment(face.person_id, religion=religion)\n",
+    "rationale": "Biometric categorisation infers individual religious beliefs for commercial segmentation.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "designated_systemic_model_security_disabled",
+    "article": "eu_ai_act_art55",
+    "expected_articles": ["eu_ai_act_art55"],
+    "file": "release.py",
+    "code": "class GeneralPurposeModelProvider:\n    def release(self, model, hosting):\n        model.training_compute_flop = 10**18\n        model.commission_designated_systemic_risk = True\n        hosting.publish(model, model_weight_security_enabled=False, infrastructure_security_enabled=False)\n",
+    "rationale": "Commission-designated systemic-risk GPAI disables model and infrastructure security despite having compute below the presumption threshold.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-55"
+  },
+  {
+    "id": "unsigned_physical_declaration",
+    "article": "eu_ai_act_art47",
+    "expected_articles": ["eu_ai_act_art47"],
+    "file": "release.py",
+    "code": "class HighRiskAIProvider:\n    def issue_declaration(self, model, printer, releases):\n        declaration = model.build_annex_v_declaration()\n        declaration.signature = None\n        printer.print_for_physical_delivery(declaration)\n        releases.publish(model, declaration=declaration)\n",
+    "rationale": "A physical declaration is allowed, but deliberately issuing it unsigned breaches the signature requirement.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-47"
+  }
+]

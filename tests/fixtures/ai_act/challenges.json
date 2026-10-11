@@ -1,0 +1,261 @@
+[
+  {
+    "id": "staff_sentiment_survey",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "staff_sentiment_survey.py",
+    "code": "def staff_survey_answers(form, database):\n    database.save(employee=form.employee_id, emotion=form.selected_mood)\n",
+    "rationale": "Self-reported mood is not biometric AI emotion inference.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "emotion_name_only",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "emotion_name_only.py",
+    "code": "def employee_emotion_model(records):\n    return {row.id: row.self_reported_mood for row in records}\n",
+    "rationale": "A suggestive function name does not establish AI inference.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "face_login",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "face_login.py",
+    "code": "def login(account, live_face, face_verifier):\n    return face_verifier.verify_one_to_one(live_face, account.enrolled_template)\n",
+    "rationale": "One-to-one biometric authentication is not prohibited biometric categorisation.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "medical_emotion",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [],
+    "file": "medical_emotion.py",
+    "code": "def workplace_therapy(patient, session, facial_emotion_model, therapist):\n    session.require_clinical_treatment_purpose()\n    session.inform_patient_of_emotion_recognition(patient)\n    return therapist.review(facial_emotion_model.predict(patient.face_frame))\n",
+    "rationale": "Explicit clinical treatment and human review support the medical-purpose exception.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "unrelated_social_scoring",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "unrelated_social_scoring.py",
+    "code": "def decide_public_housing(person, reputation_model, housing):\n    rating = reputation_model.predict(person.social_media_activity_history)\n    if rating < 0.4:\n        housing.deny_eligibility(person.id, reason=\"online social behaviour\")\n",
+    "rationale": "AI social behaviour scoring determines unrelated public housing access.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "crime_from_traits",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "crime_from_traits.py",
+    "code": "def patrol_targets(residents, personality_model):\n    return [r.id for r in residents\n            if personality_model.predict_crime_risk(r.personality_traits) > 0.8]\n",
+    "rationale": "Individual crime risk is predicted solely from personality traits.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "staff_emotion_java",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "staff_emotion_java.java",
+    "code": "void analyseShift(Camera camera, NeuralAffectNet classifier, StaffStore records) {\n    for (Employee employee : camera.employeesOnShift()) {\n        records.setMood(employee.id(), classifier.infer(employee.faceFrame()));\n    }\n}\n",
+    "rationale": "Java data flow infers workplace emotion from employee faces.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  },
+  {
+    "id": "ordinary_service_logs",
+    "article": "eu_ai_act_art19",
+    "expected_articles": [],
+    "file": "ordinary_service_logs.py",
+    "code": "def configure_blog_server(access_logs):\n    access_logs.set_retention(days=7)\n",
+    "rationale": "Ordinary web access logs do not establish high-risk AI provider duties.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-19"
+  },
+  {
+    "id": "credit_logs_without_biometrics",
+    "article": "eu_ai_act_art12",
+    "expected_articles": [],
+    "file": "credit_logs_without_biometrics.py",
+    "code": "def record_credit_ai_decision(audit, decision):\n    audit.write(timestamp=decision.time, application_id=decision.application_id,\n                result=decision.result, model_version=decision.model_version)\n",
+    "rationale": "Biometric-specific database/match/verifier fields are not universally required.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-12"
+  },
+  {
+    "id": "biometric_match_missing_verifier",
+    "article": "eu_ai_act_art12",
+    "expected_articles": [
+      "eu_ai_act_art12"
+    ],
+    "file": "biometric_match_missing_verifier.py",
+    "code": "def record_remote_biometric_match(audit, search, human_verifier):\n    audit.write(start=search.start, end=search.end, database=search.database_id,\n                matched_input=search.input, verifier_id=None)\n",
+    "rationale": "Remote biometric match logging explicitly omits verifier identity.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-12"
+  },
+  {
+    "id": "review_queue_enforced",
+    "article": "eu_ai_act_art14",
+    "expected_articles": [],
+    "file": "review_queue_enforced.ts",
+    "code": "async function decideLoan(applicant, creditModel, staffQueue) {\n    const proposed = await creditModel.predict(applicant);\n    return staffQueue.enqueue({applicant, proposed, status: \"PENDING_REVIEW\"});\n}\n",
+    "rationale": "Credit output is sent to staff review, not executed without oversight.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-14"
+  },
+  {
+    "id": "review_flag_bypassed",
+    "article": "eu_ai_act_art14",
+    "expected_articles": [
+      "eu_ai_act_art14"
+    ],
+    "file": "review_flag_bypassed.ts",
+    "code": "function configureLoanDecisionService(provider, creditModel, human_review) {\n    human_review.enabled = false;\n    provider.serve(creditModel, {oversight: human_review, override: false, safeStop: false});\n}\n",
+    "rationale": "A human_review identifier does not count as an active safeguard when disabled.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-14"
+  },
+  {
+    "id": "gpai_without_systemic_risk",
+    "article": "eu_ai_act_art55",
+    "expected_articles": [],
+    "file": "gpai_without_systemic_risk.py",
+    "code": "def release_small_translation_model(model, release):\n    model.set_metadata(general_purpose=True, training_flops=1e18,\n                       systemic_risk_designation=False)\n    release.configure(run_frontier_red_team=False)\n",
+    "rationale": "GPAI status alone does not establish systemic-risk obligations.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-55"
+  },
+  {
+    "id": "ordinary_web_crawler",
+    "article": "eu_ai_act_art53",
+    "expected_articles": [],
+    "file": "ordinary_web_crawler.py",
+    "code": "def cache_public_news_for_search_index(crawler, search_index):\n    crawler.configure(ignore_robots=True)\n    search_index.add(crawler.fetch_headlines())\n",
+    "rationale": "Generic search indexing does not establish GPAI model training.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53"
+  },
+  {
+    "id": "obvious_ai_chat",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [],
+    "file": "obvious_ai_chat.tsx",
+    "code": "export function ChatHeader() {\n    return <header><h1>AI assistant</h1></header>;\n}\n",
+    "rationale": "The interface explicitly discloses AI interaction.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "spelling_only",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [],
+    "file": "spelling_only.py",
+    "code": "def correct_typo(text, spelling_model):\n    return spelling_model.fix_spelling(text, preserve_meaning=True)\n",
+    "rationale": "Standard assistive editing without semantic change is exempt from output marking.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "marked_synthetic_video",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [],
+    "file": "marked_synthetic_video.ts",
+    "code": "async function renderVideo(prompt, generator, provenance) {\n    const bytes = await generator.synthesize(prompt);\n    return provenance.embedSignedAIGenerationMark(bytes);\n}\n",
+    "rationale": "Machine-readable AI provenance is explicitly embedded in generated output.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "strip_synthetic_provenance",
+    "article": "eu_ai_act_art50",
+    "expected_articles": [
+      "eu_ai_act_art50"
+    ],
+    "file": "strip_synthetic_provenance.ts",
+    "code": "async function distributeGeneratedVideo(prompt, generator, provenance) {\n    const bytes = await generator.synthesize(prompt);\n    return provenance.removeAllAIGenerationMarks(bytes);\n}\n",
+    "rationale": "Generated media output deliberately strips AI generation markings.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50"
+  },
+  {
+    "id": "ordinary_test_sandbox",
+    "article": "eu_ai_act_art59",
+    "expected_articles": [],
+    "file": "ordinary_test_sandbox.py",
+    "code": "def populate_test_sandbox(customer_database, sandbox):\n    sandbox.import_rows(customer_database.export_all())\n    sandbox.configure(retention_days=None, isolated=False)\n",
+    "rationale": "A generic development sandbox does not establish an AI regulatory sandbox.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-59"
+  },
+  {
+    "id": "trial_erasure_requested",
+    "article": "eu_ai_act_art60",
+    "expected_articles": [
+      "eu_ai_act_art60"
+    ],
+    "file": "trial_erasure_requested.py",
+    "code": "def process_real_world_hiring_ai_trial_withdrawal(request, trial, data):\n    trial.stop_testing(request.subject_id)\n    if request.permanent_erasure_requested:\n        data.mark_inactive(request.subject_id)\n",
+    "rationale": "Express erasure request only soft-deletes subject data after trial withdrawal.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-60"
+  },
+  {
+    "id": "signed_physical_declaration",
+    "article": "eu_ai_act_art47",
+    "expected_articles": [],
+    "file": "signed_physical_declaration.py",
+    "code": "def attach_hiring_ai_declaration(declaration, archive):\n    declaration.require_complete_annex_v()\n    declaration.require_machine_readable_text()\n    declaration.require_physical_signature()\n    archive.store(declaration, retention_years=10)\n",
+    "rationale": "A physically signed declaration is permitted; electronic signing is not mandatory.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-47"
+  },
+  {
+    "id": "self_assessed_ce",
+    "article": "eu_ai_act_art48",
+    "expected_articles": [],
+    "file": "self_assessed_ce.py",
+    "code": "def hiring_ai_ce_metadata(system, conformity):\n    conformity.require_completed_internal_assessment(system)\n    return {\"ce_marking\": \"CE\", \"machine_readable\": True,\n            \"notified_body_involved\": False, \"notified_body_id\": None}\n",
+    "rationale": "No notified-body number is needed where no notified body participated.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-48"
+  },
+  {
+    "id": "secure_investigation_evidence",
+    "article": "eu_ai_act_art78",
+    "expected_articles": [],
+    "file": "secure_investigation_evidence.py",
+    "code": "def save_market_surveillance_ai_evidence(case, source_code, secure_store):\n    secure_store.require_case_investigator(case)\n    secure_store.encrypt_and_store(case.id, source_code, delete_when_case_closed=True)\n",
+    "rationale": "Received AI Act compliance evidence has explicit confidentiality safeguards.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-78"
+  },
+  {
+    "id": "explanation_in_plain_language",
+    "article": "eu_ai_act_art86",
+    "expected_articles": [],
+    "file": "explanation_in_plain_language.py",
+    "code": "def explain_credit_rejection(request, decision, service):\n    request.require_affected_person(decision)\n    return service.describe(decision, include_ai_role=True, include_main_factors=True,\n                            use_shap=False, use_lime=False)\n",
+    "rationale": "Plain-language explanation meets the obligation without a specific XAI library.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-86"
+  },
+  {
+    "id": "non_ai_crm_export",
+    "article": "eu_ai_act_art78",
+    "expected_articles": [],
+    "file": "non_ai_crm_export.py",
+    "code": "def export_customer_contacts(customers, destination):\n    destination.write_json(customers.all(), permissions=0o666)\n",
+    "rationale": "Weak security in a CRM export alone is outside AI Act confidentiality duties.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-78"
+  },
+  {
+    "id": "existing_support_log",
+    "article": "eu_ai_act_art78",
+    "expected_articles": [],
+    "file": "existing_support_log.java",
+    "code": "import java.io.IOException;\nimport java.nio.charset.StandardCharsets;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\nimport java.nio.file.StandardOpenOption;\nimport java.nio.file.attribute.PosixFilePermission;\nimport java.nio.file.attribute.PosixFilePermissions;\nimport java.time.Instant;\nimport java.util.Set;\nimport java.util.stream.Stream;\n\npublic final class SupportAuditTrail {\n\n    private static final Path AUDIT_LOG = Path.of(\"support_audit.log\");\n    private static final Set<PosixFilePermission> WORLD_READABLE =\n            PosixFilePermissions.fromString(\"rw-rw-rw-\");\n\n    private final Path logFile;\n\n    public SupportAuditTrail() {\n        this(AUDIT_LOG);\n    }\n\n    public SupportAuditTrail(Path logFile) {\n        this.logFile = logFile;\n    }\n\n    public void recordTicket(String ticketId, String email, String nationalId, String summary)\n            throws IOException {\n        String line = Instant.now() + \" ticket=\" + ticketId\n                + \" email=\" + email\n                + \" national_id=\" + nationalId\n                + \" summary=\" + summary.replace('\\n', ' ')\n                + System.lineSeparator();\n        Files.writeString(logFile, line, StandardCharsets.UTF_8,\n                StandardOpenOption.CREATE, StandardOpenOption.APPEND);\n        Files.setPosixFilePermissions(logFile, WORLD_READABLE);\n    }\n\n    public long countEntries() throws IOException {\n        try (Stream<String> lines = Files.lines(logFile, StandardCharsets.UTF_8)) {\n            return lines.count();\n        }\n    }\n\n    public static void main(String[] args) throws IOException {\n        if (args.length < 4) {\n            System.err.println(\"usage: SupportAuditTrail <ticketId> <email> <nationalId> <summary>\");\n            System.exit(1);\n        }\n        SupportAuditTrail trail = new SupportAuditTrail();\n        trail.recordTicket(args[0], args[1], args[2], args[3]);\n        System.out.println(\"audit entries on file: \" + trail.countEntries());\n    }\n}\n",
+    "rationale": "Existing ordinary support-log fixture is outside the AI Act scope.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-78"
+  },
+  {
+    "id": "existing_crm_emotion",
+    "article": "eu_ai_act_art5",
+    "expected_articles": [
+      "eu_ai_act_art5"
+    ],
+    "file": "existing_crm_emotion.java",
+    "code": "import java.io.IOException;\nimport java.io.OutputStream;\nimport java.net.HttpURLConnection;\nimport java.net.URI;\nimport java.nio.charset.StandardCharsets;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\nimport java.util.ArrayList;\nimport java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.logging.Logger;\n\npublic final class CrmSyncJob {\n\n    private static final Logger LOGGER = Logger.getLogger(CrmSyncJob.class.getName());\n    private static final Path EXPORT_FILE = Path.of(\"export_all_users.json\");\n    private static final String CRM_ENDPOINT =\n            \"https://crm.example-partner.com/api/v2/contacts/bulk_upsert\";\n    private static final String CRM_API_KEY = \"pk_live_7f3d9a2c41b8e605\";\n    private static final String[] CONTACT_FIELDS = {\n            \"full_name\",\n            \"email\",\n            \"date_of_birth\",\n            \"home_address\",\n            \"national_id\",\n            \"marketing_opt_in\",\n            \"last_login_ip\",\n            \"employee_emotion\"\n    };\n    private static final int BATCH_SIZE = 50;\n\n    private CrmSyncJob() {\n    }\n\n    public static void main(String[] args) throws IOException, InterruptedException {\n        String json = Files.readString(EXPORT_FILE, StandardCharsets.UTF_8);\n        List<Map<String, String>> records = new JsonReader(json).readRecordArray();\n        LOGGER.info(\"loaded \" + records.size() + \" contact records from \" + EXPORT_FILE);\n        int pushed = 0;\n        List<Map<String, String>> batch = new ArrayList<>();\n        for (Map<String, String> record : records) {\n            String employeeEmotion = java.net.http.HttpClient.newHttpClient().send(\n                    java.net.http.HttpRequest.newBuilder(URI.create(\"https://emotion-ai.example/models/workplace-emotion-recognition/predict\"))\n                            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(record.get(\"employee_webcam_frame\")))\n                            .build(), java.net.http.HttpResponse.BodyHandlers.ofString()).body();\n            record.put(\"employee_emotion\", employeeEmotion);\n            LOGGER.info(\"queueing contact email=\" + record.get(\"email\")\n                    + \" national_id=\" + record.get(\"national_id\")\n                    + \" date_of_birth=\" + record.get(\"date_of_birth\"));\n            batch.add(record);\n            if (batch.size() == BATCH_SIZE) {\n                pushed += pushBatch(batch);\n                batch.clear();\n            }\n        }\n        if (!batch.isEmpty()) {\n            pushed += pushBatch(batch);\n        }\n        LOGGER.info(\"pushed \" + pushed + \" contacts to \" + CRM_ENDPOINT);\n    }\n\n    private static int pushBatch(List<Map<String, String>> batch) throws IOException {\n        byte[] payload = buildPayload(batch).getBytes(StandardCharsets.UTF_8);\n        HttpURLConnection connection =\n                (HttpURLConnection) URI.create(CRM_ENDPOINT).toURL().openConnection();\n        connection.setRequestMethod(\"POST\");\n        connection.setRequestProperty(\"Content-Type\", \"application/json\");\n        connection.setRequestProperty(\"X-Api-Key\", CRM_API_KEY);\n        connection.setDoOutput(true);\n        try (OutputStream body = connection.getOutputStream()) {\n            body.write(payload);\n        }\n        int status = connection.getResponseCode();\n        if (status >= 400) {\n            throw new IOException(\"CRM upsert failed with status \" + status);\n        }\n        connection.disconnect();\n        return batch.size();\n    }\n\n    private static String buildPayload(List<Map<String, String>> batch) {\n        StringBuilder payload = new StringBuilder(\"{\\\"contacts\\\":[\");\n        for (int i = 0; i < batch.size(); i++) {\n            if (i > 0) {\n                payload.append(',');\n            }\n            appendContact(payload, batch.get(i));\n        }\n        return payload.append(\"]}\").toString();\n    }\n\n    private static void appendContact(StringBuilder payload, Map<String, String> record) {\n        payload.append('{');\n        for (int i = 0; i < CONTACT_FIELDS.length; i++) {\n            String field = CONTACT_FIELDS[i];\n            if (i > 0) {\n                payload.append(',');\n            }\n            payload.append('\"').append(field).append(\"\\\":\");\n            String value = record.getOrDefault(field, \"\");\n            if (field.equals(\"marketing_opt_in\")) {\n                payload.append(\"true\".equals(value) ? \"true\" : \"false\");\n            } else {\n                payload.append('\"').append(escape(value)).append('\"');\n            }\n        }\n        payload.append('}');\n    }\n\n    private static String escape(String value) {\n        StringBuilder escaped = new StringBuilder(value.length());\n        for (int i = 0; i < value.length(); i++) {\n            char ch = value.charAt(i);\n            switch (ch) {\n                case '\"' -> escaped.append(\"\\\\\\\"\");\n                case '\\\\' -> escaped.append(\"\\\\\\\\\");\n                case '\\n' -> escaped.append(\"\\\\n\");\n                case '\\r' -> escaped.append(\"\\\\r\");\n                case '\\t' -> escaped.append(\"\\\\t\");\n                default -> escaped.append(ch);\n            }\n        }\n        return escaped.toString();\n    }\n\n    private static final class JsonReader {\n        private final String text;\n        private int position;\n\n        JsonReader(String text) {\n            this.text = text;\n        }\n\n        List<Map<String, String>> readRecordArray() {\n            List<Map<String, String>> records = new ArrayList<>();\n            skipWhitespace();\n            expect('[');\n            skipWhitespace();\n            if (peek() == ']') {\n                position++;\n                return records;\n            }\n            while (true) {\n                records.add(readRecord());\n                skipWhitespace();\n                char next = read();\n                if (next == ']') {\n                    return records;\n                }\n                if (next != ',') {\n                    throw fail(\"expected ',' or ']'\");\n                }\n            }\n        }\n\n        private Map<String, String> readRecord() {\n            Map<String, String> record = new LinkedHashMap<>();\n            skipWhitespace();\n            expect('{');\n            skipWhitespace();\n            if (peek() == '}') {\n                position++;\n                return record;\n            }\n            while (true) {\n                skipWhitespace();\n                String key = readString();\n                skipWhitespace();\n                expect(':');\n                skipWhitespace();\n                record.put(key, readValue());\n                skipWhitespace();\n                char next = read();\n                if (next == '}') {\n                    return record;\n                }\n                if (next != ',') {\n                    throw fail(\"expected ',' or '}'\");\n                }\n            }\n        }\n\n        private String readValue() {\n            if (peek() == '\"') {\n                return readString();\n            }\n            if (text.startsWith(\"true\", position)) {\n                position += 4;\n                return \"true\";\n            }\n            if (text.startsWith(\"false\", position)) {\n                position += 5;\n                return \"false\";\n            }\n            if (text.startsWith(\"null\", position)) {\n                position += 4;\n                return \"\";\n            }\n            throw fail(\"unsupported value\");\n        }\n\n        private String readString() {\n            expect('\"');\n            StringBuilder value = new StringBuilder();\n            while (true) {\n                char ch = read();\n                if (ch == '\"') {\n                    return value.toString();\n                }\n                if (ch == '\\\\') {\n                    char escapeChar = read();\n                    switch (escapeChar) {\n                        case 'n' -> value.append('\\n');\n                        case 'r' -> value.append('\\r');\n                        case 't' -> value.append('\\t');\n                        default -> value.append(escapeChar);\n                    }\n                } else {\n                    value.append(ch);\n                }\n            }\n        }\n\n        private void expect(char expected) {\n            if (read() != expected) {\n                throw fail(\"expected '\" + expected + \"'\");\n            }\n        }\n\n        private char read() {\n            if (position >= text.length()) {\n                throw fail(\"unexpected end of input\");\n            }\n            return text.charAt(position++);\n        }\n\n        private char peek() {\n            if (position >= text.length()) {\n                throw fail(\"unexpected end of input\");\n            }\n            return text.charAt(position);\n        }\n\n        private void skipWhitespace() {\n            while (position < text.length() && Character.isWhitespace(text.charAt(position))) {\n                position++;\n            }\n        }\n\n        private IllegalStateException fail(String message) {\n            return new IllegalStateException(message + \" at offset \" + position);\n        }\n    }\n}\n",
+    "rationale": "Existing repository fixture has a real workplace emotion prediction request.",
+    "source": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-5"
+  }
+]

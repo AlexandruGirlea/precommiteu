@@ -1,0 +1,370 @@
+[
+  {
+    "id": "transport_violation",
+    "article": "gdpr_art32",
+    "expected_articles": [
+      "gdpr_art32"
+    ],
+    "file": "service.py",
+    "code": "def send_customer_record(session, record):\n    return session.post(\"https://processor.example/customers\", json=record, verify=False)\n",
+    "rationale": "Disabling certificate validation exposes transferred personal data.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "transport_control",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def send_customer_record(session, record):\n    return session.post(\"https://processor.example/customers\", json=record, verify=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Disabling certificate validation exposes transferred personal data.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "password_violation",
+    "article": "gdpr_art32",
+    "expected_articles": [
+      "gdpr_art32"
+    ],
+    "file": "service.py",
+    "code": "import hashlib\ndef store_password(user, password):\n    user.password_hash = hashlib.md5(password.encode()).hexdigest()\n",
+    "rationale": "Password storage requires protection appropriate to credential risks.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "password_control",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "from argon2 import PasswordHasher\ndef store_password(user, password):\n    user.password_hash = PasswordHasher().hash(password)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Password storage requires protection appropriate to credential risks.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "lawful_basis_violation",
+    "article": "gdpr_art6",
+    "expected_articles": [
+      "gdpr_art6"
+    ],
+    "file": "service.py",
+    "code": "def process_customer_profile(profile, legal_basis, processor):\n    if legal_basis is None:\n        return processor.process(profile)\n    return processor.process(profile)\n",
+    "rationale": "Processing explicitly continues without any legal basis.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "lawful_basis_control",
+    "article": "gdpr_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def process_customer_profile(profile, legal_basis, processor):\n    if legal_basis is None:\n        raise PermissionError(\"No lawful basis\")\n    return processor.process(profile)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Processing explicitly continues without any legal basis.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "consent_withdrawal_violation",
+    "article": "gdpr_art7",
+    "expected_articles": [
+      "gdpr_art7"
+    ],
+    "file": "service.py",
+    "code": "def withdraw_consent(user, marketing):\n    user.consent = False\n    marketing.set_processing(user.id, enabled=True)\n",
+    "rationale": "Consent-based processing must respect withdrawal; this operation handles consent rather than an objection.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "consent_withdrawal_control",
+    "article": "gdpr_art7",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def withdraw_consent(user, marketing):\n    user.consent = False\n    marketing.set_processing(user.id, enabled=False)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Consent-based processing must respect withdrawal; this operation handles consent rather than an objection.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "special_category_violation",
+    "article": "gdpr_art9",
+    "expected_articles": [
+      "gdpr_art9"
+    ],
+    "file": "service.py",
+    "code": "def upload_health_profile(patient, research_api):\n    explicit_consent = False\n    if not explicit_consent:\n        return research_api.upload(patient.diagnosis, basis=None)\n",
+    "rationale": "Health data research export explicitly proceeds without a special-category condition.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "special_category_control",
+    "article": "gdpr_art9",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def upload_health_profile(patient, research_api):\n    if not patient.explicit_consent:\n        raise PermissionError(\"Consent needed for this research upload\")\n    return research_api.upload(patient.diagnosis, basis=\"explicit_consent\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Health data research export explicitly proceeds without a special-category condition.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "erasure_violation",
+    "article": "gdpr_art17",
+    "expected_articles": [
+      "gdpr_art17"
+    ],
+    "file": "service.py",
+    "code": "def erase_customer(customer, primary, search, backups):\n    primary.delete(customer.id)\n    search.keep_personal_record(customer.id)\n    backups.erase_subject(customer.id)\n",
+    "rationale": "An accepted erasure operation leaves an expressly identified personal-data copy intact.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "erasure_control",
+    "article": "gdpr_art17",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def erase_customer(customer, primary, search, backups):\n    primary.delete(customer.id)\n    search.delete_subject(customer.id)\n    backups.erase_subject(customer.id)\n",
+    "rationale": "The visible safeguard addresses the tested defect. An accepted erasure operation leaves an expressly identified personal-data copy intact.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "restriction_violation",
+    "article": "gdpr_art18",
+    "expected_articles": [
+      "gdpr_art18"
+    ],
+    "file": "service.py",
+    "code": "def run_customer_profiling(customer, model):\n    if customer.processing_restricted:\n        return model.profile(customer)\n    return model.profile(customer)\n",
+    "rationale": "Active profiling must respect an applicable restriction on processing.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "restriction_control",
+    "article": "gdpr_art18",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def run_customer_profiling(customer, model):\n    if customer.processing_restricted:\n        return None\n    return model.profile(customer)\n",
+    "rationale": "The visible safeguard addresses the tested defect. Active profiling must respect an applicable restriction on processing.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "portability_violation",
+    "article": "gdpr_art20",
+    "expected_articles": [
+      "gdpr_art20"
+    ],
+    "file": "service.py",
+    "code": "def portable_copy(customer, records, renderer):\n    data = records.user_provided(customer.id, basis=\"contract\")\n    return renderer.image_only_pdf(data)\n",
+    "rationale": "The contract-based portability copy must be structured and machine readable.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "portability_control",
+    "article": "gdpr_art20",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def portable_copy(customer, records, renderer):\n    data = records.user_provided(customer.id, basis=\"contract\")\n    return renderer.json(data)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The contract-based portability copy must be structured and machine readable.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "objection_violation",
+    "article": "gdpr_art21",
+    "expected_articles": [
+      "gdpr_art21"
+    ],
+    "file": "service.py",
+    "code": "def send_campaign(customer, mailer):\n    if customer.marketing_opt_out:\n        mailer.send(customer.email, \"Offer\")\n",
+    "rationale": "Direct marketing must stop after an objection.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "objection_control",
+    "article": "gdpr_art21",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def send_campaign(customer, mailer):\n    if customer.marketing_opt_out:\n        return\n    mailer.send(customer.email, \"Offer\")\n",
+    "rationale": "The visible safeguard addresses the tested defect. Direct marketing must stop after an objection.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "review_violation",
+    "article": "gdpr_art22",
+    "expected_articles": [
+      "gdpr_art22"
+    ],
+    "file": "service.py",
+    "code": "def decide_loan(customer, model, decisions):\n    score = model.predict(customer)\n    human_review = False\n    decisions.binding_loan_rejection(customer.id, score, human_review=human_review, exception=None)\n",
+    "rationale": "A solely automated binding credit rejection lacks a demonstrated exception or meaningful human decision.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "review_control",
+    "article": "gdpr_art22",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def decide_loan(customer, model, decisions):\n    score = model.predict(customer)\n    decisions.submit_to_human_underwriter(customer.id, score, may_override=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. A solely automated binding credit rejection lacks a demonstrated exception or meaningful human decision.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "privacy_defaults_violation",
+    "article": "gdpr_art25",
+    "expected_articles": [
+      "gdpr_art25"
+    ],
+    "file": "service.py",
+    "code": "def initial_profile_preferences():\n    return {\"profile_public\": True, \"share_location\": True}\n",
+    "rationale": "Personal-profile disclosure and location sharing should not be unnecessarily enabled by default.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "privacy_defaults_control",
+    "article": "gdpr_art25",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def initial_profile_preferences():\n    return {\"profile_public\": False, \"share_location\": False}\n",
+    "rationale": "The visible safeguard addresses the tested defect. Personal-profile disclosure and location sharing should not be unnecessarily enabled by default.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "regulator_notice_violation",
+    "article": "gdpr_art33",
+    "expected_articles": [
+      "gdpr_art33"
+    ],
+    "file": "service.py",
+    "code": "def report_personal_data_breach(incident, dpa):\n    if incident.risk_to_individuals:\n        dpa.schedule_notification(incident, delay_hours=168, reason_for_delay=None)\n",
+    "rationale": "A known personal-data breach with risk must be notified without undue delay and, where feasible, within 72 hours.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "regulator_notice_control",
+    "article": "gdpr_art33",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def report_personal_data_breach(incident, dpa):\n    if incident.risk_to_individuals:\n        dpa.notify_now(incident.complete_report())\n",
+    "rationale": "The visible safeguard addresses the tested defect. A known personal-data breach with risk must be notified without undue delay and, where feasible, within 72 hours.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "breach_users_violation",
+    "article": "gdpr_art34",
+    "expected_articles": [
+      "gdpr_art34"
+    ],
+    "file": "service.py",
+    "code": "def handle_high_risk_breach(incident, notifications):\n    if incident.high_risk and not incident.protected_by_encryption:\n        notifications.notify_users(incident, enabled=False)\n",
+    "rationale": "A high-risk breach without a demonstrated exception requires communication to affected people.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "breach_users_control",
+    "article": "gdpr_art34",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def handle_high_risk_breach(incident, notifications):\n    if incident.high_risk and not incident.protected_by_encryption:\n        notifications.notify_users(incident, enabled=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. A high-risk breach without a demonstrated exception requires communication to affected people.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "transfer_safeguards_violation",
+    "article": "gdpr_art46",
+    "expected_articles": [
+      "gdpr_art46"
+    ],
+    "file": "service.py",
+    "code": "def transfer_customer_records(records, exporter):\n    scc_signed = False\n    return exporter.send(records, country=\"India\", scc_signed=scc_signed, adequacy=False, derogation=None)\n",
+    "rationale": "The transfer expressly relies on safeguards that are disabled.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "transfer_safeguards_control",
+    "article": "gdpr_art46",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def transfer_customer_records(records, exporter):\n    return exporter.send(records, country=\"India\", scc_signed=True, supplementary_measures=True)\n",
+    "rationale": "The visible safeguard addresses the tested defect. The transfer expressly relies on safeguards that are disabled.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "contract_without_consent",
+    "article": "gdpr_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def fulfil_order(order, courier):\n    legal_basis = \"contract\"\n    return courier.deliver(order.delivery_address, legal_basis=legal_basis)\n",
+    "rationale": "Consent is not the only lawful basis; necessary contract performance is a separate basis.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "aggregate_weather",
+    "article": "gdpr_art6",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def publish_weather(station, output):\n    return output.write({\"temperature_c\": station.temperature_c, \"rain_mm\": station.rain_mm})\n",
+    "rationale": "No personal-data processing is established.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "checksum",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "import hashlib\ndef legacy_package_checksum(public_archive):\n    return hashlib.md5(public_archive).hexdigest()\n",
+    "rationale": "A non-security checksum of public package bytes is not insecure personal-data password storage.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "medical_care",
+    "article": "gdpr_art9",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def record_clinical_care(patient, clinician, medical_record):\n    clinician.require_professional_secrecy()\n    return medical_record.store_diagnosis(patient.id, patient.diagnosis, legal_basis=\"medical_diagnosis_under_national_law\")\n",
+    "rationale": "Article 9(2)(h) allows qualifying health-care processing under appropriate conditions; explicit consent is not always required.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "local_transfer",
+    "article": "gdpr_art44",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def replicate_customer_data(records, storage):\n    storage.put(records, region=\"eu-central-1\", encrypted=True)\n",
+    "rationale": "This excerpt establishes no third-country transfer.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  },
+  {
+    "id": "opaque_helper",
+    "article": "gdpr_art32",
+    "expected_articles": [],
+    "file": "service.py",
+    "code": "def persist_account(customer, secure_store):\n    return secure_store.save_customer(customer)\n",
+    "rationale": "The excerpt cannot establish that the unseen helper lacks security controls.",
+    "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "split": "development"
+  }
+]
