@@ -339,7 +339,7 @@ Details worth knowing:
 precommiteu --version
 ```
 
-Prints `precommiteu 0.3.0`.
+Prints `precommiteu 0.3.1`.
 
 ### 2. File discovery works
 

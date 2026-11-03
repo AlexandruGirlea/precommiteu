@@ -40,6 +40,10 @@ CODE_EXTENSIONS: frozenset[str] = frozenset(
         ".scala",
         ".sc",
         ".rb",
+        ".vue",
+        ".svelte",
+        ".sql",
+        ".sh",
     }
 )
 

@@ -34,6 +34,10 @@ _GLOB_PATTERNS: tuple[str, ...] = (
     "**/*.php",
     "**/*.swift",
     "**/*.scala",
+    "**/*.vue",
+    "**/*.svelte",
+    "**/*.sql",
+    "**/*.sh",
 )
 
 
