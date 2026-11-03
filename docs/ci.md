@@ -24,7 +24,7 @@ machine of your own:
 Download the models once, on that machine:
 
 ```bash
-docker run --rm -v /opt/precommiteu/models:/models ghcr.io/alexandrugirlea/precommiteu:0.3.0 hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --revision v0.3.0 --local-dir /models
+docker run --rm -v /opt/precommiteu/models:/models ghcr.io/alexandrugirlea/precommiteu:0.3.1 hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --revision v0.3.0 --local-dir /models
 ```
 
 Add one `<pack>/detector-adapter.gguf` per pack you scan, for example
@@ -54,14 +54,14 @@ jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
     container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
       volumes:
         - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.0
+      - uses: AlexandruGirlea/precommiteu@v0.3.1
         with:
           regulations: gdpr
       - uses: github/codeql-action/upload-sarif@v3
@@ -84,6 +84,11 @@ nothing.
 `fetch-depth: 0` is still worth setting: the action un-shallows the clone
 itself, but doing it in `checkout` is faster.
 
+On `push`, the action compares the commit before the push with `HEAD`,
+including all commits in a multi-commit push and changes from force pushes.
+A newly created branch has no previous tree, so all its code is scanned.
+If the previous commit cannot be fetched, the job fails.
+
 ## GitLab CI
 
 Register the machine as a GitLab runner with the Docker executor and the tag
@@ -96,7 +101,7 @@ Register the machine as a GitLab runner with the Docker executor and the tag
 
 ```yaml
 precommiteu:
-  image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
   tags: [precommiteu]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -126,7 +131,7 @@ pr:
 pool: { name: precommiteu }
 
 container:
-  image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
   options: -v /opt/precommiteu/models:/models:ro
 
 steps:
@@ -153,15 +158,16 @@ matches a full ref path.
 On the same machine, run the image against a non-shallow checkout:
 
 ```bash
-docker run --rm -v "$PWD:/src" -w /src -v /opt/precommiteu/models:/models:ro -e GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" ghcr.io/alexandrugirlea/precommiteu:0.3.0 precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
+docker run --rm -v "$PWD:/src" -w /src -v /opt/precommiteu/models:/models:ro -e GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" ghcr.io/alexandrugirlea/precommiteu:0.3.1 precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
 ```
 
 ## What `--ci` scans
 
 The jobs above run `precommiteu scan --ci`. It scans only the files changed
-on the current branch against a merge-target branch, and reads exactly one
-environment variable, `GIT_MERGE_TARGET_BRANCH`, and nothing else from the CI
-platform:
+on the current branch against `GIT_MERGE_TARGET_BRANCH`. For push jobs, set
+`GIT_DIFF_BASE` to the commit before the push instead. The scanner reads
+no platform-specific event variables directly; the GitHub action sets these
+values automatically.
 
 ```bash
 git diff --name-only --diff-filter=AM "<merge-target>...HEAD"
@@ -169,6 +175,11 @@ git diff --name-only --diff-filter=AM "<merge-target>...HEAD"
 
 - Merge target comes from `GIT_MERGE_TARGET_BRANCH` (default `main`), resolved
   as the local ref first, then `origin/<branch>`. Neither present → exit 2.
+- When set, `GIT_DIFF_BASE` takes precedence and uses `git diff <base> HEAD`
+  instead of the three-dot comparison. Other CI platforms must supply their
+  before-push commit explicitly; comparing `main` to itself scans nothing.
+- Running from a subdirectory still selects files across the Git repository
+  and applies the repository root's `.eu-ignore`.
 - Three-dot diff, so commits landed on the target after you branched are not
   scanned. Added and modified files only; deletions are ignored.
 - The usual file filter still applies: code files only, tests skipped, files
@@ -180,7 +191,7 @@ Wire your platform's variable through `GIT_MERGE_TARGET_BRANCH`:
 
 | Platform | Value |
 |---|---|
-| GitHub Actions | `${{ github.base_ref }}` (empty on push; fall back to `main`) |
+| GitHub Actions | The action sets the PR target or the push baseline automatically |
 | GitLab CI | `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` |
 | Azure DevOps | `${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}` |
 | Jenkins | `${CHANGE_TARGET:-main}` |
@@ -248,8 +259,8 @@ To host the image in your own registry, build it from the repository's
 `Dockerfile`:
 
 ```bash
-docker build -t <your-registry>/precommiteu:0.3.0 https://github.com/AlexandruGirlea/precommiteu.git#v0.3.0
+docker build -t <your-registry>/precommiteu:0.3.1 https://github.com/AlexandruGirlea/precommiteu.git#v0.3.1
 ```
 
 Push it to a registry your CI can pull from, and use that name in place of
-`ghcr.io/alexandrugirlea/precommiteu:0.3.0`.
+`ghcr.io/alexandrugirlea/precommiteu:0.3.1`.

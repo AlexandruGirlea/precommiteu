@@ -75,6 +75,8 @@ covering eight regulations across six packs.
 One pack is active per scan. Packs you have are listed under `Downloaded`,
 the rest under `Available to download`.
 
+Refreshing the page keeps the active scan's regulation and labels.
+
 `Download · 77 MB` fetches that pack's detector adapter. The first download
 also fetches any missing shared models: the 4.36 GiB base and the 16.5 GiB
 orchestrator. A complete first download is about 22.5 GB; each subsequent pack
@@ -146,6 +148,10 @@ escalating, so a paused scan leaves no half-written report.
 The first run of a pack loads the model before any file is analysed. The UI
 shows this as a loading phase and learns how long your machine takes, so later
 estimates are closer.
+
+Elapsed time stops when the run completes, pauses or fails. Reselecting the
+same pack or saving settings preserves the scan's status; changing code or
+model settings still causes affected files to be rechecked.
 
 On macOS the scan holds the machine awake while it runs.
 

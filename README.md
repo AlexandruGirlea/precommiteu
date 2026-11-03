@@ -276,14 +276,14 @@ jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
     container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
       volumes:
         - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.0
+      - uses: AlexandruGirlea/precommiteu@v0.3.1
         with:
           regulations: gdpr
 ```

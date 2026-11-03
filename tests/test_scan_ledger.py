@@ -316,7 +316,7 @@ def test_advisories_come_back_with_a_reused_file(harness):
 
 def test_ci_does_not_touch_the_ledger(monkeypatch, tmp_path):
     seen: dict = {}
-    monkeypatch.setattr(scan_mod, "_require_git_repo", lambda _cwd: None)
+    monkeypatch.setattr(scan_mod, "_require_git_repo", lambda cwd: cwd)
     monkeypatch.setattr(scan_mod, "_resolve_merge_target", lambda t, _cwd: t)
     monkeypatch.setattr(scan_mod, "_changed_files", lambda _ref, _cwd: [tmp_path / "a.py"])
     monkeypatch.setattr(scan_mod, "scan_paths", lambda *a, **k: seen.update(k))

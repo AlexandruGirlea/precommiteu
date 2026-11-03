@@ -70,6 +70,8 @@ def read_file(
     resolved = sandbox.resolve(path)
     if _is_sensitive(resolved):
         raise PermissionError(f"{resolved.name} is excluded: it may hold secrets")
+    if not is_code_file(resolved, sandbox.roots[0], skip_tests=False):
+        raise PermissionError(f"{resolved.name} is excluded: not a scannable code file")
     text = _readable_text(resolved)
     if text is None:
         return {
@@ -174,7 +176,7 @@ def list_dir(
                 continue
             is_dir = child.is_dir()
             if not is_dir:
-                if child.suffix and not is_code_file(child, root):
+                if not is_code_file(child, root):
                     continue
             entries.append(
                 {
@@ -198,6 +200,8 @@ def glob(sandbox: Sandbox, pattern: str) -> dict[str, Any]:
         try:
             sandbox.resolve(str(match))
         except PermissionError:
+            continue
+        if match.is_file() and not is_code_file(match, root, skip_tests=False):
             continue
         matches.append(str(match))
         if len(matches) >= _MAX_LIST_DIR_ENTRIES:
@@ -262,6 +266,8 @@ def grep(
         try:
             sandbox.resolve(str(f))
         except PermissionError:
+            continue
+        if not is_code_file(f, sandbox.roots[0], skip_tests=False):
             continue
         vetted.append(str(f))
 

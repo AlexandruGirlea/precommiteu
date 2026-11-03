@@ -296,8 +296,8 @@ adapters stop the scan before models load.
 **Goal.** Fail a PR that introduces a confirmed violation, and show the finding
 in the code-scanning UI.
 
-The scanner reads exactly one CI variable, `GIT_MERGE_TARGET_BRANCH`. Wire your
-platform's variable into it:
+For pull requests, wire your platform's target branch into
+`GIT_MERGE_TARGET_BRANCH`:
 
 ```bash
 GIT_MERGE_TARGET_BRANCH="${GITHUB_BASE_REF:-main}" precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out pr-summary.md
@@ -308,6 +308,9 @@ GIT_MERGE_TARGET_BRANCH="${GITHUB_BASE_REF:-main}" precommiteu scan --ci --fail-
 files costs three files of inference, not a whole repo. It also turns on
 `--fail-on-error` implicitly, so a scan that could not read a file never
 reports a clean pass.
+
+For push jobs, set `GIT_DIFF_BASE` to the commit before the push instead.
+The GitHub Action handles both event types automatically.
 
 As a GitHub Actions workflow, on your own runner set up as in
 [CI integration](ci.md):
@@ -325,14 +328,14 @@ jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
     container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
       volumes:
         - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.0
+      - uses: AlexandruGirlea/precommiteu@v0.3.1
         with:
           regulations: gdpr
           fail-on-findings: "true"

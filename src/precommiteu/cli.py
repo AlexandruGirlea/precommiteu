@@ -39,6 +39,8 @@ CI mode (--ci):
   precommiteu does NOT read GITHUB_BASE_REF, CI_MERGE_REQUEST_TARGET_*,
   SYSTEM_PULLREQUEST_TARGETBRANCH, or any other CI-platform-specific env
   var. Wire them through GIT_MERGE_TARGET_BRANCH in your CI config.
+  For pushes, set GIT_DIFF_BASE to the commit before the push instead;
+  this compares its tree directly with HEAD, including force pushes.
 """
 
 
@@ -71,6 +73,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "CI mode: scan only files changed vs the merge-target branch "
             "named by $GIT_MERGE_TARGET_BRANCH (default: 'main'). "
+            "$GIT_DIFF_BASE overrides this with a direct comparison to HEAD. "
             "Mutually exclusive with positional paths."
         ),
     )
@@ -535,8 +538,10 @@ def main(argv: list[str] | None = None) -> int:
         repo_root = pathlib.Path.cwd().resolve()
         if args.ci:
             try:
-                _require_git_repo(repo_root)
-                target = os.environ.get("GIT_MERGE_TARGET_BRANCH", "main")
+                repo_root = _require_git_repo(repo_root)
+                target = os.environ.get("GIT_DIFF_BASE") or os.environ.get(
+                    "GIT_MERGE_TARGET_BRANCH", "main"
+                )
                 ref = _resolve_merge_target(target, repo_root)
                 paths = _changed_files(ref, repo_root)
             except GitDiffError as exc:

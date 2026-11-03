@@ -994,12 +994,13 @@ def _run_git_bytes(
     )
 
 
-def _require_git_repo(cwd: pathlib.Path) -> None:
-    proc = _run_git(["rev-parse", "--git-dir"], cwd)
+def _require_git_repo(cwd: pathlib.Path) -> pathlib.Path:
+    proc = _run_git(["rev-parse", "--show-toplevel"], cwd)
     if proc.returncode != 0:
         raise GitDiffError(
             "--ci requires a git repository; current dir is not a git checkout"
         )
+    return pathlib.Path(proc.stdout.rstrip("\n")).resolve()
 
 
 def _resolve_merge_target(merge_target: str, cwd: pathlib.Path) -> str:
@@ -1018,6 +1019,10 @@ def _resolve_merge_target(merge_target: str, cwd: pathlib.Path) -> str:
 
 
 def _changed_files(target_ref: str, cwd: pathlib.Path) -> list[pathlib.Path]:
+    revisions = (
+        [target_ref, "HEAD"] if os.environ.get("GIT_DIFF_BASE")
+        else [f"{target_ref}...HEAD"]
+    )
     # -z: NUL-separated raw paths, immune to quotePath escaping of
     # non-ASCII filenames.
     proc = _run_git_bytes(
@@ -1027,7 +1032,8 @@ def _changed_files(target_ref: str, cwd: pathlib.Path) -> list[pathlib.Path]:
             "-z",
             "--no-renames",
             "--diff-filter=AM",
-            f"{target_ref}...HEAD",
+            *revisions,
+            "--",
         ],
         cwd,
     )
@@ -1066,10 +1072,9 @@ def scan_diff(
     max_file_bytes: int | None = MAX_SCAN_FILE_BYTES,
     context_excludes: Iterable[str | pathlib.Path] = (),
 ) -> ScanResult:
-    cwd = (repo_root or pathlib.Path.cwd()).resolve()
-    _require_git_repo(cwd)
+    cwd = _require_git_repo((repo_root or pathlib.Path.cwd()).resolve())
 
-    target = merge_target or os.environ.get(
+    target = os.environ.get("GIT_DIFF_BASE") or merge_target or os.environ.get(
         GIT_MERGE_TARGET_BRANCH_ENV, DEFAULT_MERGE_TARGET
     )
     resolved_ref = _resolve_merge_target(target, cwd)

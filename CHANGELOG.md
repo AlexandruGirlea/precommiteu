@@ -9,6 +9,20 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.3.1
+
+- Scan every change in a GitHub push, including multi-commit and force pushes.
+  Use the remote merge target for pull requests and fail when required history
+  cannot be fetched. Other CI systems can set `GIT_DIFF_BASE` explicitly.
+- Resolve CI scans from the repository root when invoked in a subdirectory.
+- Support Vue, Svelte, SQL and shell source files. Apply code-file and ignore
+  filtering to repository context reads, searches and directory listings.
+- Keep the active regulation's labels and article titles after refreshing the UI.
+- Preserve completed, paused and failed scan status when reselecting a pack or
+  saving settings.
+- Stop the elapsed-time counter when a scan ends, including in PDF reports.
+- Keep the selected sidebar item readable when hovered.
+
 ## 0.3.0
 
 - Run the orchestrator and validator on a new shared model, `orchestrator.gguf`

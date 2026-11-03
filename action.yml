@@ -15,7 +15,7 @@ inputs:
     description: Comma-separated regulation packs to scan against.
     default: gdpr
   paths:
-    description: Paths to scan. Empty scans files changed vs the merge target.
+    description: Paths to scan. Empty scans PR changes or the changes in a push.
     default: ""
   fail-on-findings:
     description: Fail the job when confirmed findings remain.
@@ -38,21 +38,37 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Resolve merge-target history
+    - name: Resolve diff history
+      id: diff
       if: inputs.paths == ''
       shell: bash
       env:
         TARGET: ${{ github.base_ref || github.event.repository.default_branch || 'main' }}
+        EVENT_NAME: ${{ github.event_name }}
+        BEFORE: ${{ github.event.before }}
       run: |
-        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-          git fetch --unshallow --quiet || true
+        if [ "$EVENT_NAME" = "push" ]; then
+          if [ -z "$BEFORE" ]; then
+            echo "::error::Push event is missing its before commit."
+            exit 2
+          elif [[ "$BEFORE" =~ ^0+$ ]]; then
+            BEFORE=$(git hash-object -w -t tree --stdin </dev/null)
+          else
+            git cat-file -e "${BEFORE}^{commit}" 2>/dev/null || git fetch --quiet origin "$BEFORE"
+          fi
+          echo "base=$BEFORE" >> "$GITHUB_OUTPUT"
+        else
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --unshallow --quiet
+          fi
+          git fetch --quiet origin "+refs/heads/${TARGET}:refs/remotes/origin/${TARGET}"
         fi
-        git fetch --quiet origin "+refs/heads/${TARGET}:refs/remotes/origin/${TARGET}" || true
 
     - name: Scan
       shell: bash
       env:
-        GIT_MERGE_TARGET_BRANCH: ${{ github.base_ref || github.event.repository.default_branch || 'main' }}
+        GIT_MERGE_TARGET_BRANCH: origin/${{ github.base_ref || github.event.repository.default_branch || 'main' }}
+        GIT_DIFF_BASE: ${{ steps.diff.outputs.base }}
         REGULATIONS: ${{ inputs.regulations }}
         PATHS: ${{ inputs.paths }}
         SARIF: ${{ inputs.sarif }}

@@ -45,7 +45,7 @@ sends over the network: [Local UI](ui.md).
 | Flag | Expects | Default | Purpose |
 | --- | --- | --- | --- |
 | `paths` (positional) | one or more files/directories | none | What to scan. Omit when using `--ci`. |
-| `--ci` | flag | off | Scan only files changed vs the merge-target branch named by `$GIT_MERGE_TARGET_BRANCH` (default `main`). Mutually exclusive with positional paths. |
+| `--ci` | flag | off | Scan changes against `$GIT_DIFF_BASE` when set, otherwise the merge-target branch named by `$GIT_MERGE_TARGET_BRANCH` (default `main`). Mutually exclusive with positional paths. |
 | `--regulations` | comma-separated pack names | `gdpr` | Regulation packs to run. Each name must resolve to an installed regulation pack. |
 | `--models-dir` | directory path | unset | Directory holding the model files (`base.gguf`, `orchestrator.gguf`, `<regulation>/detector-adapter.gguf`). Overrides `$PRECOMMITEU_MODELS_DIR`. |
 | `--detector-grammar` | GBNF file path | built-in grammar | Pins the output grammar for the detector call (expert). |
@@ -95,6 +95,10 @@ precommiteu scan src/ --dry-run
 
 Explicitly targeting a test or fixture directory opts its source files into the scan. Repository-wide walks still skip tests, and `.eu-ignore` rules still apply.
 
+Vue (`.vue`), Svelte (`.svelte`), SQL (`.sql`) and shell (`.sh`) files are also
+included. Context tools apply the same code-file and ignore filters, so
+repository documentation and unrelated data files are excluded from context.
+
 Scan with a different regulation pack, or several at once:
 
 ```sh
@@ -108,7 +112,13 @@ CI mode, scan only the files changed vs a merge-target branch:
 GIT_MERGE_TARGET_BRANCH=${GITHUB_BASE_REF:-main} precommiteu scan --ci --fail-on-findings
 ```
 
-`--ci` is CI-platform-agnostic: it reads only `$GIT_MERGE_TARGET_BRANCH` (default `main`), resolves it locally or as `origin/<branch>`, and scans files added or modified in `git diff <target>...HEAD`. Wire your CI platform's variable through `GIT_MERGE_TARGET_BRANCH` yourself. Passing positional paths together with `--ci` is an error.
+`--ci` reads `$GIT_MERGE_TARGET_BRANCH` (default `main`), resolves it locally or as
+`origin/<branch>`, and scans files added or modified in `git diff <target>...HEAD`.
+For push jobs, set `$GIT_DIFF_BASE` to the commit before the push; it takes
+precedence and uses `git diff <base> HEAD`, including force-push changes.
+The GitHub Action sets these values automatically; other CI systems must supply
+them explicitly. Running from a subdirectory still scans across the repository.
+Passing positional paths together with `--ci` is an error.
 
 ## Incremental rescans
 

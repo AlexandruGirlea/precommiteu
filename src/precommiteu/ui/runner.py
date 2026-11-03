@@ -72,8 +72,10 @@ class Session:
         self.proc: subprocess.Popen | None = None
         self.thread: threading.Thread | None = None
         self.lock = threading.Lock()
-        self.phase = "idle"
-        self.error: str | None = None
+        run = self.state.get("run") or {}
+        self.phase = run.get("phase", "idle")
+        self.error: str | None = run.get("error")
+        self.elapsed_s = run.get("elapsed_s", 0.0)
         self._plan_error: str | None = None
         self.adapter: str | None = None
         self.files: list[str] = []
@@ -168,6 +170,8 @@ class Session:
                 return
             self.state["files"] = {}
             self.state["advisories"] = []
+            self.spawned_at = 0.0
+            self.elapsed_s = 0.0
             self.state["run"] = {"started_at": _stamp(), "interrupted": False}
             state.save(self.state)
             if not self.files:
@@ -227,6 +231,14 @@ class Session:
                 if self.phase == "running":
                     self.phase = "failed"
                     self.error = self.error or "scan stopped unexpectedly"
+                self.elapsed_s = (
+                    time.monotonic() - self.spawned_at if self.spawned_at else 0.0
+                )
+                self.state["run"].update(
+                    ended_at=_stamp(), phase=self.phase,
+                    error=self.error, elapsed_s=self.elapsed_s,
+                )
+                state.save(self.state)
 
     def _scan(self) -> None:
         run_dir = settings.runs_dir()
@@ -289,8 +301,7 @@ class Session:
                 self.state["timing"]["cold_start_sec"] = (
                     observed if n == 0 else cold * 0.7 + observed * 0.3
                 )
-            self.state["run"] = {"ended_at": _stamp(), "interrupted": interrupted}
-            state.save(self.state)
+            self.state["run"]["interrupted"] = interrupted
             self.current = None
             if interrupted:
                 self.phase = "paused"
@@ -331,7 +342,11 @@ class Session:
                 self.forecast[f] for f in self.plan if f != self.current and f not in files
             ]
             current_entry = self.forecast.get(self.current) if self.current else None
-            elapsed = time.monotonic() - self.spawned_at if self.spawned_at else 0.0
+            elapsed = (
+                time.monotonic() - self.spawned_at
+                if self.phase == "running" and self.spawned_at
+                else self.elapsed_s
+            )
             cold_left = (
                 max(0.0, timing["cold_start_sec"] - elapsed)
                 if self.phase == "running" and not self.first_file_at
@@ -386,7 +401,7 @@ class Session:
                 "cold_remaining": round(cold_left, 1),
                 "cold_total": round(timing["cold_start_sec"], 1),
                 "eta_s": round(self.shown_eta) if self.shown_eta else None,
-                "elapsed_s": round(elapsed) if self.spawned_at else 0,
+                "elapsed_s": round(elapsed),
                 "files": rows,
                 "files_done": done,
                 "files_total": len(rows),
