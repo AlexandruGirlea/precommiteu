@@ -15,7 +15,7 @@ from importlib.resources import files
 from typing import Any
 
 from precommiteu.agents.orchestrator import OrchestratorRun, run_orchestrator
-from precommiteu.chunking import CanonicalChunk, token_chunks
+from precommiteu.chunking import CanonicalChunk, token_chunks, token_counter
 from precommiteu.config import (
     DEFAULT_MAX_ITERATIONS,
     DEFAULT_WALL_SECONDS_PER_FILE,
@@ -24,11 +24,7 @@ from precommiteu.config import (
     PROMOTE_SIMILARITY,
 )
 from precommiteu.debuglog import validator_debug
-from precommiteu.defaults import (
-    MISSING_MODELS_HINT,
-    default_detector_adapter,
-    default_orchestrator_model,
-)
+from precommiteu.defaults import model_bundle
 from precommiteu.direct import run_direct
 from precommiteu.grammar import DETECTOR_GBNF, LOOP_STEP_GBNF, VALIDATOR_GBNF
 from precommiteu.llama_server import launch_llama_server
@@ -39,7 +35,12 @@ from precommiteu.regulations import (
     pack_article_ids,
 )
 from precommiteu.retrieval import CaseIndex
-from precommiteu.scan_ledger import ScanLedger
+from precommiteu.scan_ledger import (
+    ScanLedger,
+    context_fingerprint,
+    default_ledger_path,
+    fingerprint,
+)
 from precommiteu.src.chunk_view import ChunkConsultLog
 from precommiteu.src.eu_ignore_marker import (
     match_eu_ignore_marker_in_range,
@@ -85,7 +86,10 @@ class _RegCounters:
     files_errored: int = 0
 
 
-_ANALYSIS_FAILURE_REASONS = frozenset({"loop_step_failed", "direct_partial"})
+_ANALYSIS_FAILURE_REASONS = frozenset({
+    "loop_step_failed", "direct_partial", "budget_exhausted_time",
+    "budget_exhausted_iters", "file_unreadable", "unknown_regulation",
+})
 
 # The file was analysed end to end. Every other ending (budget exhausted, a
 # failed step, an unreadable file) leaves work undone, so it is never recorded
@@ -131,30 +135,25 @@ def _resolve_evidence_chunk(
     if not chunks:
         return None
     for c in chunks:
-        if evidence and evidence in c.text:
+        if _evidence_line_range(c, evidence) is not None:
             return c
-    return chunks[0]
+    return None
 
 
 def _evidence_line_range(
     chunk: CanonicalChunk,
     evidence: str,
-) -> tuple[int, int]:
+) -> tuple[int, int] | None:
     text = evidence.strip()
     if not text:
-        return chunk.start_line, chunk.end_line
-    span = text.count("\n")
-    index = chunk.text.find(text)
-    if index >= 0:
-        start = chunk.start_line + chunk.text.count("\n", 0, index)
-        return start, min(start + span, chunk.end_line)
-    first = " ".join(text.splitlines()[0].split())
-    if first:
-        for offset, line in enumerate(chunk.text.splitlines()):
-            if first in " ".join(line.split()):
-                start = chunk.start_line + offset
-                return start, min(start + span, chunk.end_line)
-    return chunk.start_line, chunk.end_line
+        return None
+    match = re.search(r"\s+".join(map(re.escape, text.split())), chunk.text)
+    if match is None:
+        return None
+    return (
+        chunk.start_line + chunk.text.count("\n", 0, match.start()),
+        chunk.start_line + chunk.text.count("\n", 0, match.end()),
+    )
 
 
 def _build_finding(
@@ -167,7 +166,10 @@ def _build_finding(
     evidence: str,
     inline_markers: list,
 ) -> Finding:
-    start_line, end_line = _evidence_line_range(chunk, evidence)
+    span = _evidence_line_range(chunk, evidence)
+    if span is None:
+        raise ValueError("finding evidence is absent from its source chunk")
+    start_line, end_line = span
     finding = Finding(
         regulation=regulation,
         source="precommiteu",
@@ -216,6 +218,11 @@ def _translate_kept_findings(
         evidence = (vf.get("code_evidence") or "").strip()
         description = (vf.get("description") or "").strip()
         evidence_visible = _validator_evidence_visible(evidence, consulted_text)
+        host_chunk = next(
+            (c for c in chunks if c.id == vf.get("chunk_id")
+             and _evidence_line_range(c, evidence) is not None),
+            None,
+        ) or _resolve_evidence_chunk(chunks, evidence)
         if drop_reason is None:
             if not description:
                 drop_reason = "description_missing"
@@ -223,6 +230,8 @@ def _translate_kept_findings(
                 drop_reason = "evidence_missing"
             elif not evidence_visible:
                 drop_reason = "evidence_not_visible"
+            elif host_chunk is None:
+                drop_reason = "evidence_not_in_target"
 
         validator_debug(
             {
@@ -248,9 +257,6 @@ def _translate_kept_findings(
                 )
             continue
 
-        host_chunk = next(
-            (c for c in chunks if c.id == vf.get("chunk_id")), None
-        ) or _resolve_evidence_chunk(chunks, evidence)
         if host_chunk is None:
             continue
 
@@ -270,7 +276,9 @@ def _translate_kept_findings(
     return findings_out, rejected
 
 
-def _references_siblings(text: str, file_path: pathlib.Path) -> bool:
+def _references_siblings(
+    text: str, file_path: pathlib.Path, repo_root: pathlib.Path | None = None,
+) -> bool:
     try:
         stems = set(
             itertools.islice(
@@ -284,14 +292,24 @@ def _references_siblings(text: str, file_path: pathlib.Path) -> bool:
         )
     except OSError:
         return False
-    if not stems:
-        return False
     pattern = re.compile(
         r"\b(?:" + "|".join(map(re.escape, sorted(stems))) + r")\b"
     )
     # URL path components (e.g. /models/) are not local module references.
     code_without_urls = re.sub(r"https?://[^\s\"'<>]+", "", text)
-    return bool(pattern.search(code_without_urls))
+    if stems and pattern.search(code_without_urls):
+        return True
+    if repo_root is not None:
+        imports = re.findall(r'''\b(?:from|import)\s+["']?([.\w/-]+)''', code_without_urls)
+        for module in imports:
+            relative = module if "/" in module else module.lstrip(".").replace(".", "/")
+            for root in (file_path.parent, repo_root, repo_root / "src"):
+                for suffix in ("", ".py", ".js", ".ts"):
+                    candidate = (root / (relative + suffix)).resolve()
+                    if (candidate != file_path.resolve() and candidate.exists()
+                            and candidate.is_relative_to(repo_root.resolve())):
+                        return True
+    return False
 
 
 def _load_case_index(regulation: str) -> CaseIndex | None:
@@ -388,7 +406,10 @@ def _scan_one_file(
     on_advisory: AdvisoryCallback | None = None,
     case_index: CaseIndex | None = None,
     agent_mode: str = "auto",
+    context_excludes: tuple[pathlib.Path, ...] = (),
 ) -> tuple[list[Finding], bool]:
+    file_path = file_path.resolve()
+    repo_root = repo_root.resolve()
     try:
         text = file_path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
@@ -415,7 +436,9 @@ def _scan_one_file(
         return [], False
 
     inline_markers = parse_eu_ignore_markers_for_scan_text(text)
-    chunks = token_chunks(file_path, filtered_text)
+    chunks = token_chunks(
+        file_path, filtered_text, count_tokens=token_counter(detector_model),
+    )
     counters.chunks_scanned += len(chunks)
 
     _maybe_call(
@@ -428,14 +451,14 @@ def _scan_one_file(
         },
     )
 
-    scan_root = file_path.parent.resolve()
+    scan_root = repo_root if file_path.is_relative_to(repo_root) else file_path.parent
 
     use_orchestrator = agent_mode == "orchestrator" or (
-        agent_mode == "auto" and _references_siblings(filtered_text, file_path)
+        agent_mode == "auto" and _references_siblings(filtered_text, file_path, scan_root)
     )
     fell_back = False
     if use_orchestrator:
-        code_sandbox = Sandbox((scan_root,))
+        code_sandbox = Sandbox((scan_root,), excluded_paths=context_excludes)
         regulation_sandbox = Sandbox((regulation_docs_dir,))
         started = time.monotonic()
         run: OrchestratorRun = run_orchestrator(
@@ -467,6 +490,7 @@ def _scan_one_file(
                 detector_model=detector_model,
                 validator_model=validator_model,
                 regulation_pack=get_regulation_pack(regulation),
+                enriched_chunks=run.enriched_chunks,
                 wall_seconds=max(
                     0.0, wall_seconds_per_file - (time.monotonic() - started)
                 ),
@@ -578,12 +602,63 @@ def _scan_one_file(
     return findings_out, run.exit_reason in _CLEAN_EXIT_REASONS
 
 
+def _scan_cache_inputs(
+    selected_files: list[pathlib.Path],
+    repo_root: pathlib.Path,
+    *,
+    regulation_docs_dir: pathlib.Path | None = None,
+    agent_mode: str = "auto",
+    n_ctx: int = 32768,
+    n_gpu_layers: int = 99,
+    threads: int | None = None,
+    max_iterations: int = DEFAULT_MAX_ITERATIONS,
+    wall_seconds_per_file: float = DEFAULT_WALL_SECONDS_PER_FILE,
+    detector_grammar: str = DETECTOR_GBNF,
+    context_excludes: tuple[pathlib.Path, ...] = (),
+) -> tuple[dict[str, str | None], dict[str, Any]]:
+    if regulation_docs_dir is None:
+        regulation_docs_dir = pathlib.Path(__file__).resolve().parent / "regulations"
+    contexts: dict[str, str | None] = {}
+    root_contexts: dict[pathlib.Path, str] = {}
+    for file_path in selected_files:
+        label = _file_label(file_path, repo_root)
+        root = (repo_root if file_path.is_relative_to(repo_root)
+                else file_path.parent)
+        needs_context = agent_mode == "orchestrator"
+        if agent_mode == "auto":
+            try:
+                text = apply_prompt_ignore_directives(
+                    file_path.read_text(encoding="utf-8", errors="replace")
+                )
+            except OSError:
+                needs_context = True
+            else:
+                needs_context = text is not None and _references_siblings(
+                    text, file_path, root,
+                )
+        if needs_context and root not in root_contexts:
+            root_contexts[root] = context_fingerprint(
+                root, excluded_paths=context_excludes,
+            )
+        contexts[label] = root_contexts[root] if needs_context else None
+    configuration = {
+        "agent_mode": agent_mode,
+        "n_ctx": n_ctx,
+        "n_gpu_layers": n_gpu_layers,
+        "threads": threads,
+        "max_iterations": max_iterations,
+        "wall_seconds_per_file": wall_seconds_per_file,
+        "detector_grammar": detector_grammar,
+        "regulation_docs": context_fingerprint(regulation_docs_dir),
+    }
+    return contexts, configuration
+
+
 def scan_paths(
     paths: Iterable[str | pathlib.Path],
     *,
     regulations: tuple[str, ...] = (DEFAULT_REGULATION,),
-    orchestrator_model_path: pathlib.Path | None = None,
-    detector_adapter_path: pathlib.Path | None = None,
+    models_dir: pathlib.Path | None = None,
     detector_grammar_path: pathlib.Path | None = None,
     agent_mode: str = "auto",
     n_ctx: int = 32768,
@@ -600,16 +675,21 @@ def scan_paths(
     incremental: bool = True,
     rescan_all: bool = False,
     scan_log: pathlib.Path | None = None,
+    context_excludes: Iterable[str | pathlib.Path] = (),
 ) -> ScanResult:
     started_at = time.monotonic()
     repo_root = (repo_root or pathlib.Path.cwd()).resolve()
+    context_excludes = tuple(
+        pathlib.Path(p).expanduser().resolve() for p in context_excludes
+    )
+    if incremental:
+        context_excludes += tuple(
+            scan_log or default_ledger_path(repo_root, r) for r in regulations
+        )
     if regulation_docs_dir is None:
         regulation_docs_dir = pathlib.Path(__file__).resolve().parent / "regulations"
 
-    if orchestrator_model_path is None:
-        orchestrator_model_path = default_orchestrator_model()
-    if orchestrator_model_path is None:
-        raise ValueError(f"no model paths configured; {MISSING_MODELS_HINT}")
+    orchestrator_path, detector_path, adapters = model_bundle(models_dir, regulations)
 
     raw_paths = [pathlib.Path(p).expanduser() for p in paths]
     selected_files, oversized = collect_code_files(
@@ -656,6 +736,7 @@ def scan_paths(
     interrupted_after: dict[str, int] = {}
 
     ledgers: dict[str, ScanLedger] = {}
+    contexts: dict[str, str | None] = {}
     pending = {r: list(selected_files) for r in regulations}
     reused = dict.fromkeys(regulations, 0)
     if incremental:
@@ -664,14 +745,37 @@ def scan_paths(
                 "one scan_log cannot serve several regulations; a ledger "
                 "records one regulation only"
             )
+        contexts, configuration = _scan_cache_inputs(
+            selected_files, repo_root,
+            regulation_docs_dir=regulation_docs_dir,
+            agent_mode=agent_mode,
+            n_ctx=n_ctx,
+            n_gpu_layers=n_gpu_layers,
+            threads=threads,
+            max_iterations=max_iterations,
+            wall_seconds_per_file=wall_seconds_per_file,
+            detector_grammar=detector_grammar,
+            context_excludes=context_excludes,
+        )
         for regulation in regulations:
-            ledger = ScanLedger.load(repo_root, regulation, scan_log)
+            ledger = ScanLedger.load(
+                repo_root, regulation, scan_log,
+                configuration={
+                    **configuration,
+                    "models": fingerprint([
+                        orchestrator_path, detector_path, adapters[regulation],
+                    ]),
+                },
+            )
             ledgers[regulation] = ledger
             todo: list[pathlib.Path] = []
             for file_path in selected_files:
                 label = _file_label(file_path, repo_root)
-                hit = None if rescan_all else ledger.reuse(label)
+                hit = (None if rescan_all else ledger.reuse(
+                    label, context=contexts[label],
+                ))
                 if hit is None:
+                    ledger.entries.pop(label, None)
                     todo.append(file_path)
                     continue
                 past_findings, past_advisories = hit
@@ -705,17 +809,11 @@ def scan_paths(
             )
 
     if any(pending.values()):
-        base_model = pathlib.Path(orchestrator_model_path)
-        explicit_adapter = (
-            pathlib.Path(detector_adapter_path)
-            if detector_adapter_path is not None
-            else None
-        )
-        with ExitStack() as base_stack:
+        with ExitStack() as orchestrator_stack:
             try:
-                base_handle = base_stack.enter_context(
+                orchestrator_handle = orchestrator_stack.enter_context(
                     launch_llama_server(
-                        base_model,
+                        orchestrator_path,
                         n_ctx=n_ctx,
                         n_gpu_layers=n_gpu_layers,
                         n_threads=threads,
@@ -725,49 +823,35 @@ def scan_paths(
                 _LOG.error("scan: failed to launch llama-servers: %s", exc)
                 raise
 
-            orchestrator_loop_model = build_chat_model(base_handle, grammar=LOOP_STEP_GBNF)
-            validator_model = build_chat_model(base_handle, grammar=VALIDATOR_GBNF)
+            orchestrator_loop_model = build_chat_model(
+                orchestrator_handle, grammar=LOOP_STEP_GBNF
+            )
+            validator_model = build_chat_model(orchestrator_handle, grammar=VALIDATOR_GBNF)
 
             for reg_index, regulation in enumerate(regulations):
                 if not pending[regulation]:
                     continue
                 ledger = ledgers.get(regulation)
-                reg_adapter = explicit_adapter
-                if reg_adapter is None:
-                    candidate = default_detector_adapter(regulation, base_model.parent)
-                    reg_adapter = candidate if candidate and candidate.exists() else None
-                if reg_adapter is None:
-                    _LOG.warning(
-                        "no detector adapter for %r; scanning with the base model only "
-                        "(degraded mode)",
-                        regulation,
-                    )
+                reg_adapter = adapters[regulation]
                 _maybe_call(
                     on_progress,
                     {
                         "event": "detector_adapter",
                         "regulation": regulation,
-                        "adapter": (
-                            f"{reg_adapter.parent.name}/{reg_adapter.name}"
-                            if reg_adapter is not None
-                            else "base model (degraded)"
-                        ),
+                        "adapter": f"{reg_adapter.parent.name}/{reg_adapter.name}",
                     },
                 )
 
                 with ExitStack() as detector_stack:
-                    if reg_adapter is not None:
-                        detector_handle = detector_stack.enter_context(
-                            launch_llama_server(
-                                base_model,
-                                n_ctx=n_ctx,
-                                n_gpu_layers=n_gpu_layers,
-                                n_threads=threads,
-                                lora_path=reg_adapter,
-                            )
+                    detector_handle = detector_stack.enter_context(
+                        launch_llama_server(
+                            detector_path,
+                            n_ctx=n_ctx,
+                            n_gpu_layers=n_gpu_layers,
+                            n_threads=threads,
+                            lora_path=reg_adapter,
                         )
-                    else:
-                        detector_handle = base_handle
+                    )
                     detector_model = build_chat_model(
                         detector_handle, grammar=detector_grammar
                     )
@@ -781,6 +865,7 @@ def scan_paths(
                             findings_out, analysed = _scan_one_file(
                                 case_index=case_indexes[regulation],
                                 agent_mode=agent_mode,
+                                context_excludes=context_excludes,
                                 file_path=file_path,
                                 regulation=regulation,
                                 repo_root=repo_root,
@@ -831,6 +916,7 @@ def scan_paths(
                                     stamp,
                                     findings_out,
                                     all_advisories[advisory_mark:],
+                                    context=contexts[label],
                                 )
                                 ledger.save()
                         files_done += 1
@@ -858,7 +944,10 @@ def scan_paths(
         statuses.append(
             ScanStatus(
                 regulation=regulation,
-                status="failed" if c.files_errored else "scanned",
+                status=(
+                    "failed" if c.files_errored
+                    or regulation in interrupted_after else "scanned"
+                ),
                 detail="; ".join(detail_parts) or None,
                 chunks_scanned=c.chunks_scanned,
                 detector_candidates=c.detector_candidates,
@@ -961,8 +1050,7 @@ def scan_diff(
     *,
     merge_target: str | None = None,
     regulations: tuple[str, ...] = (DEFAULT_REGULATION,),
-    orchestrator_model_path: pathlib.Path | None = None,
-    detector_adapter_path: pathlib.Path | None = None,
+    models_dir: pathlib.Path | None = None,
     detector_grammar_path: pathlib.Path | None = None,
     agent_mode: str = "auto",
     n_ctx: int = 32768,
@@ -976,6 +1064,7 @@ def scan_diff(
     repo_root: pathlib.Path | None = None,
     regulation_docs_dir: pathlib.Path | None = None,
     max_file_bytes: int | None = MAX_SCAN_FILE_BYTES,
+    context_excludes: Iterable[str | pathlib.Path] = (),
 ) -> ScanResult:
     cwd = (repo_root or pathlib.Path.cwd()).resolve()
     _require_git_repo(cwd)
@@ -1015,8 +1104,7 @@ def scan_diff(
     return scan_paths(
         files,
         regulations=regulations,
-        orchestrator_model_path=orchestrator_model_path,
-        detector_adapter_path=detector_adapter_path,
+        models_dir=models_dir,
         detector_grammar_path=detector_grammar_path,
         agent_mode=agent_mode,
         n_ctx=n_ctx,
@@ -1033,4 +1121,5 @@ def scan_diff(
         # Every file here is changed vs the merge target, so a ledger would
         # never hit; and CI runners are meant to keep no state between runs.
         incremental=False,
+        context_excludes=context_excludes,
     )

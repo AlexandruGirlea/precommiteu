@@ -8,6 +8,10 @@ authoritative wording, follow the EUR-Lex link rendered with each finding.
 
 # DORA (Digital Operational Resilience Act)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: Establish a covered financial entity and the applicable duty for every article, including backups and recovery. A retail/health application or payment-like variable alone does not establish DORA scope. A microenterprise is not automatically an Article 16 entity; duties and individual exemptions must be checked separately.
+
 ## dora_art6
 Reference: DORA Art. 6
 Title: ICT risk management framework
@@ -80,10 +84,11 @@ Title: Backup policies and procedures, restoration and recovery procedures and m
 Regulation: DORA
 Source CELEX: 32022R2554
 
-Summary: Firms must back up data with scope and frequency set by criticality, and restore with minimal downtime and loss. Restore systems must be physically and logically segregated from the source. Backup and restore procedures must be tested periodically.
-Developer impact: Drive backup schedules from criticality tags, restore into segregated infrastructure, encrypt and integrity-check backups, and gate backup-config changes on restore tests.
-Code smells: one hardcoded daily backup schedule for all systems; restore environment in the same VPC/subnet as the primary; backups without KMS encryption, versioning, or integrity hashes; CI changes backup retention without a restore test
+Summary: Financial entities need appropriate backup and restoration arrangements, secure restoration systems, recovery objectives tied to function criticality and necessary integrity checks/reconciliation after recovery, including reconstruction from external stakeholders (12(7)).
+Developer impact: Establish financial-entity scope for every backup finding. CSD transaction recovery is art61; CCP recovery of all transactions at disruption is addressed by 12(3). No keyword automatically establishes an architectural failure.
+Code smells: A supplied recovery path explicitly bypasses required integrity/reconciliation checks before returning restored data to service; a demonstrated backup or restoration control defeats confidentiality, integrity or recoverability.
 Related: dora_art11, dora_art61
+Conditions and exceptions: Verification occurs in a shown recovery component; an unseen helper may perform it; a shared VPC/account/region or absent encryption/versioning keyword alone is offered as proof that required segregation/security is absent.
 
 ## dora_art14
 Reference: DORA Art. 14
@@ -91,10 +96,11 @@ Title: Communication
 Regulation: DORA
 Source CELEX: 32022R2554
 
-Summary: Firms need crisis communication plans for major ICT incidents. Clients, counterparties, and the public must be informed through responsible disclosure. Internal alerting must separate response staff from staff who only need to be informed. One named person owns the communication role.
-Developer impact: Build automated client/counterparty notification flows, a status page with a real major-incident disclosure path, and role-based alert routing with distinct recipient groups.
-Code smells: major-incident branch updates an internal dashboard but never notifies clients; status_page shows only a generic message with no disclosure path; alert routing sends every incident to one channel for all staff; comms tooling has no named owner; counterparty recipient mapping missing from runbooks
+Summary: Financial entities need crisis-communication plans enabling responsible disclosure as appropriate, differentiated communication to response staff and staff who need informing, and an assigned public/media communication function.
+Developer impact: Article 14 addresses crisis-communication planning; Article 19(3) addresses client notification for major incidents affecting their financial interests.
+Code smells: The actual crisis-communication configuration explicitly disables the required communication arrangements or collapses the required staff roles.
 Related: dora_art17, dora_art19
+Conditions and exceptions: The claim demands public disclosure of every incident; the defect is notification of a particular major incident to affected clients (art19(3)) or the internal incident record (art17).
 
 ## dora_art16
 Reference: DORA Art. 16
@@ -102,10 +108,11 @@ Title: Simplified ICT risk management framework
 Regulation: DORA
 Source CELEX: 32022R2554
 
-Summary: Small exempted firms (small investment firms, exempt payment and e-money institutions, small pension providers) follow a lighter framework. They must still monitor security continuously, protect data confidentiality and integrity, detect anomalies fast, map key third-party dependencies, and keep backup and restoration working.
-Developer impact: Even under the simplified regime, keep monitoring, encryption, anomaly alerts, least-privilege access, and backup/restore in place.
-Code smells: exempt-entity service with health checks but no security telemetry; wallet ledger persisted without encryption or integrity checks; OAuth scopes granting broad production access; no anomaly rules for failed-auth spikes; CI promotes changes with resilience tests skipped
+Summary: The simplified framework replaces Articles 5-15 only for the specified small non-interconnected investment firms, exempt payment/e-money or qualifying CRD institutions, and small occupational retirement institutions. Microenterprise status alone does not establish eligibility.
+Developer impact: Establish the legal category, then the defect. Incident, testing and third-party duties outside Articles 5-15 need their own scope/exemption assessment; Article 16 does not replace them all.
+Code smells: An entity established to fall under Article 16 bypasses one of its applicable protection, monitoring, continuity, backup or testing requirements.
 Related: dora_art6, dora_art9, dora_art10, dora_art12
+Conditions and exceptions: Only microenterprise, small_firm or an unrelated exempt token appears; the actor is not in the specified class; the allegation concerns a duty outside the Articles 5-15 replacement.
 
 ## dora_art17
 Reference: DORA Art. 17
@@ -135,10 +142,11 @@ Title: Reporting of major ICT-related incidents and voluntary notification of si
 Regulation: DORA
 Source CELEX: 32022R2554
 
-Summary: Major ICT incidents must be reported to the competent authority (the national financial supervisor) using official templates: an initial notification, intermediate reports when status changes, and a final report after root cause analysis. If the reporting channel fails, an alternative means must be used. Significant cyber threats may be notified voluntarily.
-Developer impact: Generate template-based payloads to authority channels, add a fallback delivery path, trigger intermediate reports on status change, and complete final reports with real figures.
-Code smells: major incident opens an internal ticket but never enqueues an authority notification; free-text email built instead of the template payload; no fallback channel when the regulator API is down; final report closes with estimated impacts and incomplete root cause
+Summary: Financial entities report major ICT-related incidents to the competent authority. Under 19(3), a major incident affecting clients' financial interests also requires prompt client information about the incident and mitigation; potentially affected clients receive appropriate protection advice for significant cyber threats.
+Developer impact: Assess authority and client branches separately under art19; crisis-communication planning is art14. Article 19(4)(c) distinguishes final actual-impact figures from earlier estimates; 19(5) permits outsourced reporting without removing responsibility.
+Code smells: An established applicable authority or client notification is explicitly disabled or unjustifiably delayed; required information is knowingly withheld from the applicable reporting stage.
 Related: dora_art14, dora_art17, dora_art18
+Conditions and exceptions: The major-incident or significant-threat trigger is not established; the allegation rests only on estimates in an initial report, lack of a particular function name, or an unseen reporting component; classification itself is the defect (art18).
 
 ## dora_art25
 Reference: DORA Art. 25
@@ -190,7 +198,8 @@ Title: Amendments to Regulation (EU) No 909/2014
 Regulation: DORA
 Source CELEX: 32022R2554
 
-Summary: This article rewrites the operational-risk rules for central securities depositories (CSDs). A CSD must recover all transactions and participant positions at the exact time of disruption so settlement completes on schedule. State must be durable before acknowledgement.
-Developer impact: Persist transaction state before ack, use synchronous replication or durable checkpoints for positions, make settlement submissions idempotent, and keep replayable message logs.
-Code smells: settlement instruction acknowledged before a durable write; replication_mode="async" on the settlement DB; positions computed in memory with no checkpoint; DR restores a nightly backup instead of disruption-timestamp state; non-idempotent settlement submission job; feed with no durable queue or replay offset
+Summary: Article 61 amends CSDR operational-risk rules for central securities depositories, including recovery of all transactions and participants' positions at disruption so settlement can complete on schedule.
+Developer impact: Trace persistence, acknowledgement and replay together. An in-memory collection or asynchronous replication alone does not establish unrecoverable CSD state.
+Code smells: A demonstrated CSD recovery design irretrievably loses acknowledged transactions or participant positions needed at disruption; restoration cannot reconstruct them from the established durable sources.
 Related: dora_art11, dora_art12
+Conditions and exceptions: An in-memory queue/cache is rebuilt from a durable journal or store; durable recovery sources are outside the excerpt; only generic settlement/payment words establish the supposed CSD role; a central counterparty duty belongs under art12(3).

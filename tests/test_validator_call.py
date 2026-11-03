@@ -331,6 +331,10 @@ def test_model_uses_source_grammar_only_for_the_current_request(monkeypatch):
     requests = []
 
     def open_response(request, **kwargs):
+        if request.full_url.endswith("/apply-template"):
+            return io.BytesIO(b'{"prompt":"rendered chat"}')
+        if request.full_url.endswith("/tokenize"):
+            return io.BytesIO(b'{"tokens":[1,2]}')
         requests.append(json.loads(request.data))
         return io.BytesIO(b'{"choices":[{"message":{"content":"ok"}}]}')
 

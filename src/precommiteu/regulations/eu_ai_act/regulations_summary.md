@@ -8,6 +8,10 @@ authoritative wording, follow the EUR-Lex link rendered with each finding.
 
 # EU AI ACT (EU Artificial Intelligence Act)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: Apply the actor, system class and activity required by the particular article. Generic ML, a CE-related filename, or a sandbox name alone does not establish high-risk status, systemic-risk GPAI or a regulatory sandbox. Do not infer a missing system-wide control from one file.
+
 ## eu_ai_act_art5
 Reference: EU AI ACT Art. 5
 Title: Prohibited AI practices
@@ -58,10 +62,11 @@ Title: Record-keeping
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: High-risk AI systems must automatically log events over their lifetime so risky situations and substantial modifications can be traced. For biometric systems the logs must include each use period (start/end time), the reference database checked, matched input data, and the identity of the human verifier.
-Developer impact: Implement always-on structured event logging on inference and decision paths with timestamps, input records, and verifier identities.
-Code smells: logging_enabled flag set false on the inference path; decision handler returning a result without writing an audit-log entry; log record built without timestamp or input data; verifier identity dropped from the match record
+Summary: High-risk AI systems need automatic event logging supporting traceability, risk identification, post-market monitoring and deployer monitoring. The additional start/end, reference-database, matched-input and verifier-identity fields in 12(3) apply only to Annex III 1(a) remote biometric identification.
+Developer impact: Establish high-risk status and logging context. Article 12 concerns logging capability and applicable content, not a universal biometric log schema.
+Code smells: Required high-risk event logging is explicitly disabled; an applicable remote-biometric-identification log schema discards a required 12(3) field.
 Related: eu_ai_act_art19, eu_ai_act_art21, eu_ai_act_art26
+Conditions and exceptions: A non-biometric system is criticised for lacking biometric-specific fields; logging could occur in an unseen component; logs exist and the allegation concerns retention (art19/art26).
 
 ## eu_ai_act_art13
 Reference: EU AI ACT Art. 13
@@ -223,10 +228,11 @@ Title: EU declaration of conformity
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: Providers must draw up a machine-readable, electronically signed EU declaration of conformity for each high-risk system, containing the mandated identification fields, keep it 10 years, and keep it current as the system changes.
-Developer impact: Automate declaration generation, electronic signing, and metadata attachment in the CI/CD pipeline, and regenerate the declaration when the system changes.
-Code smells: CI release step skipping declaration generation; declaration written without an electronic signature; declaration not regenerated after a system change
+Summary: Providers must draw up a written machine-readable EU declaration of conformity identifying the high-risk system, containing Annex V information, signed physically or electronically, and kept up to date as appropriate.
+Developer impact: Article 47 concerns the declaration; art48 concerns CE marking and art18 document retention. Missing electronic-signature code is not proof of an unsigned declaration.
+Code smells: An applicable declaration is explicitly omitted, unsigned by either valid method, missing required content, or knowingly left outdated for the identified system.
 Related: eu_ai_act_art18, eu_ai_act_art43, eu_ai_act_art48
+Conditions and exceptions: The only allegation is a missing digital signature where a physical signature is established; signature implementation or declaration contents are outside the excerpt.
 
 ## eu_ai_act_art48
 Reference: EU AI ACT Art. 48
@@ -245,10 +251,11 @@ Title: Registration
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: Before placing a high-risk system on the market, the provider must register itself and the system in the EU database; public-authority deployers must register their use. Law-enforcement, migration, and border systems register in a secure non-public section.
-Developer impact: Add automated registration steps to deployment pipelines with the required payload schema, targeting the correct public or restricted database section before release.
-Code smells: deploy job running with the registration step commented out; law-enforcement system registered to the public section instead of the secure non-public one; registration payload missing required fields; release gate not blocking on registration failure
+Summary: Article 49 governs registration of the specified Annex III systems and public-authority deployers before placing on the market, putting into service or use, with the applicable public or non-public section. Annex III point 2 systems register nationally under 49(5).
+Developer impact: Distinguish registration duty/timing from payload content. Do not infer EU-database registration duties from a registration function name or a vehicle type-approval process.
+Code smells: An established EU AI Act registration obligation is bypassed, deferred beyond its trigger, or directed to the wrong access section.
 Related: eu_ai_act_art43, eu_ai_act_art71
+Conditions and exceptions: The allegation concerns only missing payload fields (art71); the registry is an unrelated national or sectoral registry; the system or actor is outside the applicable registration duty.
 
 ## eu_ai_act_art50
 Reference: EU AI ACT Art. 50
@@ -278,10 +285,11 @@ Title: Obligations of providers of general-purpose AI models with systemic risk
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: Providers of general-purpose AI models with systemic risk must run documented adversarial testing and model evaluations, assess and mitigate systemic risks, report serious incidents to the AI Office without delay, and harden model and infrastructure security.
-Developer impact: Build adversarial-testing/red-team harnesses into model release, automate incident reporting pipelines, and protect model weights and serving infrastructure with strict access controls.
-Code smells: red-team suite skipped before a frontier-model release; incident-reporting pipeline to the AI Office removed; model weights stored or served without access control or encryption; systemic-risk mitigation step disabled
+Summary: Article 55 adds evaluation, systemic-risk mitigation, serious-incident reporting and adequate cybersecurity duties for GPAI models with systemic risk under Article 51; ordinary GPAI status alone does not establish systemic risk.
+Developer impact: Assess security against the actual risks and safeguards. TLS/authentication are relevant evidence, not blanket immunity; high-risk-system security and reporting use art15/art73.
+Code smells: An applicable systemic-risk evaluation or incident-reporting step is explicitly disabled; the source establishes a material weakness in protection of model weights or infrastructure.
 Related: eu_ai_act_art15, eu_ai_act_art53, eu_ai_act_art73
+Conditions and exceptions: Systemic-risk status is unknown; the allegation relies solely on a model being called frontier or general purpose, or on absent rate limiting despite visible TLS and authentication without a demonstrated residual defect.
 
 ## eu_ai_act_art59
 Reference: EU AI ACT Art. 59
@@ -289,10 +297,11 @@ Title: Further processing of personal data for developing certain AI systems in 
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: Personal data may be reused inside an AI regulatory sandbox only under strict conditions: an isolated, protected processing environment, access limited to authorised people, no sharing outside, deletion once participation ends, and processing logs kept for the project's duration.
-Developer impact: Implement sandbox data isolation, strict access controls, egress prevention, audit logging, and automated deletion when the sandbox project ends.
-Code smells: sandbox job copying personal data to a non-sandbox bucket; sandbox data not deleted when participation ends; processing logs disabled inside the sandbox; sandbox storage shared with production with no isolation
+Summary: Article 59 permits specified further processing of personal data in an AI regulatory sandbox only under its cumulative conditions, including isolation, controlled access, restricted onward use and documented processing. Personal data is deleted when participation or its retention period ends; processing logs remain for the participation duration unless law provides otherwise.
+Developer impact: Distinguish personal-data deletion from processing-log retention. Ordinary training is art10 where applicable; real-world testing outside regulatory sandboxes is art60.
+Code smells: An established Article 59 sandbox flow bypasses required isolation, exports sandbox-created personal data outside the permitted conditions, or explicitly retains personal data beyond the applicable end trigger.
 Related: eu_ai_act_art10, eu_ai_act_art60
+Conditions and exceptions: Only a directory or variable named sandbox is shown; the setting is ordinary development/testing rather than a competent-authority AI regulatory sandbox; applicability of this further-processing regime is unknown.
 
 ## eu_ai_act_art60
 Reference: EU AI ACT Art. 60
@@ -300,10 +309,11 @@ Title: Testing of high-risk AI systems in real world conditions outside AI regul
 Regulation: EU AI ACT
 Source CELEX: 32024R1689
 
-Summary: Real-world testing of high-risk AI requires a registered testing plan, a bounded duration, effective oversight, and subject protections: data of withdrawn subjects deleted, predictions reversible or disregardable, and transfers abroad only with safeguards.
-Developer impact: Implement withdrawal-triggered data deletion, decision reversal/disregard mechanisms, time-bound test runs, and transfer safeguards in testing harnesses.
-Code smells: subject withdrawal handler keeping already-collected data; AI predictions made during testing with no reversal or disregard mechanism; test run continuing past the planned duration with no stop; testing started before plan registration
+Summary: For applicable real-world testing outside regulatory sandboxes, participants may withdraw without detriment and may request immediate permanent deletion of their personal data. Withdrawal stops participation but does not undo activities already carried out; predictions must be reversible or disregarded.
+Developer impact: Separate withdrawal from the erasure request in 60(5). Consent capture is art61; regulatory-sandbox processing is art59.
+Code smells: A withdrawal is ignored or penalised; an explicit erasure request results only in a soft-delete while the personal data remains available; required prediction reversal is disabled.
 Related: eu_ai_act_art59, eu_ai_act_art61, eu_ai_act_art73
+Conditions and exceptions: The only allegation is retention after withdrawal without an erasure request; the context is an ordinary pilot without an established Article 60 testing duty; a different applicable legal requirement governs the alleged defect.
 
 ## eu_ai_act_art61
 Reference: EU AI ACT Art. 61

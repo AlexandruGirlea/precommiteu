@@ -13,6 +13,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from collections import deque
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -36,7 +37,7 @@ _LOG = logging.getLogger(__name__)
 
 # Three shapes in the wild: "build 10450", "version: 9570" and "b4400".
 BUILD_RE = re.compile(r"(?:build\s+|version:\s*|\bb)(\d{4,6})\b")
-MIN_BUILD = 4400
+MIN_BUILD = 10158
 HEALTH_TIMEOUT_S = SERVER_HEALTH_TIMEOUT_S
 HEALTH_POLL_INTERVAL_S = SERVER_HEALTH_POLL_INTERVAL_S
 PORT_RETRY_LIMIT = SERVER_PORT_RETRY_LIMIT
@@ -47,6 +48,7 @@ TERMINATE_GRACE_S = SERVER_TERMINATE_GRACE_S
 class ServerHandle:
     url: str
     api_key: str
+    n_ctx: int = 32768
 
 
 def parse_build(s: str) -> int:
@@ -68,15 +70,9 @@ def _poll_health(port: int, timeout_s: float, proc: subprocess.Popen | None = No
     last_err: Exception | None = None
     while time.monotonic() < deadline:
         if proc is not None and proc.poll() is not None:
-            stderr = (
-                proc.stderr.read().decode("utf-8", errors="replace")
-                if proc.stderr
-                else ""
-            )
-            tail = stderr.strip().splitlines()[-8:]
             raise RuntimeError(
                 "llama-server exited during startup. The model file may be "
-                "corrupt or incompatible:\n" + "\n".join(tail)
+                "corrupt or incompatible."
             )
         try:
             with LOOPBACK_OPENER.open(url, timeout=2.0) as resp:
@@ -138,10 +134,11 @@ def _terminate(proc: subprocess.Popen) -> None:
         pass
 
 
-def _drain_stream(stream) -> None:
+def _drain_stream(stream, tail: deque[bytes] | None = None) -> None:
     try:
-        for _ in iter(stream.readline, b""):
-            pass
+        for chunk in iter(lambda: stream.read1(4096), b""):
+            if tail is not None:
+                tail.append(chunk)
     except (ValueError, OSError):
         pass
 
@@ -213,7 +210,8 @@ def launch_llama_server(
             )
         except FileNotFoundError as e:
             raise RuntimeError(
-                "llama-server binary not found on PATH; install llama.cpp >= b4400"
+                "llama-server binary not found on PATH; "
+                f"install llama.cpp >= b{MIN_BUILD}"
             ) from e
         time.sleep(0.05)
         if candidate.poll() is not None:
@@ -268,11 +266,26 @@ def launch_llama_server(
         pass
 
     try:
+        stderr_tail: deque[bytes] = deque(maxlen=16)
+        drainers: list[threading.Thread] = []
+        for stream in (proc.stdout, proc.stderr):
+            if stream is not None:
+                thread = threading.Thread(
+                    target=_drain_stream,
+                    args=(stream, stderr_tail if stream is proc.stderr else None),
+                    daemon=True,
+                )
+                thread.start()
+                drainers.append(thread)
         try:
             _poll_health(chosen_port, HEALTH_TIMEOUT_S, proc)
-        except RuntimeError:
+        except RuntimeError as exc:
             _cleanup()
-            raise
+            for thread in drainers:
+                thread.join(timeout=1.0)
+            stderr = b"".join(stderr_tail).decode("utf-8", errors="replace")
+            tail = "\n".join(stderr.strip().splitlines()[-8:])
+            raise RuntimeError(f"{exc}\n{tail}".rstrip()) from exc
 
         version_raw = _query_version()
         try:
@@ -289,15 +302,10 @@ def launch_llama_server(
                     f"llama-server build b{build} is older than required b{MIN_BUILD}"
                 )
 
-        for stream in (proc.stdout, proc.stderr):
-            if stream is not None:
-                threading.Thread(
-                    target=_drain_stream, args=(stream,), daemon=True
-                ).start()
-
         handle = ServerHandle(
             url=f"http://127.0.0.1:{chosen_port}/v1",
             api_key="sk-no-key",
+            n_ctx=n_ctx,
         )
         yield handle
     finally:

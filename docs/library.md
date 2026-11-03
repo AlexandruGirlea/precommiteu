@@ -190,10 +190,11 @@ Callback type aliases (`ProgressCallback`, `FindingCallback`, `AdvisoryCallback`
 
 ## Configuring models
 
-Model bundle layout: one shared `base.gguf` plus one `<regulation>/detector-adapter.gguf` per regulation pack.
+Model bundle layout: `orchestrator.gguf` for the orchestrator and validator, `base.gguf` for the detector, plus one `<regulation>/detector-adapter.gguf` per regulation pack.
 
 ```text
 /opt/precommiteu/models/
+├── orchestrator.gguf
 ├── base.gguf
 └── gdpr/
     └── detector-adapter.gguf
@@ -207,21 +208,21 @@ import os
 os.environ["PRECOMMITEU_MODELS_DIR"] = "/opt/precommiteu/models"
 result = scan_paths(["src/"])
 
-# 2. Explicit paths, overrides the environment
+# 2. Bundle directory, overrides the environment
 import pathlib
 root = pathlib.Path("/opt/precommiteu/models")
 result = scan_paths(
     ["src/"],
-    orchestrator_model_path=root / "base.gguf",
-    detector_adapter_path=root / "gdpr" / "detector-adapter.gguf",
+    models_dir=root,
 )
 ```
 
 Resolution rules:
 
-- `orchestrator_model_path=None` resolves to `$PRECOMMITEU_MODELS_DIR/base.gguf`. If neither is set, `scan_paths` raises `ValueError` with a hint describing the expected layout.
-- `detector_adapter_path=None` resolves to `$PRECOMMITEU_MODELS_DIR/<regulation>/detector-adapter.gguf` for the first regulation in `regulations`. If that file does not exist, the scan proceeds with the base model only and logs a degraded-mode warning.
-- The validator always runs on the base model resolved above, with the built-in grammar. It takes no adapter and no grammar override.
+- `models_dir=None` uses `$PRECOMMITEU_MODELS_DIR`. If neither is set, `scan_paths` raises `ValueError`.
+- Detection always uses `<models-dir>/base.gguf` with `<models-dir>/<regulation>/detector-adapter.gguf`, separately for each selected regulation.
+- Orchestration and validation always use `<models-dir>/orchestrator.gguf` without an adapter.
+- Missing models or selected adapters raise `ValueError` before scanning. Individual model and adapter paths cannot be overridden.
 
 ## Agent mode
 
@@ -245,20 +246,20 @@ All parameters except `paths` are keyword-only. `scan_diff` accepts the same set
 |---|---|---|---|
 | `paths` | `Iterable[str \| pathlib.Path]` | required | Files and/or directories to scan; test files are skipped |
 | `regulations` | `tuple[str, ...]` | `("gdpr",)` | Regulation packs to scan against, in order |
-| `orchestrator_model_path` | `pathlib.Path \| None` | `None` | Base model GGUF; `None` = resolve from `PRECOMMITEU_MODELS_DIR` |
-| `detector_adapter_path` | `pathlib.Path \| None` | `None` | Detector adapter GGUF; `None` = resolve from models dir, degrade to base-only if absent |
+| `models_dir` | `pathlib.Path \| None` | `None` | Bundle directory; `None` = `PRECOMMITEU_MODELS_DIR` |
 | `detector_grammar_path` | `pathlib.Path \| None` | `None` | Custom GBNF grammar for detector output; `None` = built-in grammar |
 | `agent_mode` | `str` | `"auto"` | `"auto"`, `"direct"`, or `"orchestrator"` |
 | `n_ctx` | `int` | `32768` | Inference context window |
 | `n_gpu_layers` | `int` | `99` | Layers offloaded to GPU (`0` = CPU only) |
 | `threads` | `int \| None` | `None` | Inference threads; `None` = server default |
 | `max_iterations` | `int` | `12` | Orchestrator loop iteration cap per file |
-| `wall_seconds_per_file` | `float` | `90.0` | Wall-clock budget per file |
+| `wall_seconds_per_file` | `float` | `300.0` | Wall-clock budget per file |
 | `on_progress` | `Callable[[dict], None] \| None` | `None` | Progress event callback |
 | `on_finding` | `Callable[[Finding], None] \| None` | `None` | Called for each confirmed finding as it is kept |
 | `on_advisory` | `Callable[[Advisory], None] \| None` | `None` | Called for each advisory as it is emitted |
 | `repo_root` | `pathlib.Path \| None` | `None` | Root for repo-relative file labels; `None` = cwd. For `scan_diff`, also the git checkout to diff |
 | `regulation_docs_dir` | `pathlib.Path \| None` | `None` | Directory of regulation reference docs for the orchestrator; `None` = packaged docs |
 | `max_file_bytes` | `int \| None` | `1_000_000` | Per-file size cap; larger files are skipped and reported via `files_oversized`. `None` disables the cap |
+| `context_excludes` | iterable of `str` or `pathlib.Path` | `()` | Files or directories excluded from context tools and cache fingerprints; use for report destinations written by callbacks |
 
 Returns: `ScanResult`. Raises: `ValueError` (no model configured, bad `agent_mode`). `scan_diff` additionally raises `GitDiffError`.

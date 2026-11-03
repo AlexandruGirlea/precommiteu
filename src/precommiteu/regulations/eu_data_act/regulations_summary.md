@@ -5,6 +5,10 @@ Compact, developer-oriented SUMMARIES of code-relevant EU Data Act articles - NO
 
 # EU Data Act (Regulation on harmonised rules on fair access to and use of data)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: Distinguish connected-product/related-service data rights, Chapter V exceptional-need requests, data-processing-service switching, and data-sharing agreements. Generic personal-data ingestion is not Article 6 recipient processing without the Article 5 provenance. Apply Article 31 exemptions only to the same qualifying service and flow.
+
 ## eu_data_act_art3
 Reference: EU DATA ACT Art. 3
 Title: Obligation to make product data and related service data accessible to the user
@@ -66,10 +70,11 @@ Title: Compensation for making data available
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: Compensation for B2B data sharing must be non-discriminatory and reasonable; for small and medium-sized enterprises (SMEs) and not-for-profit research recipients it must not exceed the direct costs of making data available. Holders must show how the price was calculated.
-Developer impact: Implement cost-only price caps keyed on is_sme/is_non_profit flags, and expose the calculation basis (volume, format, storage) in invoices and billing APIs.
-Code smells: flat fee with no SME/non-profit cost-cap branch; user model lacks is_sme/is_non_profit flag; invoice omits volume/format/storage breakdown; profit margin applied to non-profit research orgs; billing webhook missing calculation metadata
+Summary: Compensation between data holders and recipients under Chapter III must be reasonable and non-discriminatory and may include a margin. Qualifying SMEs and nonprofit research recipients have the Article 9(4) delivery-cost cap; explain the calculation basis under 9(7).
+Developer impact: Identify the payer, recipient eligibility and compensation context. A flat fee or missing is_sme variable alone proves neither excessive cost nor a violated cap.
+Code smells: A qualifying capped recipient is charged beyond the permitted making-available costs; the calculation basis is withheld; comparable recipients receive unjustifiably discriminatory compensation terms.
 Related: eu_data_act_art8, eu_data_act_art29, eu_data_act_art34
+Conditions and exceptions: The sole allegation is a margin for an uncapped commercial recipient; the payer is the user exercising free access/sharing rights (art4/art5), a cloud switching customer (art29), or an exceptional-need public body (Article 20, outside this pack).
 
 ## eu_data_act_art11
 Reference: EU DATA ACT Art. 11
@@ -110,10 +115,11 @@ Title: Compliance with requests for data
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: A data holder answering a public body's request must do so without undue delay - and where personal data is involved, pseudonymise or anonymise it first, in line with the measures stated in the request.
-Developer impact: Add an anonymisation/pseudonymisation step to every authority-request export, covering names, national IDs and IBANs.
-Code smells: tax records exported with raw national IDs; passenger manifest keeps full names and contacts; batch job sends IBANs unmasked; telemetry export retains drivers' home GPS routes; export SQL has no masking step
+Summary: Under an applicable Chapter V exceptional-need request, the holder makes data available without undue delay and anonymises personal data, or pseudonymises where the request requires personal data. Article 18(2) permits qualifying refusal/modification; it does not require a refusal branch.
+Developer impact: Verify Chapter V scope and whether the request requires personal data. A ministry recipient or masking token alone is not enough; requirements on the recipient after delivery belong to art19.
+Code smells: An applicable exceptional-need export bypasses required anonymisation/pseudonymisation on the actual disclosed data.
 Related: eu_data_act_art14, eu_data_act_art17, eu_data_act_art19
+Conditions and exceptions: The only issue is absence of a decline/modify option; the flow is routine statutory reporting, criminal/administrative-offence work, customs or taxation administration outside this regime; appropriate transformation of the disclosed fields is established.
 
 ## eu_data_act_art19
 Reference: EU DATA ACT Art. 19
@@ -198,10 +204,11 @@ Title: Gradual withdrawal of switching charges
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: Switching charges are being phased out: from 11 January 2024 they may only cover direct switching costs, and from 12 January 2027 they are banned. Fees, early-termination penalties and complexity must be disclosed pre-contract and on a public page.
-Developer impact: Date-gate billing to zero switching charges after 2027-01-12 and cap earlier ones at direct cost; add pre-contract fee disclosures and a public fees page.
-Code smells: switching fee charged with no 2027-01-12 cut-off check; flat 500-euro fee instead of computed direct costs; checkout missing the fee/penalty disclosure; no public switching-fees page; extraction invoices still generated after the deadline
+Summary: Switching charges, including egress charges incurred for switching, must not exceed directly linked costs during the transitional period and are prohibited from 12 January 2027. Standard service fees and early-termination penalties are distinct, but their required pre-contract disclosure remains relevant.
+Developer impact: Route egress by purpose: leaving the service is art29, continued parallel use is art34. Assess the relevant billing date and exemptions, not the word egress alone.
+Code smells: A switching charge is billed on or after 2027-01-12; an earlier charge demonstrably exceeds directly linked costs; applicable fee disclosures are deliberately omitted.
 Related: eu_data_act_art23, eu_data_act_art25, eu_data_act_art31
+Conditions and exceptions: The charge concerns continued parallel use at incurred cost (art34), a standard service fee or early-termination penalty with no disclosure defect, or an applicable Article 31 exemption; lack of a date check alone does not establish billing after the deadline.
 
 ## eu_data_act_art30
 Reference: EU DATA ACT Art. 30
@@ -220,10 +227,11 @@ Title: Specific regime for certain data processing services
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: Custom-built single-customer services and non-production test/evaluation services escape some switching obligations - but the provider must say, before contract, exactly which do not apply.
-Developer impact: Render the exemption notice in onboarding, checkout and API provisioning flows for trial, sandbox, beta and custom-built services.
-Code smells: sandbox provisioning shows no exemption disclosure; trial signup reuses standard ToS without non-production clauses; exemption modal bypassed for custom-built dashboards; beta checkout omits the which-obligations-do-not-apply text; exemption notice missing from the provisioning API
+Summary: Qualifying custom-built services not offered at broad commercial scale are exempt only from 23(d), 29 and 30(1),(3). Time-limited non-production testing/evaluation services are exempt from Chapter VI switching duties; 31(3) still requires pre-contract information about the inapplicable duties.
+Developer impact: Apply exemptions to the same service and flow. Custom-built services still have applicable contractual, information and cooperation duties; do not treat every small or bespoke provider as wholly exempt.
+Code smells: The complete pre-contract information flow explicitly suppresses or misstates applicable exemption information for a qualifying service.
 Related: eu_data_act_art23, eu_data_act_art29, eu_data_act_art30
+Conditions and exceptions: A generic trial, beta or sandbox name is the sole evidence of exemption; the custom-built/commercial-scale conditions or non-production/time-limit conditions are not established; notice could be in an unseen contract.
 
 ## eu_data_act_art32
 Reference: EU DATA ACT Art. 32
@@ -231,10 +239,11 @@ Title: International governmental access and transfer
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: Providers must use technical, organisational and legal measures to block international governmental access to EU-held non-personal data where it conflicts with EU or national law. If a third-country request must be honoured, release the minimum and notify the customer where allowed.
-Developer impact: Scope foreign-authority exports to minimum fields, keep non-EU replication behind EU-held keys, and notify the customer before fulfilment.
-Code smells: full transaction history dumped to a non-EU authority; bucket auto-replicates to a non-EU region without EU-held keys; third-country transfer fires with no customer notification; request answered beyond the asked timeframe; no geo-restriction on admin access
+Summary: Providers must prevent third-country governmental access to or transfer of Union-held non-personal data that conflicts with Union or Member-State law. Recognition of orders under 32(2), conditions under 32(3), minimisation under 32(4) and customer notice under 32(5) must be assessed together.
+Developer impact: An MLAT label or national-body opinion alone does not prove every condition is satisfied. Article 32 concerns governmental access to non-personal data, not a universal EU-only storage requirement.
+Code smells: An established conflicting governmental demand is fulfilled despite the applicable safeguards; the disclosed data exceeds the permissible minimum; required prior customer information is deliberately bypassed without an applicable exception.
 Related: eu_data_act_art28
+Conditions and exceptions: Only an ordinary foreign-region deployment is shown; the data is solely personal (GDPR governs); the applicable legal route and conditions are satisfied; notice is deferred for a law-enforcement purpose for as long as necessary under 32(5).
 
 ## eu_data_act_art33
 Reference: EU DATA ACT Art. 33
@@ -264,7 +273,8 @@ Title: Essential requirements regarding smart contracts for executing data shari
 Regulation: EU DATA ACT
 Source CELEX: 32023R2854
 
-Summary: Smart contracts executing data sharing agreements need rigorous access control, robustness against manipulation, a safe termination mechanism, and archiving of transaction data, logic and code when wound down. Vendors must assess conformity and issue an EU declaration of conformity.
-Developer impact: Add access-control modifiers, pause/termination functions, and state-change events enabling off-chain archiving to every data-sharing contract.
-Code smells: contract lacks a Pausable/circuit-breaker; state-changing function without onlyOwner/role modifier; no events emitted for off-chain archiving; no termination function for accidental executions; contract deactivated without archiving final state
+Summary: Article 36 concerns vendors, or relevant professional deployers, of smart contracts executing data-sharing agreements: robustness/access control, safe interruption, archiving/continuity, governance-layer access and consistency with the agreement. A smart contract need not be on-chain.
+Developer impact: Inspect the program that executes the agreement. Neither Solidity syntax nor a smart_contract function name proves a violation; ordinary API routing does not establish missing contract controls.
+Code smells: The supplied agreement-execution implementation visibly bypasses a required access control, prevents necessary interruption, or destroys required transaction/state information without an archiving route.
 Related: eu_data_act_art11, eu_data_act_art33
+Conditions and exceptions: Only a dispatcher or call to an unseen contract handler is shown; no data-sharing agreement is involved; missing blockchain events are treated as proof that no other archiving mechanism exists.

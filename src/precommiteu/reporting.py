@@ -13,7 +13,7 @@ from precommiteu.src.reporters import (
     write_sarif_report,
 )
 from precommiteu.src.scanner import dedup_findings
-from precommiteu.src.schemas import Advisory, Finding, ScanResult
+from precommiteu.src.schemas import Advisory, Finding, ScanResult, ScanStatus
 
 __all__ = ["IncrementalReporter", "attach_scan_log", "log_scan_event"]
 
@@ -84,7 +84,11 @@ class IncrementalReporter:
         self._write_all(
             ScanResult(
                 findings=dedup_findings(self._findings),
-                statuses=[],
+                statuses=[ScanStatus(
+                    regulation="scan",
+                    status="failed",
+                    detail="Scan in progress; results are incomplete.",
+                )],
                 advisories=list(self._advisories),
             )
         )

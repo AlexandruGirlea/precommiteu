@@ -14,7 +14,7 @@ Every example assumes the scanner and the model bundle are already in place
 ```bash
 brew install llama.cpp
 pip install precommiteu
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 ```
 
@@ -86,7 +86,7 @@ verbatim quote from your file, so it takes seconds to agree or disagree.
 Advisories are a reading list, not a task list. Nothing failed here: without
 `--fail-on-findings` the exit code is 0 even with findings present.
 
-Budget roughly a minute per file on CPU. Scan a directory, not the whole repo,
+Budget several minutes per file on CPU. Scan a directory, not the whole repo,
 on the first run.
 
 ---
@@ -286,13 +286,8 @@ personal data wants `gdpr`. Add `eu_ai_act` when you ship model inference,
 `cra_dma_nis2` for product security, gatekeeper or critical-infrastructure
 duties.
 
-One constraint to know: `--detector-adapter` points at a single file, so it
-cannot be combined with multiple regulations. Omit it and let each pack resolve
-its own adapter from the models directory.
-
-```
-error: a single --detector-adapter can't be combined with multiple regulations; omit it to auto-resolve per regulation
-```
+Each selected pack uses its own adapter from the models directory. Missing
+adapters stop the scan before models load.
 
 ---
 
@@ -314,7 +309,8 @@ files costs three files of inference, not a whole repo. It also turns on
 `--fail-on-error` implicitly, so a scan that could not read a file never
 reports a clean pass.
 
-As a GitHub Actions workflow:
+As a GitHub Actions workflow, on your own runner set up as in
+[CI integration](ci.md):
 
 ```yaml
 name: compliance-scan
@@ -327,12 +323,16 @@ permissions:
 
 jobs:
   precommiteu:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, precommiteu]
+    container:
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      volumes:
+        - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.2.4
+      - uses: AlexandruGirlea/precommiteu@v0.3.0
         with:
           regulations: gdpr
           fail-on-findings: "true"
@@ -681,7 +681,7 @@ precommiteu scan src/billing src/identity --agent-mode direct --max-wall-seconds
 | Scope | positional paths | Scan the directories that touch personal data, not the repo |
 | Diff only | `--ci` | Only files changed vs the merge target |
 | Route | `--agent-mode direct` | Fixed detector plus validator per file, no tool use, no cross-file reads. Fastest path |
-| Time budget | `--max-wall-seconds-per-file 45` | Hard wall-clock cap per file (default 90 s) |
+| Time budget | `--max-wall-seconds-per-file 45` | Hard wall-clock cap per file (default 300 s) |
 | Steps budget | `--max-orchestrator-iterations 6` | Cap on agent steps per file (default 12) |
 | Size cutoff | `--max-file-bytes 200000` | Skip large files (default 1000000; `0` removes the limit) |
 | Packs | `--regulations gdpr` | One pass per pack, so one pack is one pass |
@@ -691,7 +691,7 @@ What `direct` costs you: the cross-file case from example 2. `user_store.py`
 would be judged on its own text, without reading `models.py`. Use `direct` for
 a broad first pass, then re-run the interesting directories on `auto`.
 
-Budgets are per file and hard: 12 orchestrator iterations, 90 seconds of
+Budgets are per file and hard: 12 orchestrator iterations, 300 seconds of
 wall-clock, and an 8000-token cap on every message sent to the model. A file
 that exhausts its budget is reported, not silently dropped, and a file that
 fails to scan raises the exit code to 3 under `--fail-on-error`.
@@ -702,7 +702,7 @@ Confirm the workload before committing to it:
 precommiteu scan src/ --dry-run | wc -l
 ```
 
-Multiply by roughly a minute per file on CPU. If that number is unpleasant,
+Multiply by several minutes per file on CPU. If that number is unpleasant,
 scope harder or move the whole-repo scan to a nightly job on a GPU machine and
 keep `--ci` on pull requests.
 

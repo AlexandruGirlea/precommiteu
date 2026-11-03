@@ -25,7 +25,9 @@ def harness(tmp_path, monkeypatch):
     target.write_text("import logging\n\n\ndef f():\n    pass\n", encoding="utf-8")
     calls: list[str] = []
 
-    def scan_file(orch_run: OrchestratorRun) -> tuple[list, list[str], dict]:
+    def scan_file(
+        orch_run: OrchestratorRun, *, direct_reason: str = "direct"
+    ) -> tuple[list, list[str], dict]:
         calls.clear()
         events: list[dict] = []
 
@@ -36,13 +38,13 @@ def harness(tmp_path, monkeypatch):
         def fake_direct(**kwargs):
             calls.append("direct")
             events.append({"direct_wall_seconds": kwargs["wall_seconds"]})
-            return _run("direct", detector_called=True)
+            return _run(direct_reason, detector_called=True)
 
         monkeypatch.setattr(scan_mod, "run_orchestrator", fake_orchestrator)
         monkeypatch.setattr(scan_mod, "run_direct", fake_direct)
 
         progress: list[dict] = []
-        findings, _analysed = scan_mod._scan_one_file(
+        findings, analysed = scan_mod._scan_one_file(
             file_path=target,
             regulation="gdpr",
             repo_root=tmp_path,
@@ -60,6 +62,10 @@ def harness(tmp_path, monkeypatch):
         )
         done = next(e for e in progress if e["event"] == "orchestrator_done")
         done["_direct_budget"] = events[0]["direct_wall_seconds"] if events else None
+        done["_analysed"] = analysed
+        done["_file_errors"] = [
+            e["error"] for e in progress if e["event"] == "file_error"
+        ]
         return findings, list(calls), done
 
     return scan_file
@@ -74,6 +80,8 @@ def test_falls_back_when_detector_never_ran(harness, reason):
     assert done["route"] == "orchestrator"
     assert done["detector_called"] is True
     assert done["exit_reason"] == "direct"
+    assert done["_analysed"] is True
+    assert done["_file_errors"] == []
 
 
 @pytest.mark.parametrize("reason", UNANALYSED)
@@ -110,8 +118,27 @@ def test_fallback_stays_inside_the_per_file_budget(harness):
     assert 0.0 <= done["_direct_budget"] <= 90.0
 
 
-def test_unanalysed_reasons_are_disjoint_from_failure_reasons():
-    assert not (scan_mod._UNANALYSED_REASONS & scan_mod._ANALYSIS_FAILURE_REASONS)
+def test_iteration_exhaustion_after_detection_reports_an_incomplete_file(harness):
+    _findings, calls, done = harness(
+        _run("budget_exhausted_iters", detector_called=True)
+    )
+
+    assert calls == ["orchestrator"]
+    assert done["_analysed"] is False
+    assert done["_file_errors"] == ["budget_exhausted_iters"]
+
+
+@pytest.mark.parametrize("reason", ["budget_exhausted_time", "direct_partial"])
+def test_incomplete_fallback_still_reports_a_failed_file(harness, reason):
+    _findings, calls, done = harness(
+        _run("budget_exhausted_iters", detector_called=False),
+        direct_reason=reason,
+    )
+
+    assert calls == ["orchestrator", "direct"]
+    assert done["fell_back"] is True
+    assert done["_analysed"] is False
+    assert done["_file_errors"] == [reason]
 
 
 def test_wall_clock_exhaustion_does_not_trigger_a_pointless_fallback(harness):

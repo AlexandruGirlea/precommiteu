@@ -12,7 +12,7 @@ precommitEU installs as three separate pieces.
 | `llama-server` | The local inference server binary from llama.cpp | Homebrew, a release archive, or a source build |
 | `precommiteu` | The scanner, a pure-Python wheel | `pip install precommiteu` |
 | `precommiteu[ui]` | Optional, adds the local web UI | `pip install "precommiteu[ui]"` |
-| Model bundle | One shared base GGUF plus one LoRA adapter per regulation | Hugging Face, downloaded once |
+| Model bundle | An orchestrator GGUF, a detector base GGUF and one LoRA adapter per regulation | Hugging Face, downloaded once |
 
 The wheel does not contain the models. The models do not contain the runtime.
 All three stay on your machine: the scanner starts and stops `llama-server`
@@ -24,9 +24,9 @@ and nothing is fetched at scan time.
 | Requirement | Detail                                                                                                                |
 |---|-----------------------------------------------------------------------------------------------------------------------|
 | Python | 3.11 or newer (3.11, 3.12 and 3.13 are declared supported)                                                            |
-| `llama-server` | From [llama.cpp](https://github.com/ggml-org/llama.cpp), on `PATH`, build number 4400 or higher                       |
-| Disk | About 4.5 GB for one regulation, about 4.9 GB for all six                                                             |
-| RAM | 16 GB recommended. A default scan peaks near 13 GB across two servers - read [Memory](#memory) before running on 8 GB |
+| `llama-server` | From [llama.cpp](https://github.com/ggml-org/llama.cpp), on `PATH`, build number 10158 or higher |
+| Disk | About 22.5 GB for one regulation, about 22.9 GB for all six |
+| RAM | 32 GB. A default scan peaks near 24 GiB across two servers - read [Memory](#memory) |
 | CPU architecture | x86_64 and ARM64 (Apple Silicon, Graviton)                                                                            |
 | Operating system | macOS and Linux. On Windows, use WSL2 and follow the Linux steps                                                      |
 | Network | Needed for the three install steps only, never for a scan                                                             |
@@ -38,37 +38,34 @@ package.
 
 ## Memory
 
-A scan runs **two** `llama-server` processes at once: one on the base model for
-the orchestrator and validator, one on the base model with the detector adapter
-attached. Each loads the full 4.36 GiB base model, and each keeps its own
-context window - the running memory of everything that server has read so far,
-sized by `--n-ctx`.
+A scan runs **two** `llama-server` processes at once: one on `orchestrator.gguf`
+(16.5 GiB) for the orchestrator and validator, and one on `base.gguf` (4.36 GiB)
+with the detector adapter attached. Each keeps its own context window - the
+running memory of everything that server has read so far, sized by `--n-ctx`.
 
-That window costs **56 KiB per token, per server**, so it is the part of the
-footprint you can actually control:
+That window costs about **20 KiB per token on the orchestrator server and
+56 KiB per token on the detector server**. The model weights dominate the
+footprint:
 
-| `--n-ctx` | Window per server | Peak per server | Both servers | Run it on |
+| `--n-ctx` | Orchestrator peak | Detector peak | Both servers | Run it on |
 |---|---|---|---|---|
-| 32768 (default) | 1.75 GiB | ~6.3 GiB | **~12.6 GiB** | 16 GB or more |
-| 16384 | 0.88 GiB | ~5.4 GiB | ~10.8 GiB | 16 GB |
-| 8192 | 0.44 GiB | ~4.9 GiB | ~9.8 GiB | 16 GB, or 8 GB with nothing else running |
+| 32768 (default) | ~17.5 GiB | ~6.3 GiB | **~23.7 GiB** | 32 GB or more |
+| 16384 | ~17.1 GiB | ~5.4 GiB | ~22.6 GiB | 32 GB |
 
 Figures are measured resident size on Apple Silicon with full Metal offload.
-Both processes memory-map the same base model file, so where those pages are
-shared the true physical cost is roughly 4 GiB below the combined figure. Plan
-for the combined number anyway: it is what `top` and Activity Monitor report,
-and it is what the operating system reacts to when it starts killing processes
-to reclaim memory.
+The two servers load different model files, so no pages are shared between
+them. Plan for the combined number: it is what `top` and Activity Monitor
+report, and it is what the operating system reacts to when it starts killing
+processes to reclaim memory.
 
-**On an 8 GB machine the default settings will swap or be killed.** Use
-`--n-ctx 16384 --gpu-layers 0`, expect a slow scan, and close other
-applications. Do not set `--n-ctx` below 16384 - a single request can carry an
-8000 token message and ask for up to 8192 output tokens, and a smaller window
-truncates model output mid-answer, marking that chunk as not analysed.
+**On a machine with less than 32 GB the scan will swap or be killed.** Lowering
+`--n-ctx` saves little. Do not set `--n-ctx` below 16384 - a single request can
+carry an 8000 token message and ask for up to 8192 output tokens, and a smaller
+window truncates model output mid-answer, marking that chunk as not analysed.
 
-On a GPU the same context window is held in the card's own memory for offloaded
-layers, so a card with less than 8 GB should lower `--n-ctx` or offload
-partially with `--gpu-layers 20`.
+On a GPU both models need about 24 GB of the card's memory for full offload. On
+a smaller card offload partially with `--gpu-layers 20` and expect a slower
+scan.
 
 The scanner stops both servers on exit, including on Ctrl-C. They appear in
 `ps` as `precommiteu-llama-server`; if a scan is killed with `SIGKILL` or by the
@@ -120,17 +117,17 @@ git clone https://github.com/ggml-org/llama.cpp && cd llama.cpp && cmake -B buil
 llama-server --version
 ```
 
-The output looks like `version: 9570 (3ac3c20c9)`. precommitEU parses that
-number and requires **4400 or higher** (llama.cpp tags releases as `b4400`,
-`b4401` and so on). The check runs once the first server has started and
+The output looks like `version: 10450 (ece963f41)`. precommitEU parses that
+number and requires **10158 or higher** (llama.cpp tags releases as `b10158`,
+`b10159` and so on). The check runs once the first server has started and
 reported healthy, so an outdated binary fails a few seconds into a scan rather
 than at argument parsing.
 
 Failures at this stage produce one of:
 
 ```
-llama-server binary not found on PATH; install llama.cpp >= b4400
-llama-server build b<N> is older than required b4400
+llama-server binary not found on PATH; install llama.cpp >= b10158
+llama-server build b<N> is older than required b10158
 ```
 
 ## Step 2: install the scanner
@@ -154,12 +151,12 @@ Models are not shipped with pip. They are published on Hugging Face at
 [AlexandruGirlea/precommiteu-models](https://huggingface.co/AlexandruGirlea/precommiteu-models).
 The repository is public: no account, no token, no `hf auth login`.
 
-### One base, one adapter per regulation
+### Two shared models, one adapter per regulation
 
-There is a single shared `base.gguf` (Qwen2.5-Coder-7B-Instruct, Q4_K_M,
-4.36 GiB). It serves every role: orchestrator, validator, and the detector
-when no adapter is loaded. Each regulation adds one small LoRA adapter
-(77 MiB) that is swapped onto the detector server for that regulation's pass.
+`orchestrator.gguf` (Qwen3.6-35B-A3B, IQ4_XS, 16.5 GiB) runs the orchestrator
+and the validator. `base.gguf` (Qwen2.5-Coder-7B-Instruct, Q4_K_M, 4.36 GiB) runs
+the detector. Each regulation adds one small LoRA adapter (77 MiB) that is
+loaded onto the detector server for that regulation's pass.
 
 | `--regulations` value | Regulation | Adapter file |
 |---|---|---|
@@ -170,7 +167,7 @@ when no adapter is loaded. Each regulation adds one small LoRA adapter
 | `dsa` | Digital Services Act | `dsa/detector-adapter.gguf` |
 | `cra_dma_nis2` | Cyber Resilience Act, DMA and NIS2 in one adapter | `cra_dma_nis2/detector-adapter.gguf` |
 
-Adding a regulation later means one extra 77 MiB file, never another base
+Adding a regulation later means one extra 77 MiB file, never another shared
 model.
 
 ### Download only the packs you need
@@ -179,13 +176,13 @@ model.
 pip install -U "huggingface_hub[cli]"
 ```
 
-Base plus GDPR only (about 4.5 GB):
+The shared models plus GDPR only (about 22.5 GB):
 
 ```bash
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 ```
 
-The whole bundle, all six adapters (about 4.9 GB):
+The whole bundle, all six adapters (about 22.9 GB):
 
 ```bash
 hf download AlexandruGirlea/precommiteu-models --local-dir ~/.precommiteu/models
@@ -214,14 +211,15 @@ Notes on this step:
 Without the Hugging Face client, plain HTTP works too:
 
 ```bash
-mkdir -p ~/.precommiteu/models/gdpr && curl -L -o ~/.precommiteu/models/base.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/base.gguf && curl -L -o ~/.precommiteu/models/gdpr/detector-adapter.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/gdpr/detector-adapter.gguf
+mkdir -p ~/.precommiteu/models/gdpr && curl -L -o ~/.precommiteu/models/base.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/base.gguf && curl -L -o ~/.precommiteu/models/orchestrator.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/orchestrator.gguf && curl -L -o ~/.precommiteu/models/gdpr/detector-adapter.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/gdpr/detector-adapter.gguf
 ```
 
 ### The layout the scanner expects
 
 ```
 ~/.precommiteu/models/
-├── base.gguf                       # shared base model, 4.36 GiB
+├── orchestrator.gguf               # orchestrator and validator, 16.5 GiB
+├── base.gguf                       # detector base model, 4.36 GiB
 ├── gdpr/detector-adapter.gguf      # one 77 MiB adapter per regulation
 ├── eu_ai_act/detector-adapter.gguf
 ├── eu_data_act/detector-adapter.gguf
@@ -233,14 +231,15 @@ mkdir -p ~/.precommiteu/models/gdpr && curl -L -o ~/.precommiteu/models/base.ggu
 └── NOTICE
 ```
 
-Two rules, and that is the whole contract:
+Three rules, and that is the whole contract:
 
-1. The base model is `<models-dir>/base.gguf`.
-2. An adapter is `<models-dir>/<regulation>/detector-adapter.gguf`, where
+1. The orchestrator model is `<models-dir>/orchestrator.gguf`.
+2. The detector base model is `<models-dir>/base.gguf`.
+3. An adapter is `<models-dir>/<regulation>/detector-adapter.gguf`, where
    `<regulation>` is exactly the `--regulations` value.
 
 Directory names are the pack names, so a typo in a directory name shows up as
-a missing adapter, not as an error. Recent `huggingface_hub` versions also
+a missing-adapter error. Recent `huggingface_hub` versions also
 create a `.cache/huggingface/` metadata folder inside the local directory. It
 is harmless; the scanner never looks at it.
 
@@ -248,17 +247,19 @@ is harmless; the scanner never looks at it.
 
 | Contents | Size |
 |---|---|
+| `orchestrator.gguf` | 16.5 GiB |
 | `base.gguf` | 4.36 GiB |
 | One adapter | 77 MiB |
-| Base plus one regulation | about 4.5 GB |
-| Base plus all six regulations | about 4.9 GB |
+| Shared models plus one regulation | about 22.5 GB |
+| Shared models plus all six regulations | about 22.9 GB |
 
-Leave some headroom on top for the download metadata folder. The base file is
-the whole cost: six regulations are only about 0.4 GB more than one.
+Leave some headroom on top for the download metadata folder. The two shared
+models are almost the whole cost: six regulations are only about 0.4 GB more
+than one.
 
 ### Verify the download
 
-`SHA256SUMS` covers all seven model files, the shared base plus the six adapters:
+`SHA256SUMS` covers all eight model files: both shared models and six adapters:
 
 ```bash
 cd ~/.precommiteu/models && shasum -a 256 -c SHA256SUMS
@@ -315,29 +316,20 @@ precommiteu scan src/ --models-dir ~/.precommiteu/models
 |---|---|---|
 | `--models-dir` | One invocation | Highest |
 | `$PRECOMMITEU_MODELS_DIR` | Shell or CI environment | Used when the flag is absent |
-| `--orchestrator-model` | Explicit path to the base GGUF | Bypasses both; adapters then resolve next to that file |
-| `--detector-adapter` | Explicit path to one adapter GGUF | Bypasses adapter resolution entirely |
 
 Details worth knowing:
 
 - `~` is expanded in both the flag and the environment variable.
-- `--orchestrator-model /opt/m/base.gguf` makes adapters resolve from
-  `/opt/m/<regulation>/detector-adapter.gguf`, that is, from the directory
-  holding the base file.
-- `--detector-adapter` pins one adapter, so it is valid with a single
-  regulation only. Combining it with several is a usage error (exit 2).
-- With no models directory, no environment variable and no explicit base path,
+- The bundle fixes model roles: `orchestrator.gguf` for orchestration and
+  validation; `base.gguf` plus the selected adapter for detection.
+- With no models directory and no environment variable,
   the scan exits 2 with
   `error: no model paths configured;` followed by a hint describing this
   layout.
-- A configured but missing base model exits 2 with
+- A missing `orchestrator.gguf`, `base.gguf` or selected adapter exits 2 with
   `error: required path not found: <path>`.
-- A missing adapter is **not** fatal. The regulation still runs in degraded
-  mode with the detector on the untrained base weights. The progress line
-  reads `adapter=base model (degraded)` and the scan log records a warning. If
-  you passed `--detector-adapter` explicitly and the file is absent, stderr
-  also gets
-  `::warning::precommiteu: detector adapter missing (<path>); running without a LoRA-bound detector (degraded mode).`
+- Every selected adapter is required. There is no unadapted or alternate-model
+  detection mode.
 
 ## Verify the installation
 
@@ -347,7 +339,7 @@ Details worth knowing:
 precommiteu --version
 ```
 
-Prints `precommiteu 0.2.4`.
+Prints `precommiteu 0.3.0`.
 
 ### 2. File discovery works
 
@@ -405,8 +397,7 @@ Findings: 1
 ```
 
 A clean run ends with `No findings.` instead. The `detector_adapter` line is
-the one to read on a first install: it confirms which adapter was resolved,
-and shows `base model (degraded)` when none was found.
+the one to read on a first install: it confirms which adapter was loaded.
 
 A timestamped log is appended to `precommiteu_scan.log` in the working
 directory. Change the path with `--log-file`.
@@ -465,19 +456,15 @@ What to expect, qualitatively:
 - CPU-only mode produces the same findings and is substantially slower per
   file. It is a fine choice for CI runners with no GPU, given a large enough
   per-file budget.
-- A scan runs **two** `llama-server` processes: one on the base model, shared
-  by the orchestrator and validator, and one on the same base file with the
-  regulation's LoRA adapter for detection. The detector process is restarted
-  per regulation, so scanning several packs never exceeds two at once.
-  llama.cpp memory-maps the weights and precommitEU does not disable that, so
-  the two processes share the mapped file rather than reading it twice. Plan
-  for more headroom than a single copy of the weights all the same,
-  especially in GPU memory, where each process holds its own copy of the
-  offloaded layers.
+- A scan runs **two** `llama-server` processes: one on `orchestrator.gguf` for
+  orchestration and validation, and one on `base.gguf` with the regulation's
+  LoRA adapter for detection. The detector process is restarted per regulation,
+  so scanning several packs never exceeds two at once. The processes load
+  separate model files; allow memory for both models and their runtime buffers.
 - Do not judge speed from the first run. The initial model load from a cold
   page cache dominates it.
 
-Each file gets a hard budget: 12 orchestrator iterations and 90 seconds of
+Each file gets a hard budget: 12 orchestrator iterations and 300 seconds of
 wall-clock time, with an 8000-token cap on every message sent to a model. On
 slow hardware the time budget can end context gathering early, so a file may
 be judged with less cross-file context. That is not counted as an error and
@@ -491,7 +478,7 @@ Flags that affect cost and speed:
 | `--gpu-layers` | `99` | Layers offloaded to the GPU (`0` = CPU only) |
 | `--threads` | auto | CPU threads for inference |
 | `--n-ctx` | `32768` | Model context window in tokens |
-| `--max-wall-seconds-per-file` | `90` | Wall-clock budget per file |
+| `--max-wall-seconds-per-file` | `300` | Wall-clock budget per file |
 | `--max-orchestrator-iterations` | `12` | Maximum agent steps per file |
 | `--max-file-bytes` | `1000000` | Skip files larger than this (`0` = no limit) |
 | `--agent-mode` | `auto` | Per-file route, see below |
@@ -507,11 +494,11 @@ the direct route otherwise.
 
 | Message | Meaning | Fix |
 |---|---|---|
-| `error: no model paths configured; ...` | Neither `--models-dir`, `$PRECOMMITEU_MODELS_DIR` nor `--orchestrator-model` was set | Step 4 |
-| `error: required path not found: <path>` | The base model or a grammar file is not where you said it is | Check the path and the bundle layout |
+| `error: no model paths configured; ...` | Neither `--models-dir` nor `$PRECOMMITEU_MODELS_DIR` was set | Step 4 |
+| `error: required path not found: <path>` | A shared model, selected adapter or grammar file is missing | Check the path and the bundle layout |
 | `error: scan wiring failed: <exc>` | Startup failed, most often the `llama-server` runtime | Read the wrapped message, then Step 1 |
-| `llama-server binary not found on PATH; install llama.cpp >= b4400` | The binary is not installed or not on `PATH` | Step 1 |
-| `llama-server build b<N> is older than required b4400` | The build is too old | Upgrade llama.cpp |
+| `llama-server binary not found on PATH; install llama.cpp >= b10158` | The binary is not installed or not on `PATH` | Step 1 |
+| `llama-server build b<N> is older than required b10158` | The build is too old | Upgrade llama.cpp |
 | `llama-server exited immediately: <stderr>` | The server died before serving | Read the captured stderr, usually a bad or unsupported model file |
 | `llama-server exited during startup ...` | The model file may be corrupt or incompatible | Re-download and re-check `SHA256SUMS` |
 | `error: regulation '<value>' not packaged in precommiteu.regulations` | A `--regulations` value is misspelled | Use one of the six pack names |
@@ -568,7 +555,7 @@ folder it scans.
 | Guide | Contents |
 |---|---|
 | [cli.md](cli.md) | CLI usage, complete flag reference, reports, suppressions |
-| [ci.md](ci.md) | GitHub Actions, GitLab, exit codes, caching the model bundle |
+| [ci.md](ci.md) | The CI container, GitHub Actions, GitLab, Azure DevOps, exit codes |
 | [library.md](library.md) | Python API: `scan_paths`, `scan_diff`, schemas, callbacks |
 | [reports.md](reports.md) | Report formats: JSON field reference, SARIF, summary, ledger |
 | [suppressions.md](suppressions.md) | `.eu-ignore`, inline directives, audited ignore markers |

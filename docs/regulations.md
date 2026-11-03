@@ -72,17 +72,15 @@ How it behaves:
 
 - Pass a comma-separated list to `--regulations`, or a tuple to `regulations=`
   in the library. Order is preserved.
-- The base model, used by the orchestrator and validator, starts **once** and
-  is shared. For each regulation the scanner swaps only the **detector** to
-  that regulation's LoRA adapter, resolved as
+- `orchestrator.gguf`, used by the orchestrator and validator, starts **once**
+  and is shared. For each regulation the detector uses `base.gguf` with
+  that regulation's required LoRA adapter, resolved as
   `<models-dir>/<regulation>/detector-adapter.gguf`.
 - Regulations are scanned **sequentially**, and every finding is tagged with
   its `regulation`. Reports are written incrementally, so interrupting a run
   keeps the results from regulations already completed.
-- A regulation with no adapter under the models directory still runs, in
-  degraded mode with the detector on the base model. A warning is logged.
-- `--detector-adapter` pins one specific adapter, so it is valid only with a
-  **single** regulation. Combining it with several is an error (exit 2).
+- All selected adapters must exist before scanning starts. Missing shared
+  models or adapters are errors; model roles cannot be overridden.
 
 ## Related
 

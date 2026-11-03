@@ -117,10 +117,12 @@ the network: **[Local UI](https://alexandrugirlea.github.io/precommiteu/ui.html)
 ```bash
 brew install llama.cpp
 pip install precommiteu "huggingface_hub[cli]"
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/
 ```
+
+The models need 32 GB of RAM and about 23 GB of disk.
 
 Linux, source and GPU builds, downloading more packs, air-gapped installs and
 uninstall: **[Installation](https://alexandrugirlea.github.io/precommiteu/install.html)**.
@@ -131,13 +133,14 @@ scanner resolves `<models-dir>/<regulation>/detector-adapter.gguf`:
 
 ```text
 ~/.precommiteu/models/
-├── base.gguf                        # shared by every regulation
+├── orchestrator.gguf                # orchestrator and validator
+├── base.gguf                        # detector base, shared by every regulation
 ├── gdpr/detector-adapter.gguf
 └── eu_ai_act/detector-adapter.gguf  # one directory per pack you downloaded
 ```
 
-A flat directory does not work: a missing adapter is not an error, the scan
-just continues on the base model alone in degraded mode and logs a warning.
+A flat directory does not work: both shared models and every selected
+regulation's adapter are required. A missing file stops the scan.
 
 ```bash
 precommiteu scan src/ --regulations gdpr,eu_ai_act    # several regulations
@@ -150,8 +153,7 @@ precommiteu scan --ci --fail-on-findings              # changed files only, gate
 import os
 from precommiteu import scan_paths
 
-# Required unless you pass orchestrator_model_path / detector_adapter_path
-# explicitly. Without it, scan_paths raises ValueError.
+# Required unless you pass models_dir to scan_paths.
 os.environ["PRECOMMITEU_MODELS_DIR"] = "~/.precommiteu/models"
 
 result = scan_paths(["src/"], regulations=("gdpr",))
@@ -191,27 +193,25 @@ PyPI; the weights are published separately on Hugging Face at
 [AlexandruGirlea/precommiteu-models](https://huggingface.co/AlexandruGirlea/precommiteu-models)
 (public, no token needed). `pip install` does **not** fetch them.
 
-The repository holds seven files: one shared 4.36 GiB `base.gguf` used by every
-regulation, plus a 77 MiB detector adapter per pack. **You choose which
+The repository holds eight model files: a 16.5 GiB `orchestrator.gguf` that runs
+the orchestrator and validator, a 4.36 GiB `base.gguf` that every detector
+adapter loads onto, plus a 77 MiB detector adapter per pack. **You choose which
 adapters to download.** Name the files you want, or omit them to take
 everything:
 
 ```bash
-# base + GDPR only, about 4.5 GB
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+# shared models + GDPR only, about 22.5 GB
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 
-# add another pack later, the base is already there
+# add another pack later, the shared models are already there
 hf download AlexandruGirlea/precommiteu-models eu_ai_act/detector-adapter.gguf --local-dir ~/.precommiteu/models
 
-# everything, about 4.9 GB
+# everything, about 22.9 GB
 hf download AlexandruGirlea/precommiteu-models --local-dir ~/.precommiteu/models
 ```
 
-`--regulations` then picks which of the downloaded packs to run. The two are
-independent, and that is worth knowing: scanning with a regulation whose
-adapter you never downloaded is **not** an error. The run continues on the base
-model alone in degraded mode, logs a warning, and detects noticeably less. If a
-scan seems weak, check the adapter is actually on disk.
+`--regulations` picks which downloaded packs to run. Every selected pack's
+adapter must be present; a missing adapter stops the scan before models load.
 
 Air-gapped installs, checksum verification and uninstall:
 [Installation](https://alexandrugirlea.github.io/precommiteu/install.html).
@@ -245,8 +245,8 @@ precommitEU is not built to catch everything. The bar it aims for is: **flag
 more than half of the real violations, and be right about nine out of ten
 things it flags.**
 
-From local evaluation runs on my own codebases, measured on confirmed findings
-(advisories are excluded):
+Historical results from local evaluation runs on my own codebases using the
+earlier shared-base setup, measured on confirmed findings (advisories excluded):
 
 | Pack | Precision | Recall | False positive rate |
 |---|---|---|---|
@@ -257,28 +257,41 @@ From local evaluation runs on my own codebases, measured on confirmed findings
 | `dsa` | 90% | 90% | 15% |
 | `dora` | 100% | 73% | 0% |
 
-Every pack clears both bars. `dora` is the most conservative and `dsa` the
-noisiest, but nothing here is a compliance guarantee - treat a clean scan as
-one useful signal, not as sign-off.
+In those runs, every pack cleared both bars. `dora` was the most conservative
+and `dsa` the noisiest, but nothing here is a compliance guarantee - treat a
+clean scan as one useful signal, not as sign-off.
 
-Numbers are for the shipped setup: shared base model plus the per-regulation
-LoRA adapter, loaded at runtime, exactly as a normal scan runs them.
+These numbers cover the earlier shared base model with per-regulation LoRA
+adapters. They have not been revalidated with the separate `orchestrator.gguf`
+validator introduced in 0.3.0.
 
 ## In CI
 
+The models need 32 GB of RAM, more than hosted CI runners have. Scans run in
+the precommitEU container on a Linux machine of your own, registered as a
+runner. After a one-time setup of that machine, the job is:
+
 ```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-- uses: AlexandruGirlea/precommiteu@v0.2.4
-  with:
-    regulations: gdpr,eu_ai_act
+jobs:
+  precommiteu:
+    runs-on: [self-hosted, precommiteu]
+    container:
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      volumes:
+        - /opt/precommiteu/models:/models:ro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: AlexandruGirlea/precommiteu@v0.3.0
+        with:
+          regulations: gdpr
 ```
 
 `--ci` scans only the files changed against the merge-target branch. Exit code
-`1` on confirmed findings with `--fail-on-findings`, `0` when clean. GitLab,
-Azure DevOps, the full input list and every exit code are in
-[CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
+`1` on confirmed findings with `--fail-on-findings`, `0` when clean. The
+machine setup, GitLab, Azure DevOps, the full input list and every exit code
+are in [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
 
 ## Documentation
 
@@ -288,7 +301,7 @@ Azure DevOps, the full input list and every exit code are in
 | [Local UI](https://alexandrugirlea.github.io/precommiteu/ui.html) | The six steps, downloading packs, pause vs stop, settings, what leaves the machine |
 | [CLI reference](https://alexandrugirlea.github.io/precommiteu/cli.html) | CLI usage, complete flag reference, reports, suppressions |
 | [Regulation packs](https://alexandrugirlea.github.io/precommiteu/regulations.html) | The six packs, application dates, choosing packs, multi-regulation runs |
-| [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html) | GitHub Actions, GitLab, exit codes, caching the model bundle |
+| [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html) | The CI container, GitHub Actions, GitLab, Azure DevOps, exit codes |
 | [Python library](https://alexandrugirlea.github.io/precommiteu/library.html) | Python API: `scan_paths`, `scan_diff`, schemas, callbacks |
 | [Report reference](https://alexandrugirlea.github.io/precommiteu/reports.html) | Report formats: JSON field reference, SARIF, summary, ledger |
 | [Ignoring and suppressing](https://alexandrugirlea.github.io/precommiteu/suppressions.html) | `.eu-ignore`, inline `eu-ignore` directives, audited `precommiteu-ignore` markers |

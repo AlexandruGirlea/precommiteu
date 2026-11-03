@@ -81,11 +81,12 @@ def _article_titles(pack_id: str) -> dict[str, str]:
 
 def build(models_dir: pathlib.Path) -> dict:
     demo_jurisdictions, demo_packs = _demo_overlay()
-    # The shared base is fetched with whichever pack is downloaded first. The
-    # adapter is 1.7% of the download, so it lands long before the base: without
-    # the base a pack with an adapter on disk is not usable yet.
-    have_base = install.base_ok(models_dir)
-    base_mb = 0 if have_base else install.BASE_MB
+    have_base = install.shared_ok(models_dir)
+    base_mb = sum(
+        round(size / 1048576)
+        for name, size in install.SHARED.items()
+        if not install.sized(models_dir, name)
+    )
     packs = []
     for jurisdiction, pid, name, ref, covers, timeline in PACKS + demo_packs:
         adapter = models_dir / pid / install.ADAPTER

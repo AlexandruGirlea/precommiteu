@@ -802,6 +802,10 @@ function drawLog(){
 
 function resetLog(){ LOG = []; SEEN = new Set(); drawLog(); }
 
+const scanComplete = s => s.phase==='done' && !s.error
+  && s.files_done===s.files_total
+  && s.files.every(f=>['done','cached','ignored'].includes(f.status));
+
 function paint(s){
   // /api/stop returns before the child is down; idle is the backend telling us
   // the kill, the state purge and the re-plan have all landed.
@@ -821,7 +825,8 @@ function paint(s){
   if (s.findings.length || adv || finished) $('nav-results').classList.remove('off');
   $('c-scan').textContent = running ? `${s.files_done}/${s.files_total}`
     : s.phase==='paused' ? t('cnt.paused') : s.files_done ? t('cnt.done') : '';
-  $('c-results').textContent = s.findings.length || (finished ? t('cnt.clean') : '');
+  $('c-results').textContent = s.findings.length
+    || (finished ? t(scanComplete(s) ? 'cnt.clean' : 'res.incompleteLede') : '');
   $('tbsub').textContent = VIEW==='scan' && running
     ? t('scan.tbsub',{done:s.files_done, total:s.files_total}) : '';
   $('sidefoot').innerHTML = (CATALOG
@@ -843,7 +848,7 @@ function paint(s){
       : running ? t('scan.remaining',{t:mmss(s.eta_s)})
       : s.phase==='paused' ? t('scan.paused')
       : s.phase==='failed' ? t('scan.failed')
-      : s.files_done ? t('scan.complete') : t('scan.ready');
+      : scanComplete(s) ? t('scan.complete') : t('scan.ready');
     $('etaSub').textContent = running
       ? t('scan.sub.running',{done:s.files_done, total:s.files_total,
                               adapter:s.adapter||''})
@@ -897,10 +902,14 @@ function paint(s){
   $('backScan').classList.toggle('hide', running);
   $('err').classList.toggle('hide', !s.error);
   if (s.error) $('err').textContent = s.error;
+  if (VIEW==='results') render(s);
 }
 
 function render(s){
   const adv = s.advisories||[];
+  const incomplete = !scanComplete(s);
+  const warning = `<div class="card"><div class="h">${t('res.incompleteLede')}</div>
+    <div class="p">${t('res.incompleteP')}</div></div>`;
   const arts = [...new Set(s.findings.map(f=>artNo(f.probable_article_id)))]
     .sort((a,b)=>a-b);
   // Article 5 is a prohibition in the AI Act alone; elsewhere it is an ordinary
@@ -912,20 +921,20 @@ function render(s){
     <div class="k">${k}</div></div>`;
 
   if (!s.findings.length && !adv.length){
-    $('rLede').textContent = t('res.cleanLede');
+    $('rLede').textContent = t(incomplete ? 'res.incompleteLede' : 'res.cleanLede');
     $('rSub').textContent = `${packName(PACK)} · ${t('cnt.files',{n:s.files_total})}`
       + (s.elapsed_s>0 ? t('res.scannedIn',{t:mmss(s.elapsed_s)}) : '')
       + t('res.noEgress');
     $('rStats').innerHTML = st(s.files_total,t('scan.files'),'warm')
       + st(s.chunks_done,t('scan.chunks'),'') + st(0,t('scan.hits'),'')
       + st(0,t('scan.adv'),'');
-    $('cards').innerHTML = `<div class="card clean"><span class="tick">✓</span>
+    $('cards').innerHTML = incomplete ? warning : `<div class="card clean"><span class="tick">✓</span>
       <div><div class="h">${t('res.cleanH',{n:s.files_total})}</div>
       <div class="p">${t('res.cleanP',{pack:packName(PACK)})}</div></div></div>`;
     return;
   }
 
-  $('rLede').textContent = s.findings.length
+  $('rLede').textContent = incomplete ? t('res.incompleteLede') : s.findings.length
     ? t('res.lede',{n:s.findings.length, m:t('res.articles',{n:arts.length})})
     : t('res.ledeNone');
   $('rSub').textContent = t('cnt.files',{n:s.files_total})
@@ -948,7 +957,7 @@ function render(s){
       .replace(/\s*\[matches a known violation pattern:[^\]]*\]/g,''))}</div>
     ${f.code_evidence?`<pre>${esc(f.code_evidence)}</pre>`:''}</div>`;
 
-  $('cards').innerHTML =
+  $('cards').innerHTML = (incomplete ? warning : '') +
     (s.findings.length ? s.findings.slice()
       .sort((a,b)=>artNo(a.probable_article_id)-artNo(b.probable_article_id))
       .map(f=>card(f,false)).join('')

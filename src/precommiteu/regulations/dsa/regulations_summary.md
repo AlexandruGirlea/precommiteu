@@ -8,6 +8,10 @@ authoritative wording, follow the EUR-Lex link rendered with each finding.
 
 # DSA (Digital Services Act)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: Distinguish intermediary, hosting, online-platform, marketplace and designated VLOP/VLOSE duties. Articles 15(2), 19 and 29 provide micro/small-enterprise exemptions with specified exceptions. Do not assume designation or a service tier from a recommender/ad feature. Article 8 imposes no general proactive-monitoring obligation; establish each specific duty before confirming an omission.
+
 ## dsa_art4
 Reference: DSA Art. 4
 Title: ‘Mere conduit’
@@ -124,10 +128,11 @@ Title: Notice and action mechanisms
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Hosting services must offer an easy electronic way for anyone to report specific illegal content. The form must collect an explanation, the exact URL/location, the reporter's name and email (child-abuse-material reports may be anonymous), and a good-faith confirmation. The service must confirm receipt and disclose automated processing of notices.
-Developer impact: Build a notice form/API with the required fields, conditional anonymity for child-abuse reports, automated receipt confirmation and automated-decision disclosure.
-Code smells: report form lacks an exact-URL field; reporter email mandatory even for child-abuse reports; no bona-fide confirmation checkbox; no automated confirmation of receipt; ML rejection of notices undisclosed to the submitter
+Summary: Hosting services must enable sufficiently precise and substantiated electronic notices of illegal content. Where electronic contact details are supplied, acknowledge receipt and tell the notifier the decision and redress possibilities; disclose automated processing used for the decision.
+Developer impact: The notifier/reporter receives art16 communications; the person whose content or account was restricted receives art17 reasons. Establish the addressee rather than routing every decision email to art17.
+Code smells: The completed notice mechanism prevents required information being supplied; an outcome message to the reporter explicitly omits applicable redress information or conceals automated decision-making.
 Related: dsa_art17, dsa_art20, dsa_art22
+Conditions and exceptions: No electronic contact is available for the alleged missing reply; the claim demands mandatory identity for the qualifying child-sexual-abuse/exploitation notices; a required input is enabled as an optional field rather than forced.
 
 ## dsa_art17
 Reference: DSA Art. 17
@@ -135,10 +140,11 @@ Title: Statement of reasons
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Whenever the platform removes, demotes or hides content, or suspends payments, service or an account, it must send the affected user a clear, specific statement of reasons: what was done and for how long/where, the facts, the exact legal ground or T&C clause, whether automated means were used, and the redress options.
-Developer impact: Trigger a notification on every moderation action carrying the measure, its scope/duration, the specific ground, an automated-means flag and redress links.
-Code smells: account suspended with no notification trigger; notice omits redress options; generic guidelines-violation string instead of the specific clause; automated_decision flag absent from notices; territorial scope and duration missing from suspension emails
+Summary: Hosting services give affected recipients clear and specific reasons for restrictions based on illegality or incompatibility with terms, including applicable facts, grounds, automation and redress information. The duty covers visibility and monetisation restrictions as well as removal/suspension.
+Developer impact: Check 17(2) and 17(5) exceptions before demanding notice. Explaining a moderation decision is distinct from the later internal complaint process (art20).
+Code smells: An applicable restriction notice explicitly discards its grounds, scope/duration or redress information; the established notification flow is disabled.
 Related: dsa_art9, dsa_art16, dsa_art20
+Conditions and exceptions: Electronic contact details are unknown; the content is established to be deceptive high-volume commercial content; the action follows an Article 9 order; the message is to the notifier (art16). A generic spam label alone does not establish the commercial-content exception.
 
 ## dsa_art18
 Reference: DSA Art. 18
@@ -168,10 +174,11 @@ Title: Out-of-court dispute settlement
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Users affected by moderation decisions may take the dispute to a certified out-of-court settlement body. The platform must make information about this option easily accessible and clear on its interface, and engage in good faith. The body's decision does not bind the parties.
-Developer impact: Render accessible UI and notification content pointing users to certified dispute-settlement bodies after moderation or complaint decisions.
-Code smells: dispute-settlement link rendered only for premium accounts; settlement notice present in one locale file only; complaint-rejection email omits certified-body links; settlement outcome treated as binding in the workflow; settlement info hidden via CSS or tiny font
+Summary: Applicable online platforms must make certified out-of-court dispute settlement information accessible and engage in good faith, while preserving access to court at any stage. The settlement body cannot impose a binding outcome on the parties.
+Developer impact: Voluntary implementation is lawful. A successful recipient is reimbursed as required by 21(5); a losing recipient need not reimburse platform costs absent manifest bad faith, although the body may charge a nominal recipient fee.
+Code smells: An applicable settlement route is deliberately hidden or unjustifiably gated; the workflow makes settlement a compulsory prerequisite to court action or waives court access; the platform charges the user its costs without the required bad-faith finding.
 Related: dsa_art17, dsa_art20
+Conditions and exceptions: The platform voluntarily implements a settlement outcome without restricting further legal remedies; the same dispute on the same grounds was already resolved; the alleged upload facility is a duty of the settlement body rather than the platform.
 
 ## dsa_art22
 Reference: DSA Art. 22
@@ -212,10 +219,11 @@ Title: Online interface design and organisation
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Platform interfaces must not deceive or manipulate users or distort their ability to make free and informed decisions. Examples: one choice more prominent than another, nagging repeat prompts after the user already chose, and cancelling harder than signing up.
-Developer impact: Audit frontend flows for dark patterns: equal prominence of choices, persisted dismissal state, and symmetric subscribe/cancel paths.
-Code smells: paid option pre-selected in component state; dismissed flag never persisted, popup returns every load; account created via API but deletion requires an emailed PDF; reject button styled low-contrast versus accept; fake only-X-left counters not backed by inventory
+Summary: Applicable online platforms must not design interfaces that deceive, manipulate or materially distort recipients' free and informed decisions. Article 25(2) excludes practices covered by the Unfair Commercial Practices Directive or GDPR.
+Developer impact: Evaluate the actual practice and statutory carve-out. Do not confirm an Article 25 violation simply because a consent banner or consumer cancellation flow resembles a dark-pattern example.
+Code smells: A supported in-scope flow uses deceptive presentation, fabricated scarcity or materially obstructive repeated choices; the supplied behavior establishes manipulation rather than merely an interface style.
 Related: dsa_art14, dsa_art26, dsa_art27
+Conditions and exceptions: The practice is covered by GDPR or the Unfair Commercial Practices Directive; only a legitimate offer, ordinary confirmation or different button style is shown without the prohibited effect.
 
 ## dsa_art26
 Reference: DSA Art. 26
@@ -234,10 +242,11 @@ Title: Recommender system transparency
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Platforms using recommender systems must explain their main ranking parameters in plain language in the terms and conditions, and why they matter. Where several ranking options exist, users must get a control to pick and change their preferred option, accessible directly from the section where results are ranked.
-Developer impact: Disclose ranking parameters and ship a feed-level UI control for selecting and persisting the user's recommender option.
-Code smells: feed ranking hardcoded with no option toggle; sorting preference buried in deep settings instead of on the feed; recommender parameters absent from the T&C content; preference changes not persisted to the backend; no disclosure link in the recommendation widget
+Summary: Applicable online platforms explain recommender main parameters and available influence options in their terms. Where several options are available, Article 27(3) requires an accessible facility to select and modify the preferred option where recommendations appear.
+Developer impact: Article 27 does not universally require multiple ranking modes. Article 38 requires a non-profiling option for designated VLOPs/VLOSEs; distinct supported obligations can coexist.
+Code smells: An established user-selectable ranking option is ignored or the selection facility is obstructed; the supplied terms/disclosure flow explicitly removes required main-parameter information.
 Related: dsa_art14, dsa_art38
+Conditions and exceptions: The only allegation is that a single fixed ranking lacks alternative modes; only scoring computation is shown without the relevant interface or terms; the claim concerns the designated-service non-profiling obligation (art38).
 
 ## dsa_art28
 Reference: DSA Art. 28
@@ -245,10 +254,11 @@ Title: Online protection of minors
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Platforms accessible to minors must take appropriate measures for minors' privacy, safety and security, and must not show ads based on profiling using personal data when they know with reasonable certainty the user is a minor. They are not required to collect extra personal data just to assess age.
-Developer impact: Add minor-aware conditional logic so behavioral or profiled ad serving is disabled whenever an under-18 signal is present.
-Code smells: behavioral_ads flag left enabled when date_of_birth shows under 18; viewing history sent to ad bidding while profile_type is kids; ad webhook called without checking is_minor; student performance data fed into ad-targeting models; extra identity data collected only to estimate age
+Summary: Applicable online platforms accessible to minors need appropriate and proportionate privacy, safety and security measures. Profiling-based advertising is prohibited when the provider knows with reasonable certainty that the recipient is a minor; Article 28(3) does not require extra personal-data collection to assess age.
+Developer impact: Article 28(3) is not a ban on all age verification; its data protection must be assessed under applicable law. Lack of age certainty alone does not remove the separate 28(1) duty for services accessible to minors.
+Code smells: Profiling-based advertising knowingly targets a minor or discards an established minor signal to bypass the protection.
 Related: dsa_art26, dsa_art35
+Conditions and exceptions: Ads are contextual rather than based on the person's profile; minority awareness is not established for the advertising claim; the sole allegation is either missing extra age-data collection or that collecting age-verification data is automatically prohibited by 28(3).
 
 ## dsa_art30
 Reference: DSA Art. 30
@@ -256,10 +266,11 @@ Title: Traceability of traders
 Regulation: DSA
 Source CELEX: 32022R2065
 
-Summary: Marketplaces must collect and verify trader identity before letting them sell: name, address, phone, email, ID document, payment account, trade-register number and a self-certification. Traders with missing or inaccurate data must be suspended; data is kept six months after the contract ends; key trader details are shown on listings.
-Developer impact: Enforce mandatory onboarding fields, best-effort register verification, suspension automation, retention schedules and trader display on listings.
-Code smells: trader can list without a trade-register number or self-certification; ID document upload skipped at onboarding; no suspension when verification fails or expires; trader records kept years beyond the six-month window; listing page omits the trader's identity
+Summary: Applicable marketplaces obtain and assess required trader identification before use, seek correction of deficient information and suspend where required. Trade-register details apply where the trader is registered; only 30(1)(a),(d),(e) are made public under 30(7).
+Developer impact: Distinguish the trader from the product's manufacturer/importer/other economic operator. Obtain required data before platform use, but retain it securely throughout the relationship and for six months after it ends.
+Code smells: A known applicable trader field is explicitly bypassed; verified deficiencies are allowed to persist without the required correction/suspension process; records are retained beyond the six-month post-contract period without the prescribed deletion.
 Related: dsa_art6, dsa_art31, dsa_art32
+Conditions and exceptions: The alleged missing register entry concerns an unregistered trader; a listing omits private identity-document/payment-account data that need not be public; a product economic-operator block is mistaken for the trader-onboarding record (art31).
 
 ## dsa_art31
 Reference: DSA Art. 31

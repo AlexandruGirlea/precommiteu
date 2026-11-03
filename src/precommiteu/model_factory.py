@@ -38,6 +38,7 @@ class LocalChatModel:
         grammar: str | None,
         timeout_s: float,
         retries: int,
+        n_ctx: int = 32768,
     ) -> None:
         self._endpoint = endpoint
         self._api_key = api_key
@@ -46,15 +47,44 @@ class LocalChatModel:
         self._grammar = grammar
         self._timeout_s = timeout_s
         self._retries = retries
+        self._n_ctx = n_ctx
+
+    def _native(self, route: str, payload: dict) -> dict:
+        request = urllib.request.Request(
+            self._endpoint.split("/v1/")[0] + route,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json",
+                     "Authorization": f"Bearer {self._api_key}"},
+        )
+        with LOOPBACK_OPENER.open(request, timeout=15) as response:
+            return json.load(response)
+
+    def count_tokens(self, text: str) -> int:
+        return len(self._native("/tokenize", {
+            "content": text, "add_special": False, "parse_special": True,
+        })["tokens"])
 
     def invoke(
         self, messages: list[Any], timeout_s: float | None = None, *, grammar: str | None = None
     ) -> ChatResponse:
+        started = time.monotonic()
+        rendered = self._native("/apply-template", {
+            "messages": [_as_message_dict(m) for m in messages],
+            "add_generation_prompt": True,
+            "chat_template_kwargs": {"enable_thinking": False},
+        })["prompt"]
+        prompt_tokens = self.count_tokens(rendered)
+        if prompt_tokens + self._max_tokens > self._n_ctx:
+            raise RuntimeError(
+                f"model context budget exceeded: {prompt_tokens} input + "
+                f"{self._max_tokens} output > {self._n_ctx} tokens"
+            )
         body: dict[str, Any] = {
             "model": "precommiteu-local",
             "messages": [_as_message_dict(m) for m in messages],
             "temperature": self._temperature,
             "max_tokens": self._max_tokens,
+            "chat_template_kwargs": {"enable_thinking": False},
         }
         active_grammar = self._grammar if grammar is None else grammar
         if active_grammar:
@@ -71,7 +101,7 @@ class LocalChatModel:
         deadline = (
             None
             if timeout_s is None
-            else time.monotonic() + max(1.0, timeout_s)
+            else started + max(1.0, timeout_s)
         )
         last_error: Exception | None = None
         for attempt in range(self._retries + 1):
@@ -133,4 +163,5 @@ def build_chat_model(
         grammar=grammar,
         timeout_s=request_timeout,
         retries=MODEL_REQUEST_RETRIES,
+        n_ctx=handle.n_ctx,
     )

@@ -5,16 +5,21 @@ import json
 import logging
 import os
 import pathlib
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 from pydantic import ValidationError
 
 from precommiteu.src.schemas import Advisory, Finding
+from precommiteu.src.tools.read_tools import _is_sensitive
+from precommiteu.src.tools.sandbox import Sandbox
 
-__all__ = ["FORMAT_VERSION", "ScanLedger", "default_ledger_path"]
+__all__ = [
+    "FORMAT_VERSION", "ScanLedger", "context_fingerprint",
+    "default_ledger_path", "fingerprint",
+]
 
-# Recheck all regulations with the validation changes in 0.2.4.
-FORMAT_VERSION = 5
+FORMAT_VERSION = 8
 
 _LOG = logging.getLogger(__name__)
 
@@ -42,6 +47,42 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
+def fingerprint(paths: Iterable[pathlib.Path]) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(paths):
+        try:
+            stat = path.stat()
+            identity = (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+        except OSError:
+            identity = None
+        digest.update(json.dumps((str(path.resolve()), identity)).encode())
+    return digest.hexdigest()
+
+
+def context_fingerprint(
+    root: pathlib.Path, *, excluded_paths: tuple[pathlib.Path, ...] = (),
+) -> str:
+    sandbox = Sandbox((root,), excluded_paths=excluded_paths)
+    paths = [root / ".eu-ignore"]
+    for directory, dirs, names in os.walk(root):
+        base = pathlib.Path(directory)
+        for name in dirs[:] + names:
+            path = base / name
+            try:
+                if _is_sensitive(path):
+                    raise PermissionError
+                sandbox.resolve(path)
+            except PermissionError:
+                if name in dirs:
+                    dirs.remove(name)
+                continue
+            if path.is_file():
+                paths.append(path)
+    return hashlib.sha256(
+        json.dumps([(str(p), _sha256(p)) for p in sorted(paths)]).encode()
+    ).hexdigest()
+
+
 class ScanLedger:
     def __init__(
         self,
@@ -49,11 +90,13 @@ class ScanLedger:
         target: pathlib.Path,
         regulation: str,
         entries: dict[str, dict] | None = None,
+        configuration: dict | None = None,
     ) -> None:
         self.path = path
         self.target = target
         self.regulation = regulation
         self.entries = entries if entries is not None else {}
+        self.configuration = configuration
         self._save_failed = False
 
     @classmethod
@@ -62,11 +105,16 @@ class ScanLedger:
         target: pathlib.Path,
         regulation: str,
         path: pathlib.Path | None = None,
+        *,
+        configuration: dict | None = None,
     ) -> ScanLedger:
         target = pathlib.Path(target).resolve()
         if path is None:
             path = default_ledger_path(target, regulation)
-        ledger = cls(pathlib.Path(path), target, regulation)
+        ledger = cls(
+            pathlib.Path(path), target, regulation,
+            configuration=configuration,
+        )
         try:
             doc = json.loads(ledger.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -76,6 +124,7 @@ class ScanLedger:
             or doc.get("version") != FORMAT_VERSION
             or doc.get("regulation") != regulation
             or doc.get("target") != str(target)
+            or doc.get("configuration") != configuration
             or not isinstance(doc.get("files"), dict)
         ):
             _LOG.info("scan ledger at %s not reusable; scanning everything", path)
@@ -98,9 +147,14 @@ class ScanLedger:
             "sha256": _sha256(self.target / rel),
         }
 
-    def reuse(self, rel: str) -> tuple[list[Finding], list[Advisory]] | None:
+    def reuse(
+        self, rel: str, *, context: str | None = None,
+    ) -> tuple[list[Finding], list[Advisory]] | None:
         entry = self.entries.get(rel)
         if entry is None:
+            return None
+        if entry.get("context") != context:
+            del self.entries[rel]
             return None
         path = self.target / rel
         try:
@@ -131,11 +185,14 @@ class ScanLedger:
         stamp: dict[str, object] | None,
         findings: list[Finding],
         advisories: list[Advisory],
+        *,
+        context: str | None = None,
     ) -> None:
         if stamp is None or not stamp["sha256"]:
             return
         self.entries[rel] = {
             **stamp,
+            "context": context,
             "scanned_at": _now(),
             "findings": [f.model_dump(mode="json") for f in findings],
             "advisories": [a.model_dump(mode="json") for a in advisories],
@@ -146,6 +203,7 @@ class ScanLedger:
             "version": FORMAT_VERSION,
             "regulation": self.regulation,
             "target": str(self.target),
+            "configuration": self.configuration,
             "updated_at": _now(),
             "files": self.entries,
         }

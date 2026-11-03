@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from precommiteu.src.file_filter import is_code_file
 from precommiteu.src.ignore_directives import apply_prompt_ignore_directives
 from precommiteu.tools.sandbox import Sandbox
 
@@ -86,6 +87,8 @@ def find_references(
     sandbox: Sandbox,
     symbol: str,
     repo_root: Path,
+    *,
+    exclude_file: Path | None = None,
 ) -> list[dict[str, Any]]:
     symbol = symbol.strip()
     if not symbol:
@@ -103,8 +106,17 @@ def find_references(
 
     results: list[dict[str, Any]] = []
     total_bytes = 0
+    include_tests = (
+        exclude_file is not None
+        and not is_code_file(exclude_file, repo_root_resolved)
+        and is_code_file(exclude_file, repo_root_resolved, skip_tests=False)
+    )
 
     for path in _candidate_files(repo_root_resolved):
+        if path.resolve() == exclude_file or not is_code_file(
+            path, repo_root_resolved, skip_tests=not include_tests,
+        ):
+            continue
         if len(results) >= _MAX_HITS or total_bytes >= _MAX_TOTAL_BYTES:
             break
         try:

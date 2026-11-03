@@ -9,6 +9,10 @@ each finding.
 
 # Cyber Resilience Act (CRA)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: CRA product/manufacturer and steward duties, DMA designated-gatekeeper/service duties, and NIS2 covered-entity obligations have different scope and applicability. Generic service, product, CSIRT or maintainer names alone prove none of these. Check sector-specific exclusions and applicable timing; do not turn an unknown actor into a confirmed regulated actor.
+
 ## cra_art4
 Reference: CRA Art. 4
 Title: Free movement
@@ -59,10 +63,11 @@ Title: Identification of economic operators
 Regulation: CRA
 Source CELEX: 32024R2847
 
-Summary: Anyone in the supply chain must be able to tell market surveillance authorities who supplied them a product and whom they supplied it to. These records - names and addresses of suppliers and buyers - must stay available for 10 years after each supply.
-Developer impact: Design supply-chain record schemas with supplier and buyer name/address fields, and set retention and cleanup jobs to keep those records for at least 10 years.
-Code smells: cleanup job purging supply records with retention_days=365 or similar short TTL; supply-chain table missing supplier_address or buyer fields; supplier identification dropped during ETL; supply record schema storing only an internal ID with no name or address
+Summary: Economic operators must be able to identify their supplying economic operator and, where available, downstream economic operators by name/address for market-surveillance authorities, for ten years after the respective receipt or supply.
+Developer impact: Article 23 concerns manufacturers, authorised representatives, importers and distributors in the supply chain, not a universal duty to retain consumer identities for ten years.
+Code smells: An applicable supply-chain record is deliberately stripped of required available identification or purged before the ten-year period.
 Related: nis2_art27
+Conditions and exceptions: The records concern consumers rather than economic operators; downstream identification is unavailable; only generic customer/order data or an unrelated retention job is shown.
 
 ## cra_art24
 Reference: CRA Art. 24
@@ -70,10 +75,11 @@ Title: Obligations of open-source software stewards
 Regulation: CRA
 Source CELEX: 32024R2847
 
-Summary: Organizations stewarding open-source products must document a cybersecurity policy covering secure development and vulnerability handling, and foster voluntary vulnerability reporting. They must cooperate with authorities and report severe incidents in their development infrastructure.
-Developer impact: Maintain a published security policy (e.g. SECURITY.md), run a working vulnerability intake/disclosure channel, and wire incident alerts for the project's build and hosting systems.
-Code smells: vulnerability disclosure endpoint or SECURITY.md removed from a stewarded project; vuln intake form discarding submissions; no incident reporting hook for project infrastructure; security policy file empty or unpublished
+Summary: An open-source software steward is a non-manufacturer legal person sustainably supporting qualifying open-source products intended for commercial activity. Article 24 requires a verifiable cybersecurity policy and authority cooperation, with Article 14 reporting duties limited by its involvement and development-infrastructure scope.
+Developer impact: Do not infer legal role from a filename. Manufacturer lifecycle/reporting duties are art13/art14; steward reporting under 24(3) depends on the specified involvement or infrastructure.
+Code smells: An established steward explicitly disables its required policy or applicable reporting for actively exploited vulnerabilities or severe development-infrastructure incidents.
 Related: cra_art14, nis2_art30
+Conditions and exceptions: Only a maintainer field, SECURITY.md file, open-source dependency or foundation-like name suggests stewardship; the actor is a manufacturer; the incident or reporting scope is not established.
 
 ## cra_art28
 Reference: CRA Art. 28
@@ -92,10 +98,11 @@ Title: Rules and conditions for affixing the CE marking
 Regulation: CRA
 Source CELEX: 32024R2847
 
-Summary: The CE marking must be affixed visibly, legibly and permanently before the product reaches the market. For software, it goes on the EU declaration of conformity or on the website accompanying the product, easy for consumers to find. The notified body's ID number follows it when one was involved.
-Developer impact: Render the CE marking (and notified body number where required) in the product UI, website or generated docs, visible, directly accessible and legible at any size.
-Code smells: CE marking styled display:none or visibility:hidden; ce_logo asset removed from the accompanying website; CE section behind logins or dead links; notified_body_id omitted next to the marking
+Summary: CE marking must be visible, legible and indelible before market placement. For software it may be on the declaration of conformity or an easily/directly accessible accompanying website; below 5 mm is permitted when still visible and legible.
+Developer impact: Inspect the permitted marking location. A CLI need not render the mark itself; a URL alone proves neither compliant content nor missing marking. Declaration content is art28.
+Code smells: An applicable CE mark is explicitly hidden, illegible or placed behind an inaccessible page; the required Module H notified-body identifier is removed.
 Related: cra_art4, cra_art28
+Conditions and exceptions: Software directs users to an accessible declaration or accompanying website carrying the mark; small size alone is the allegation; a linked page is unseen, so absence of its marking cannot be established.
 
 ## cra_art31
 Reference: CRA Art. 31
@@ -182,10 +189,11 @@ Title: Entry into force and application
 Regulation: DMA
 Source CELEX: 32022R1925
 
-Summary: The DMA's Annex fixes how gatekeepers must count active end users and business users: unique, deduplicated individuals across all core platform services, with sound methodology and no double counting. These counts drive designation thresholds.
-Developer impact: Implement user-counting jobs that deduplicate identities across services, filter bots and duplicates, and follow the Annex methodology for reported metrics.
-Code smells: active_users report summing per-service counts without cross-service dedupe; bot or duplicate accounts left in reported MAU; user_count_report diverging from the Annex methodology; reported metrics derived from raw event counts instead of unique users
+Summary: This scanner ID carries the DMA Annex active-user methodology linked to Article 3(2)(b); Article 54 itself concerns application dates. Count unique active end users monthly and business users yearly for each relevant core platform service, avoiding within-service device/platform duplication.
+Developer impact: Deduplicate within each relevant service, not across all services. Preserve the existing scanner ID for compatibility; describe the Annex methodology rather than attributing its counting rules to Article 54 itself.
+Code smells: Regulatory counts double-count the same users across devices within one service, count events instead of users, or split one service by domain/geography to distort the relevant count.
 Related: dma_art15
+Conditions and exceptions: The same person is counted separately for distinct core platform services; the metric is internal analytics rather than designation reporting; the alleged counting error depends on an unestablished service boundary.
 
 # Network and Information Security Directive (NIS2)
 
@@ -206,10 +214,11 @@ Title: Reporting obligations
 Regulation: NIS2
 Source CELEX: 32022L2555
 
-Summary: Entities must report significant incidents to their CSIRT or competent authority (the national regulator): an early warning within 24 hours, a notification with severity, impact and indicators of compromise within 72 hours, and a final report within a month. Service recipients must be told about incidents and threats affecting them, including available remedies.
-Developer impact: Trigger notifications inside the 24h/72h deadlines, carry severity and IoCs in payloads, and notify affected recipients automatically.
-Code smells: early-warning deadline constant above 24 hours; report payload stripped of indicators_of_compromise or severity; recipient notification branch removed; final report job disabled
+Summary: Covered entities report significant incidents to the CSIRT or competent authority without undue delay: early warning within 24 hours, notification within 72 hours, and later reports under 23(4). Trust-service notifications use the applicable 24-hour derogation.
+Developer impact: Early warning: suspected unlawful/malicious cause or cross-border impact where applicable. Notification: initial assessment, severity/impact and available IoCs. Intermediate report on request; final report within one month, with the ongoing-incident progress/final-report exception in 23(4)(e). CRA reporting has different triggers and content.
+Code smells: An established significant incident bypasses its applicable reporting deadline or knowingly strips information required and available at that stage; applicable service-recipient notices or protective advice are explicitly suppressed.
 Related: cra_art14, nis2_art21, nis2_art30
+Conditions and exceptions: An early warning is criticised for missing later notification/final-report fields; IoCs are unavailable; only a non-significant incident or voluntary intake is shown; the regulated-entity scope is unknown.
 
 ## nis2_art27
 Reference: NIS2 Art. 27

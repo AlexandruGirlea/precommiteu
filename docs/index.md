@@ -22,7 +22,7 @@ source code egress.
 ```bash
 brew install llama.cpp
 pip install precommiteu "huggingface_hub[cli]"
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/
 ```
@@ -53,26 +53,28 @@ artifacts.
 | Artifact | Source | Size | Fetched by |
 |---|---|---|---|
 | Scanner | PyPI, `pip install precommiteu` (pure Python wheel) | small | pip |
-| Weights | Hugging Face, [AlexandruGirlea/precommiteu-models](https://huggingface.co/AlexandruGirlea/precommiteu-models) (public, no token) | 4.36 GiB base plus ~77 MiB per regulation | `hf download` |
+| Weights | Hugging Face, [AlexandruGirlea/precommiteu-models](https://huggingface.co/AlexandruGirlea/precommiteu-models) (public, no token) | 16.5 GiB orchestrator, 4.36 GiB base plus ~77 MiB per regulation | `hf download` |
 
-`pip install precommiteu` does **not** fetch the weights. The bundle is one
-shared `base.gguf` (Qwen2.5-Coder-7B-Instruct, Q4_K_M) plus one small LoRA
-detector adapter per regulation at `<regulation>/detector-adapter.gguf`. Six
-regulations therefore cost one base download, not six.
+`pip install precommiteu` does **not** fetch the weights. The bundle is
+`orchestrator.gguf` (Qwen3.6-35B-A3B, IQ4_XS), which runs the orchestrator and
+validator, and `base.gguf` (Qwen2.5-Coder-7B-Instruct, Q4_K_M), which runs the
+detector with one small LoRA adapter per regulation at
+`<regulation>/detector-adapter.gguf`. Six regulations therefore cost one download
+of each shared model, not six.
 
 The scanner resolves models from `--models-dir` first, then from
 `$PRECOMMITEU_MODELS_DIR`, expecting this layout:
 
 ```text
 ~/.precommiteu/models/
+├── orchestrator.gguf
 ├── base.gguf
 └── gdpr/detector-adapter.gguf
 ```
 
-`--orchestrator-model` and `--detector-adapter` take explicit file paths and
-bypass the directory layout. Note that `--detector-adapter` names one adapter,
-so it cannot be combined with several regulations: pass it with a single
-`--regulations` value, or omit it and let each regulation resolve its own.
+Model roles are fixed by this layout. The detector always loads `base.gguf`
+with the selected regulation's adapter; everything else uses `orchestrator.gguf`.
+Missing models or selected adapters stop the scan.
 
 ## Findings and advisories
 
@@ -96,7 +98,7 @@ Exit codes: `0` clean · `1` confirmed findings (with `--fail-on-findings`) ·
 `--fail-on-error`, always on under `--ci`) · `130` interrupted, with partial
 reports preserved.
 
-Every file gets a 90 second wall-clock budget. Files routed to the
+Every file gets a 300 second wall-clock budget. Files routed to the
 orchestrator also get a hard cap of 12 agent iterations. The code view sent to
 the model is capped at 8000 tokens.
 
@@ -129,7 +131,7 @@ scan uses the new location without a restart.
 | [Regulation packs](regulations.md) | The six packs, application dates, choosing packs, multi-regulation runs |
 | [Suppressions](suppressions.md) | `.eu-ignore`, inline `eu-ignore` directives, audited `precommiteu-ignore` markers |
 | [Examples](examples.md) | Worked scans, real output, common flag combinations |
-| [CI integration](ci.md) | GitHub Actions, GitLab, Azure DevOps, exit codes, caching the bundle |
+| [CI integration](ci.md) | The CI container, GitHub Actions, GitLab, Azure DevOps, exit codes |
 | [Python library](library.md) | `scan_paths`, `scan_diff`, result schemas, streaming callbacks |
 | [Reports](reports.md) | JSON field reference, SARIF, markdown summary, event ledger |
 | [Troubleshooting](troubleshooting.md) | Model paths, `llama-server` startup, empty scans, error messages |

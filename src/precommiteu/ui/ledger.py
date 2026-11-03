@@ -41,19 +41,27 @@ class LedgerFold:
 
         if event == "detector_adapter":
             self.adapter = payload.get("adapter")
-        elif event == "file_start":
-            self._finalize()
-            self.current = {
-                "file": payload.get("file", "?"),
-                "chunks": payload.get("chunks", 1) or 1,
-                "route": "direct",
-                "fell_back": False,
-                "exit_reason": None,
-                "kept": 0,
-                "status": "running",
-                "findings": [],
-                "_started": time.monotonic(),
-            }
+        elif event in ("file_start", "file_ignored", "file_error"):
+            if (event == "file_start" or self.current is None
+                    or self.current["file"] != payload.get("file", "?")):
+                self._finalize()
+                self.current = {
+                    "file": payload.get("file", "?"),
+                    "chunks": payload.get("chunks", 0),
+                    "route": "direct",
+                    "fell_back": False,
+                    "exit_reason": None,
+                    "kept": 0,
+                    "status": "running",
+                    "findings": [],
+                    "_started": time.monotonic(),
+                }
+            if event == "file_ignored":
+                self.current["status"] = "ignored"
+                self._finalize()
+            elif event == "file_error":
+                self.current["status"] = "error"
+                self.current["error"] = payload.get("error")
         elif event == "file_reused":
             # No file_start/file_done for these, but their findings still come
             # through, so the entry has to be open when they arrive.
@@ -80,12 +88,6 @@ class LedgerFold:
             if self.current is not None:
                 self.current["kept"] = payload.get("kept", 0)
             self._finalize()
-        elif event == "file_ignored":
-            if self.current is not None:
-                self.current["status"] = "ignored"
-            self._finalize()
-        elif event == "file_error" and self.current is not None:
-            self.current["error"] = payload.get("error")
         elif event == "scan_interrupted":
             self.interrupted = True
         elif event == "scan_done":

@@ -9,6 +9,7 @@ import time
 from precommiteu.chunking import (
     APPROX_TOKENS,
     USER_MESSAGE_TOKEN_BUDGET,
+    token_counter,
     truncate_to_token_budget,
 )
 from precommiteu.config import CANDIDATE_FINDINGS_TOKEN_BUDGET
@@ -102,14 +103,6 @@ def call_validator(
 
     pack = regulation_pack
 
-    enriched_code = truncate_to_token_budget(
-        enriched_code,
-        USER_MESSAGE_TOKEN_BUDGET - CANDIDATE_FINDINGS_TOKEN_BUDGET,
-    )
-    evidence_options = _source_evidence_options(enriched_code)
-    if not evidence_options:
-        return []
-
     candidates_json = json.dumps(
         {
             "candidates": [
@@ -118,10 +111,25 @@ def call_validator(
         },
         ensure_ascii=False,
     )
+    count_tokens = token_counter(model)
+    overhead = count_tokens(
+        f"<code_or_diff>\n\n</code_or_diff>\n\n"
+        f"<candidate_findings>\n{candidates_json}\n</candidate_findings>"
+    )
+    enriched_code = truncate_to_token_budget(
+        enriched_code,
+        USER_MESSAGE_TOKEN_BUDGET - max(CANDIDATE_FINDINGS_TOKEN_BUDGET, overhead + 16),
+        count_tokens=count_tokens,
+    )
+    evidence_options = _source_evidence_options(enriched_code)
+    if not evidence_options:
+        return []
     user_message = (
         f"<code_or_diff>\n{enriched_code}\n</code_or_diff>\n\n"
         f"<candidate_findings>\n{candidates_json}\n</candidate_findings>"
     )
+    if count_tokens(user_message) > USER_MESSAGE_TOKEN_BUDGET:
+        raise ValueError("validator input exceeds its token budget")
 
     system_message = pack.validator_system + "\n" + _EVIDENCE_INSTRUCTIONS
     grammar = validator_evidence_grammar(evidence_options)

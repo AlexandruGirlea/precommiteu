@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from precommiteu.config import DEFAULT_WALL_SECONDS_PER_FILE
+
 CLAMP_MIN = 3.0
-CLAMP_MAX = 90.0
+CLAMP_MAX = DEFAULT_WALL_SECONDS_PER_FILE
 
 
 def _key(route: str) -> tuple[str, str]:

@@ -168,6 +168,10 @@ def list_dir(
                 return
             if _is_sensitive(child):
                 continue
+            try:
+                sandbox.resolve(child)
+            except PermissionError:
+                continue
             is_dir = child.is_dir()
             if not is_dir:
                 if child.suffix and not is_code_file(child, root):
@@ -262,7 +266,7 @@ def grep(
         vetted.append(str(f))
 
     worker = subprocess.Popen(
-        [sys.executable, "-c", _GREP_WORKER],
+        [sys.executable, "-P", "-c", _GREP_WORKER],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,

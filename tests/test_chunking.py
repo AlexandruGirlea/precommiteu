@@ -12,16 +12,20 @@ from precommiteu.chunking import (
 
 def test_chunks_cover_every_line_without_gaps(risky_code):
     path = risky_code / "CrmSyncJob.java"
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8") * 50
 
     chunks = token_chunks(path, text)
 
     assert chunks
     assert chunks[0].start_line == 1
     assert chunks[-1].end_line == len(text.splitlines())
+    rebuilt = chunks[0].text
     for previous, current in pairwise(chunks):
-        assert current.start_line == previous.end_line + 1
-    assert "".join(c.text for c in chunks) == text
+        overlap = previous.end_line - current.start_line + 1
+        assert overlap > 0
+        assert current.start_line > previous.start_line
+        rebuilt += "".join(current.text.splitlines(keepends=True)[overlap:])
+    assert rebuilt == text
 
 
 def test_chunk_id_encodes_file_and_line_range(risky_code):
