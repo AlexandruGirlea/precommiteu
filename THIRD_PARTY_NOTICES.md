@@ -8,8 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 
 precommitEU is released under the Apache License 2.0 (see LICENSE). It is
 built on and used alongside third-party libraries, model weights, tooling and
-public reference material, each under its own license. None of them are
-vendored here: they are installed, downloaded or referenced separately.
+public reference material, each under its own license. These components are
+installed, downloaded or referenced separately; the published container image
+includes llama.cpp and the Python runtime dependencies.
 
 If something is used without correct attribution, please open an issue.
 
@@ -17,7 +18,7 @@ If something is used without correct attribution, please open an issue.
 |---|---|---|---|
 | [Qwen 2.5 Coder 7B Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Alibaba Cloud / Qwen team | Apache-2.0 | Detector base weights. Delivered separately in the model bundle as `base.gguf`, not in this repository or the Python package. |
 | [Qwen3.6 35B A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) | Alibaba Cloud / Qwen team | Apache-2.0 | Orchestrator and validator weights, GGUF quantisation by Unsloth. Delivered separately in the model bundle as `orchestrator.gguf`, not in this repository or the Python package. |
-| [llama.cpp](https://github.com/ggml-org/llama.cpp) | ggml-org and contributors | MIT | Provides the `llama-server` binary the scanner drives. Installed by the user, never bundled. |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | ggml-org and contributors | MIT | Provides the `llama-server` binary the scanner drives. Installed separately for native use and included in the container image. |
 | [pydantic](https://github.com/pydantic/pydantic) | Samuel Colvin and contributors | MIT | Declared Python dependency, installed from PyPI. |
 | [huggingface_hub](https://github.com/huggingface/huggingface_hub) | Hugging Face and contributors | Apache-2.0 | Provides the `hf` command used to download the model bundle. |
 | [jekyll-theme-cayman](https://github.com/pages-themes/cayman) | Jason Long | CC0-1.0 | Theme for the documentation site, resolved by GitHub Pages at build time. |

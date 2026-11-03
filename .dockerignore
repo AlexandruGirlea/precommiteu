@@ -5,3 +5,5 @@
 !NOTICE
 !THIRD_PARTY_NOTICES.md
 !src
+**/__pycache__
+**/*.py[cod]
