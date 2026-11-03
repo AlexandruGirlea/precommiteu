@@ -13,12 +13,13 @@ from precommiteu.scan_ledger import FORMAT_VERSION, ScanLedger, default_ledger_p
 
 CODE = "def save(user):\n    db.write(user.email)\n    return True\n"
 EVIDENCE = "db.write(user.email)"
+REGULATIONS = ("eu_ai_act", "gdpr", "eu_data_act", "dora", "dsa", "cra_dma_nis2")
 
 
 class Harness:
-    def __init__(self, repo: pathlib.Path, model: pathlib.Path) -> None:
+    def __init__(self, repo: pathlib.Path, models_dir: pathlib.Path) -> None:
         self.repo = repo
-        self.model = model
+        self.models_dir = models_dir
         self.analysed: list[str] = []
         self.servers = 0
         self.exit_reason = "direct"
@@ -31,7 +32,7 @@ class Harness:
         result = scan_mod.scan_paths(
             [self.repo],
             regulations=kwargs.pop("regulations", ("gdpr",)),
-            orchestrator_model_path=self.model,
+            models_dir=self.models_dir,
             repo_root=self.repo,
             on_progress=events.append,
             **kwargs,
@@ -46,7 +47,15 @@ def harness(tmp_path, monkeypatch):
     repo.mkdir()
     (repo / "one.py").write_text(CODE, encoding="utf-8")
     (repo / "two.py").write_text(CODE, encoding="utf-8")
-    harness = Harness(repo, tmp_path / "base.gguf")
+    models = tmp_path / "models"
+    models.mkdir()
+    (models / "base.gguf").touch()
+    (models / "orchestrator.gguf").touch()
+    for regulation in REGULATIONS:
+        adapter = models / regulation / "detector-adapter.gguf"
+        adapter.parent.mkdir()
+        adapter.touch()
+    harness = Harness(repo, models)
 
     @contextlib.contextmanager
     def fake_server(*_args, **_kwargs):
@@ -106,7 +115,7 @@ def test_unchanged_files_are_reused_with_their_findings(harness):
     second, events = harness.run()
 
     assert harness.analysed == []
-    assert harness.servers == 1, "a fully cached scan must not load a model"
+    assert harness.servers == 2, "a fully cached scan must not load a model"
     assert [f.model_dump() for f in second.findings] == [
         f.model_dump() for f in first.findings
     ]
@@ -231,10 +240,8 @@ def test_results_from_before_applicability_fixes_are_not_reused(harness, version
     assert harness.analysed == ["one.py", "two.py"]
 
 
-@pytest.mark.parametrize(
-    "regulation", ["eu_ai_act", "gdpr", "eu_data_act", "dora", "dsa", "cra_dma_nis2"]
-)
-@pytest.mark.parametrize("version", [3, 4])
+@pytest.mark.parametrize("regulation", REGULATIONS)
+@pytest.mark.parametrize("version", [3, 4, 5, 6])
 def test_release_rechecks_unchanged_files_from_older_validators(harness, regulation, version):
     harness.run(regulations=(regulation,))
     doc = _ledger_doc(harness.repo, regulation)
@@ -245,13 +252,13 @@ def test_release_rechecks_unchanged_files_from_older_validators(harness, regulat
     harness.run(regulations=(regulation,))
 
     assert harness.analysed == ["one.py", "two.py"]
-    assert harness.servers == servers + 1
+    assert harness.servers == servers + 2
     assert _ledger_doc(harness.repo, regulation)["version"] == FORMAT_VERSION
 
     harness.run(regulations=(regulation,))
 
     assert harness.analysed == []
-    assert harness.servers == servers + 1
+    assert harness.servers == servers + 2
 
 
 def test_a_ledger_from_another_target_is_not_reused(harness, tmp_path):

@@ -27,6 +27,8 @@ from types import ModuleType
 # Evaluate this checkout even when the virtualenv also contains a released wheel.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from precommiteu.config import DEFAULT_WALL_SECONDS_PER_FILE
+from precommiteu.defaults import model_bundle
 from precommiteu.detector_call import call_detector
 from precommiteu.direct import _as_added_diff
 from precommiteu.grammar import DETECTOR_GBNF, VALIDATOR_GBNF
@@ -46,6 +48,9 @@ class RecordedModel:
     def __init__(self, model):
         self.model = model
         self.responses = []
+
+    def count_tokens(self, text):
+        return self.model.count_tokens(text)
 
     def invoke(self, messages, **kwargs):
         response = self.model.invoke(messages, **kwargs)
@@ -87,7 +92,9 @@ def main():
         help="Load only validator_call.py from a trusted local git revision; "
         "all other pipeline files still come from this checkout",
     )
-    parser.add_argument("--wall-seconds", type=float, default=90.0)
+    parser.add_argument(
+        "--wall-seconds", type=float, default=DEFAULT_WALL_SECONDS_PER_FILE
+    )
     parser.add_argument(
         "--fail-fast",
         action="store_true",
@@ -116,10 +123,11 @@ def main():
         replay.update(additional)
     if args.candidates_from and not {row["id"] for row in rows} <= replay.keys():
         parser.error("missing recorded candidates for selected fixtures")
-    base = args.models_dir / "base.gguf"
-    adapter = args.models_dir / args.regulation / "detector-adapter.gguf"
-    if not base.is_file() or not adapter.is_file():
-        parser.error("both base model and selected detector adapter are required")
+    try:
+        orchestrator, base, adapters = model_bundle(args.models_dir, (args.regulation,))
+    except ValueError as exc:
+        parser.error(str(exc))
+    adapter = adapters[args.regulation]
     pack = get_regulation_pack(args.regulation)
     if args.pack_ref:
         prefix = subprocess.check_output(["git", "rev-parse", "--show-prefix"], text=True).strip()
@@ -176,6 +184,7 @@ def main():
         "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "fixture_sha256": {str(p): sha256(p) for p in fixture_paths},
         "base_sha256": sha256(base),
+        "orchestrator_sha256": sha256(orchestrator),
         "adapter_sha256": sha256(adapter),
         "temperature": 0,
         "n_ctx": 32768,
@@ -217,7 +226,7 @@ def main():
         output.write(json.dumps(metadata) + "\n")
         output.flush()
         print(
-            "Starting local base model"
+            "Starting local orchestrator model"
             + (
                 " with recorded detector candidates"
                 if args.candidates_from
@@ -225,7 +234,7 @@ def main():
             ),
             flush=True,
         )
-        handle = stack.enter_context(launch_llama_server(base, n_gpu_layers=99))
+        handle = stack.enter_context(launch_llama_server(orchestrator, n_gpu_layers=99))
         validator = RecordedModel(build_chat_model(handle, grammar=VALIDATOR_GBNF))
         detector = None
         if not args.candidates_from:

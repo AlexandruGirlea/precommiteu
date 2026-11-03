@@ -9,6 +9,31 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.3.0
+
+- Run the orchestrator and validator on a new shared model, `orchestrator.gguf`
+  (Qwen3.6-35B-A3B). The detector keeps `base.gguf` with the per-regulation
+  adapters. Model roles are fixed by the bundle layout; individual model and
+  adapter overrides are removed. Missing models or selected adapters stop the scan.
+- Add `orchestrator.gguf` (16.5 GiB) to the model bundle. Scans need 32 GB of
+  RAM and about 23 GB of disk. The UI downloads both shared models and warns
+  when the machine has less memory.
+- Raise the per-file wall-clock budget from 90 to 300 seconds.
+- Require llama.cpp build 10158 or newer.
+- Turn off chat-template thinking on every model request.
+- Run CI scans in the precommitEU container on your own Linux runner with
+  32 GB of RAM; hosted runners are too small. Each release publishes the
+  image to `ghcr.io/alexandrugirlea/precommiteu`, built from the new
+  `Dockerfile`; the models are mounted from the runner machine. See CI
+  integration.
+- Run the GitHub Action inside that container. It no longer installs
+  llama.cpp or the scanner or downloads models, and the `version`,
+  `models-revision` and `llama-build` inputs are removed. Older action
+  versions install the latest scanner by default and fail without
+  `orchestrator.gguf`; pin `version: 0.2.4` there until you move.
+- Recheck cached files after upgrading so the new model runs on unchanged code
+  too.
+
 ## 0.2.4
 
 - Check AI Act findings against the actor, activity and literal configuration

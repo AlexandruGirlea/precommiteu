@@ -13,8 +13,8 @@ from precommiteu.ui import settings
 
 REPO = os.environ.get("PRECOMMITEU_MODELS_REPO", "AlexandruGirlea/precommiteu-models")
 BASE = "base.gguf"
-BASE_BYTES = 4_683_074_336
-BASE_MB = round(BASE_BYTES / 1024 / 1024)
+ORCHESTRATOR = "orchestrator.gguf"
+SHARED = {BASE: 4_683_074_336, ORCHESTRATOR: 17_730_509_792}
 ADAPTER = "detector-adapter.gguf"
 SUMS = "SHA256SUMS"
 EXTRA = ("NOTICE", "LICENSE.Apache-2.0.txt")
@@ -29,9 +29,13 @@ FETCH = (
 )
 
 
-def base_ok(models: pathlib.Path) -> bool:
-    base = models / BASE
-    return base.is_file() and base.stat().st_size == BASE_BYTES
+def sized(models: pathlib.Path, name: str) -> bool:
+    path = models / name
+    return path.is_file() and path.stat().st_size == SHARED[name]
+
+
+def shared_ok(models: pathlib.Path) -> bool:
+    return all(sized(models, name) for name in SHARED)
 
 
 def engine_upgrade() -> str:
@@ -143,12 +147,11 @@ class Installer:
         wanted = [SUMS, *EXTRA]
         if pack_id:
             wanted.insert(0, f"{pack_id}/{ADAPTER}")
-        if not base_ok(models):
-            wanted.append(BASE)
-            # With the sidecar in place huggingface_hub trusts the local copy and
-            # skips it forever. Dropping the sidecar makes it hash base.gguf and
-            # replace it only if the hash really differs.
-            (models / ".cache/huggingface/download" / f"{BASE}.metadata").unlink(missing_ok=True)
+        for name in SHARED:
+            if sized(models, name):
+                continue
+            wanted.append(name)
+            (models / ".cache/huggingface/download" / f"{name}.metadata").unlink(missing_ok=True)
         threading.Thread(target=self._run_pack, args=(models, wanted), daemon=True).start()
         return {"started": True}
 

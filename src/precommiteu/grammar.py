@@ -11,12 +11,12 @@ __all__ = [
 
 LOOP_STEP_GBNF = r"""
 root ::= action | emit
-action ::= "ACTION:" ws tool-name "(" args ")" ws? newline reason?
+action ::= "ACTION:" ws ("call_detector()" | tool-name "(" args ")") ws? newline reason?
 emit ::= "EMIT" ws? newline reason?
-tool-name ::= ("read_file" | "read_chunk" | "list_chunks" | "list_dir"
+tool-name ::= ("read_file" | "list_dir"
             | "glob" | "grep" | "read_article" | "list_articles"
             | "grep_regulation" | "find_references"
-            | "call_detector" | "call_validator" | "write_todos")
+            | "call_validator" | "write_todos")
 args ::= (kv (ws? "," ws? kv)*)?
 kv ::= key ws? "=" ws? value
 value ::= string | integer | boolean
@@ -28,7 +28,7 @@ integer ::= "-"? [0-9]+
 boolean ::= "true" | "false" | "True" | "False"
 ws ::= [ \t]
 newline ::= "\n"
-reason ::= [^\x00]*
+reason ::= [^\r\n\x00]{0,320}
 """
 
 

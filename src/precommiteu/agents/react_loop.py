@@ -6,6 +6,8 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from precommiteu.chunking import token_counter, truncate_to_token_budget
+
 __all__ = ["parse_loop_step", "run_react_loop"]
 
 _logger = logging.getLogger(__name__)
@@ -157,6 +159,8 @@ def parse_loop_step(s: str) -> dict[str, Any]:
         if tail.startswith("\n"):
             tail = tail[1:]
         reason = tail.strip()
+        if "\n" in reason or "\r" in reason:
+            raise ValueError("one action and one reason line are allowed per step")
         return {"kind": "action", "tool": tool, "args": args, "reason": reason}
     m = _EMIT_RE.match(re.sub(r"^\s*ACTION:\s*", "", text))
     if m:
@@ -180,6 +184,8 @@ def run_react_loop(
     max_iterations: int,
     wall_seconds: float,
     on_step: Callable[[dict[str, Any]], None] | None = None,
+    get_context: Callable[[], tuple[str, bool]] | None = None,
+    is_complete: Callable[[], bool] | None = None,
 ) -> tuple[list[dict[str, str]], str]:
     history: list[dict[str, str]] = [
         {"role": "system", "content": system_prompt},
@@ -189,6 +195,8 @@ def run_react_loop(
     consecutive_parse_failures = 0
 
     for _ in range(max_iterations):
+        if is_complete is not None and is_complete():
+            return history, "emit"
         remaining = wall_seconds - (time.monotonic() - start)
         if remaining <= 0:
             # a failure burning the budget must not read as a clean timeout
@@ -231,6 +239,11 @@ def run_react_loop(
             on_step(step)
 
         if step["kind"] == "emit":
+            if is_complete is not None and not is_complete():
+                context = get_context()[0] if get_context is not None else initial_user_message
+                history = [*history[:1], {"role": "user", "content":
+                    context + "\nFinish detection and validation before EMIT."}]
+                continue
             history.append({"role": "assistant", "content": raw})
             return history, "emit"
 
@@ -248,5 +261,18 @@ def run_react_loop(
         if not isinstance(tool_result, str):
             tool_result = str(tool_result)
         history.append({"role": "user", "content": tool_result})
+        if is_complete is not None and is_complete():
+            return history, "emit"
+        if get_context is not None:
+            tool_result = truncate_to_token_budget(
+                tool_result, 2000, count_tokens=token_counter(model),
+            )
+            context, reset_history = get_context()
+            history = [*history[:1], {"role": "user", "content": context}]
+            if not reset_history:
+                history.extend([
+                    {"role": "assistant", "content": raw.split("\n", 1)[0]},
+                    {"role": "user", "content": tool_result},
+                ])
 
     return history, "budget_exhausted_iters"

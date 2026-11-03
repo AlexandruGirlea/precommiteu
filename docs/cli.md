@@ -47,9 +47,7 @@ sends over the network: [Local UI](ui.md).
 | `paths` (positional) | one or more files/directories | none | What to scan. Omit when using `--ci`. |
 | `--ci` | flag | off | Scan only files changed vs the merge-target branch named by `$GIT_MERGE_TARGET_BRANCH` (default `main`). Mutually exclusive with positional paths. |
 | `--regulations` | comma-separated pack names | `gdpr` | Regulation packs to run. Each name must resolve to an installed regulation pack. |
-| `--models-dir` | directory path | unset | Directory holding the model files (`base.gguf`, `<regulation>/detector-adapter.gguf`). Overrides `$PRECOMMITEU_MODELS_DIR`. |
-| `--orchestrator-model` | GGUF file path | `base.gguf` under the models dir | Base model used by the orchestrator deep-agent and validator. |
-| `--detector-adapter` | GGUF file path | `<regulation>/detector-adapter.gguf` under the models dir | LoRA adapter applied to the detector server. |
+| `--models-dir` | directory path | unset | Directory holding the model files (`base.gguf`, `orchestrator.gguf`, `<regulation>/detector-adapter.gguf`). Overrides `$PRECOMMITEU_MODELS_DIR`. |
 | `--detector-grammar` | GBNF file path | built-in grammar | Pins the output grammar for the detector call (expert). |
 | `--agent-mode` | `auto` \| `direct` \| `orchestrator` | `auto` | Per-file analysis route. `auto` = direct unless the file references sibling files. |
 | `--gpu-layers` | integer | `99` | Model layers offloaded to the GPU (`99` = all, `0` = CPU only). |
@@ -62,7 +60,7 @@ sends over the network: [Local UI](ui.md).
 | `--log-file` | file path | `precommiteu_scan.log` | Append a timestamped scan log (progress events, warnings, errors). |
 | `--progress` | `text` \| `jsonl` \| `none` | `text` | Progress output on stderr. |
 | `--max-orchestrator-iterations` | integer | `12` | Maximum agent steps per file. |
-| `--max-wall-seconds-per-file` | integer (seconds) | `90` | Wall-clock budget per file. |
+| `--max-wall-seconds-per-file` | integer (seconds) | `300` | Wall-clock budget per file. |
 | `--fail-on-findings` | flag | off | Exit 1 when confirmed findings remain after ignore filtering. Advisories never affect the exit code. |
 | `--fail-on-error` | flag | off (on under `--ci`) | Exit 3 when any file could not be scanned, so an incomplete scan never reports a clean pass. |
 | `--show-advisories` | flag | off | Print unconfirmed detector candidates (informational, never blocking). |
@@ -71,6 +69,7 @@ sends over the network: [Local UI](ui.md).
 | `--scan-log` | file path | `~/.precommiteu/scans/<regulation>-<hash>.json` | Where the scan ledger of analysed files is kept. One regulation per ledger. |
 | `--force` | flag | off | Overwrite existing output files instead of refusing to run. See [Never overwriting your files](#never-overwriting-your-files). |
 | `--dry-run` | flag | off | Print the files that would be scanned and exit without loading any model. |
+| `--exclude-context` | path (repeatable) | none | Exclude files or directories from context tools and cache fingerprints. Configured report files are excluded automatically. |
 
 ## Basic scans
 
@@ -93,6 +92,8 @@ precommiteu scan src/ --dry-run
 ```
 
 `--dry-run` prints exactly the files a real scan would process, after all filtering: only recognized source files are selected; test files, documentation, generated files, binaries, dependency directories, files over `--max-file-bytes`, and anything matched by `.eu-ignore` are skipped.
+
+Explicitly targeting a test or fixture directory opts its source files into the scan. Repository-wide walks still skip tests, and `.eu-ignore` rules still apply.
 
 Scan with a different regulation pack, or several at once:
 
@@ -145,6 +146,8 @@ out of the ledger and analysed again next time.
 | --- | --- |
 | Same bytes | Reused |
 | Content changed | Rescanned |
+| Model, adapter, agent mode or analysis settings changed | Rescanned |
+| Accessible helper content changed | Files using cross-file context are rescanned |
 | mtime changed but bytes identical (checkout, touch, cloud sync) | Reused, after a sha256 confirms it |
 | Budget exhausted, error or interrupt last time | Rescanned |
 | File deleted | Dropped from the ledger and from the results |
@@ -154,6 +157,8 @@ Change detection is size plus mtime first, and a sha256 whenever either
 differs. A `git checkout` that rewrites every timestamp therefore costs one
 hash per file instead of a full rescan, and the ledger records the new
 timestamps so the next run is back on the fast path.
+
+Context fingerprints use content hashes and exclude dependency/cache directories and configured report outputs. Use `--exclude-context reports/` for other generated output directories; ordinary source and configuration files remain eligible context.
 
 Force a complete pass, for example after upgrading the model bundle:
 
@@ -266,10 +271,11 @@ Escalation in `auto` mode is purely structural: the scanner lists the other file
 
 ## Model selection
 
-The scanner needs the precommitEU model bundle (see [install.md](install.md)): one shared `base.gguf` plus one `detector-adapter.gguf` per regulation.
+The scanner needs the precommitEU model bundle (see [install.md](install.md)): `orchestrator.gguf` for the orchestrator and validator, `base.gguf` for the detector, plus one `detector-adapter.gguf` per regulation.
 
 ```
 <models-dir>/
+  orchestrator.gguf
   base.gguf
   gdpr/
     detector-adapter.gguf
@@ -285,15 +291,13 @@ precommiteu scan src/
 precommiteu scan src/ --models-dir /opt/precommiteu/models
 ```
 
-Resolution order: explicit file flags > `--models-dir` > `$PRECOMMITEU_MODELS_DIR`. Explicit paths bypass the directory layout entirely:
+`--models-dir` overrides `$PRECOMMITEU_MODELS_DIR`. Model roles are fixed:
+`base.gguf` plus the selected regulation's adapter performs detection;
+`orchestrator.gguf` handles orchestration, validation and finding descriptions.
+There are no individual model or adapter overrides.
 
-```sh
-precommiteu scan src/ \
-  --orchestrator-model /opt/models/base.gguf \
-  --detector-adapter /opt/models/gdpr/detector-adapter.gguf
-```
-
-Failure behavior: a missing base model is a hard error (exit 2). A missing detector adapter is not: the scan continues on the base model alone and prints a `::warning::` marking the run as degraded mode.
+A missing shared model or selected detector adapter is a hard error (exit 2).
+The scanner never substitutes another model or runs detection without an adapter.
 
 Expert flags (not needed in normal operation):
 
@@ -302,7 +306,7 @@ Expert flags (not needed in normal operation):
 precommiteu scan src/ --detector-grammar custom-detector.gbnf
 ```
 
-The validator always runs on the base model with the built-in grammar and takes no adapter.
+The validator always runs on `orchestrator.gguf` with the built-in grammar and takes no adapter.
 
 ## Performance tuning
 
@@ -326,7 +330,7 @@ precommiteu scan src/ --max-file-bytes 0
 | `--threads` | CPU inference threads. Default lets the runtime auto-select. |
 | `--n-ctx` | Context window in tokens (default 32768). Lower values reduce memory use. |
 | `--max-file-bytes` | Files above this size are skipped and reported in a `files_oversized` progress event (default 1000000; `0` disables the limit). |
-| `--max-wall-seconds-per-file` | Hard wall-clock budget per file (default 90 s). |
+| `--max-wall-seconds-per-file` | Hard wall-clock budget per file (default 300 s). |
 | `--max-orchestrator-iterations` | Cap on agent steps per file in orchestrator routing (default 12). |
 
 ## Exit codes

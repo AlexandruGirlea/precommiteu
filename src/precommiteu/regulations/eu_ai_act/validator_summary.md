@@ -11,6 +11,8 @@ For an applicable obligation, the violating operation or value must be visible i
 
 ## How to decide on a candidate (run in this order)
 
+Check the article's scope, conditions, exceptions and visible safeguards before the steps below; these override literal/token matching and routing examples. A token identifies a topic, not a violation. Assess each candidate's own allegation independently; do not replace an unsupported allegation with a different defect elsewhere in the file. Unknown material prerequisites do not establish a confirmed violation.
+
 1. **Applicability first** - identify the regulated AI activity or AI Act compliance process and the actor subject to the article. High-risk and GPAI duties require evidence of those contexts. Personal data, automation, a database, or weak security alone do not establish applicability. Ordinary CRM exports, marketing jobs, contact models, and support logs must be dropped unless the required context is supported.
 2. **Visible defect** - copy the operation or value that breaches the applicable obligation into `code_evidence`. Article `Tokens` and literal overlap are search hints, never sufficient grounds to KEEP. Do not infer a missing system-wide safeguard just because it is absent from one excerpt.
 3. **Check safeguards** - drop if a visible safeguard negates the defect (e.g. a `human_review` queue next to an auto-decision, a `watermark(` call on the generated-content path, `retention_days = 365` on AI logs). Names, annotations, and comments alone do not prove a defect.
@@ -20,7 +22,7 @@ For an applicable obligation, the violating operation or value must be visible i
 - If `<candidate_findings>` is empty, output `{"findings":[]}`.
 - Otherwise emit exactly: `{"findings":[{"article_no":"eu_ai_act_artN","code_evidence":"<verbatim>","description":"<explanation>"}]}`. No prose, no fences.
 - `article_no` is lowercase, from this list of 34: `eu_ai_act_art5, eu_ai_act_art9, eu_ai_act_art10, eu_ai_act_art11, eu_ai_act_art12, eu_ai_act_art13, eu_ai_act_art14, eu_ai_act_art15, eu_ai_act_art16, eu_ai_act_art17, eu_ai_act_art18, eu_ai_act_art19, eu_ai_act_art20, eu_ai_act_art21, eu_ai_act_art23, eu_ai_act_art24, eu_ai_act_art26, eu_ai_act_art43, eu_ai_act_art46, eu_ai_act_art47, eu_ai_act_art48, eu_ai_act_art49, eu_ai_act_art50, eu_ai_act_art53, eu_ai_act_art55, eu_ai_act_art59, eu_ai_act_art60, eu_ai_act_art61, eu_ai_act_art71, eu_ai_act_art72, eu_ai_act_art73, eu_ai_act_art74, eu_ai_act_art78, eu_ai_act_art86`.
-- If you re-attribute to a different article than the upstream guessed, start `description` with `re-attributed from eu_ai_act_artX: `. Otherwise no prefix.
+- Candidates contain descriptions, not upstream article assignments. Start the description with the observed defect; do not invent an attribution history.
 - `description` is 1–2 plain sentences explaining the violation concretely: name the specific operation or value visible in `code_evidence`, say why it breaches this article, and what the article requires instead. Do NOT output just the article title (e.g. never `"Record-keeping"`).
 
 ## Worked example
@@ -30,13 +32,15 @@ For an applicable obligation, the violating operation or value must be visible i
 If the supplied context establishes provider-side high-risk AI decision logs, KEEP with `code_evidence` = `LOG_RETENTION_DAYS = 30`. A generic log-retention constant without that context must be dropped.
 Emit: `{"findings":[{"article_no":"eu_ai_act_art19","code_evidence":"LOG_RETENTION_DAYS = 30","description":"Automatically generated AI system logs are purged after 30 days; Art. 19 requires providers to keep them for at least six months."}]}`
 
+Applicability: Apply the actor, system class and activity required by the particular article. Generic ML, a CE-related filename, or a sandbox name alone does not establish high-risk status, systemic-risk GPAI or a regulatory sandbox. Do not infer a missing system-wide control from one file.
+
 ## Global routing (apply before per-article tiebreakers)
 
 - Log defects: logs never written or required fields missing → **art12**; logs written but retention/TTL/rotation under ~180 days → **art19** (a `deployer`/operator-config token in the chunk → **art26**); log export to an authority → **art21**.
 - Retention durations: months-scale value on AI event/decision LOGS → art19/art26; years-scale duty on documentation/declaration/QMS artifacts (10-year floor) → **art18** (an `importer` token in the chunk → **art23**).
 - Disclosure audience decides the article: deployer/integrator (`instructions_for_use`, `confidence_score`) → **art13**; end user interacting with AI or consuming generated content (`chatbot`, `watermark`, `deepfake`) → **art50**; person affected by a decision (`explanation`, `adverse_decision`) → **art86**; authority (`authority_request`) → art21/art74.
 - Stops and incidents: in-operation control (`human_override`, `stop_button`) → **art14**; recall + notify chain (`recall`, `notify_deployers`) → **art20**; emergency refusal + `discard_outputs` → **art46**; deployer `suspend_use` → **art26**; `serious_incident` + authority report + day-deadline (15/10/2) or state freeze → **art73**; GPAI context (`ai_office`, `systemic_risk`) → **art55**.
-- Personal data in test contexts: a `sandbox` token → **art59**; real-world testing controls (withdrawal deletion, reversal, duration) → **art60**; the consent capture/record itself → **art61**.
+- Personal data in test contexts: established Article 59 regulatory-sandbox processing → **art59**; applicable real-world testing controls (withdrawal, requested erasure, reversal, duration) → **art60**; consent capture/record → **art61**. A sandbox filename alone proves neither scope nor a defect.
 - GPAI tokens (`gpai`, `general_purpose`, `foundation_model`): copyright opt-outs / training-summary / downstream docs → **art53**; adversarial testing / weights security / incident reporting → **art55**. The same themes on a high-risk SYSTEM → art10/art15/art73.
 - Conformity artifacts, scan in order: drift → **art43**; declaration → **art47**; CE mark → **art48**; the registration step/call → **art49**; payload → **art71**.
 - Actor tokens help route an already applicable duty: `importer` → **art23**; `marketplace`/`distributor`/`listing` → **art24**; `deployer` → **art26**. Do not assume a regulated provider role when the supplied context does not establish it.
@@ -76,11 +80,11 @@ Drop when: defect is the doc RETENTION duration (art18); the audience is deploye
 Vs: art11 = creating/updating docs; art18 = keeping them 10 years; art13 = information surfaced to deployers.
 
 ## eu_ai_act_art12 - Record-keeping
-What: High-risk system lacks automatic event logging, or log records omit required fields (timestamps, input data, reference database, verifier identity).
+What: High-risk AI systems need automatic event logging supporting traceability, risk identification, post-market monitoring and deployer monitoring. The additional start/end, reference-database, matched-input and verifier-identity fields in 12(3) apply only to Annex III 1(a) remote biometric identification.
 Tokens: `audit_log`, `event_log`, `log_event`, `logging_enabled`, `timestamp`, `session_start`, `session_end`, `input_record`, `reference_db`, `verifier_id`, `match_record`.
-Hits: `logging_enabled = False` on an inference path; decision handler returning a result without writing a log entry; log record built with `timestamp`/`input_record`/`verifier_id` missing or null.
-Drop when: logs are produced but deleted early (art19/art26); the defect is exporting logs to an authority (art21); logging in a sandbox (art59).
-Vs: art12 = logs exist and are complete; art19 = how long the provider keeps them; art26 = deployer-side retention and monitoring.
+Hits: Required high-risk event logging is explicitly disabled; an applicable remote-biometric-identification log schema discards a required 12(3) field.
+Drop when: A non-biometric system is criticised for lacking biometric-specific fields; logging could occur in an unseen component; logs exist and the allegation concerns retention (art19/art26).
+Vs: Establish high-risk status and logging context. Article 12 concerns logging capability and applicable content, not a universal biometric log schema.
 
 ## eu_ai_act_art13 - Transparency and provision of information to deployers
 What: System hides interpretive information from deployers: instructions for use, accuracy metrics, confidence scores, limitations.
@@ -182,11 +186,11 @@ Drop when: no emergency/derogation token appears - an ordinary bypass of assessm
 Vs: art46 needs an emergency/derogation token; art43 = the normal gate; art20 = recall after non-conformity.
 
 ## eu_ai_act_art47 - EU declaration of conformity
-What: Declaration of conformity not generated, not signed, missing required content, not machine-readable, or not kept current.
+What: Providers must draw up a written machine-readable EU declaration of conformity identifying the high-risk system, containing Annex V information, signed physically or electronically, and kept up to date as appropriate.
 Tokens: `declaration_of_conformity`, `conformity_declaration`, `eu_declaration`, `doc_generate`, `sign`, `digital_signature`, `annex_v`.
-Hits: CI release step skipping declaration generation; declaration written without a `digital_signature`; required identification fields empty in the declaration payload.
-Drop when: the defect is displaying the CE mark (art48), retaining the document 10 years (art18), or the assessment process itself (art43).
-Vs: art47 = the declaration artifact; art48 = the visible marking; art18 = how long it is kept.
+Hits: An applicable declaration is explicitly omitted, unsigned by either valid method, missing required content, or knowingly left outdated for the identified system.
+Drop when: The only allegation is a missing digital signature where a physical signature is established; signature implementation or declaration contents are outside the excerpt.
+Vs: Article 47 concerns the declaration; art48 concerns CE marking and art18 document retention. Missing electronic-signature code is not proof of an unsigned declaration.
 
 ## eu_ai_act_art48 - CE marking
 What: Digital high-risk system without an accessible digital CE marking in the UI or machine-readable form, or notified-body number missing.
@@ -196,11 +200,11 @@ Drop when: the artifact is the declaration document (art47); the verifier is a d
 Vs: art48 = displaying/exposing the mark on the provider's own system; art47 = the declaration document behind it.
 
 ## eu_ai_act_art49 - Registration
-What: Deploy pipeline skips registering the system in the EU database before placement, or targets the wrong (public vs restricted) section.
+What: Article 49 governs registration of the specified Annex III systems and public-authority deployers before placing on the market, putting into service or use, with the applicable public or non-public section. Annex III point 2 systems register nationally under 49(5).
 Tokens: `register_system`, `registration`, `eu_database`, `registration_payload`, `pre_deploy`, `annex_viii`, `non_public_section`, `register_before_deploy`.
-Hits: deploy job with the `register_system` step commented out; registration deferred until after release; law-enforcement system registered to the public section instead of `non_public_section`.
-Drop when: registration happens and the defect is the payload content, visibility of stored data, or machine-readability (art71).
-Vs: art49 = the registration step, its timing, and target endpoint; art71 = the database payload schema and public-access mechanics.
+Hits: An established EU AI Act registration obligation is bypassed, deferred beyond its trigger, or directed to the wrong access section.
+Drop when: The allegation concerns only missing payload fields (art71); the registry is an unrelated national or sectoral registry; the system or actor is outside the applicable registration duty.
+Vs: Distinguish registration duty/timing from payload content. Do not infer EU-database registration duties from a registration function name or a vehicle type-approval process.
 
 ## eu_ai_act_art50 - Transparency obligations for certain AI systems
 What: Chatbot/AI interaction with no user disclosure; synthetic content with no machine-readable mark; deepfake with no visible label.
@@ -217,25 +221,25 @@ Drop when: the model is systemic-risk and the defect is adversarial testing, wei
 Vs: art53 = GPAI documentation and copyright opt-outs; art55 adds the systemic-risk duties on top.
 
 ## eu_ai_act_art55 - GPAI models with systemic risk
-What: Systemic-risk model without adversarial testing/red-teaming, no incident reporting to the AI Office, or weak security on weights and infrastructure.
+What: Article 55 adds evaluation, systemic-risk mitigation, serious-incident reporting and adequate cybersecurity duties for GPAI models with systemic risk under Article 51; ordinary GPAI status alone does not establish systemic risk.
 Tokens: `red_team`, `adversarial_eval`, `model_eval`, `systemic_risk`, `incident_report`, `ai_office`, `model_weights`, `weights_encryption`, `access_control`.
-Hits: `red_team`/`adversarial_eval` suite skipped before a frontier-model release; `incident_report` pipeline to the `ai_office` removed; `model_weights` stored or served without `access_control` or encryption.
-Drop when: no GPAI/systemic-risk context token appears - high-risk system robustness routes to art15, high-risk incident reporting to art73; plain GPAI docs/copyright route to art53.
-Vs: art55 needs a GPAI/systemic-risk token; art15/art73 are the high-risk-system equivalents.
+Hits: An applicable systemic-risk evaluation or incident-reporting step is explicitly disabled; the source establishes a material weakness in protection of model weights or infrastructure.
+Drop when: Systemic-risk status is unknown; the allegation relies solely on a model being called frontier or general purpose, or on absent rate limiting despite visible TLS and authentication without a demonstrated residual defect.
+Vs: Assess security against the actual risks and safeguards. TLS/authentication are relevant evidence, not blanket immunity; high-risk-system security and reporting use art15/art73.
 
 ## eu_ai_act_art59 - Personal data in the AI regulatory sandbox
-What: Sandbox processing of personal data without isolation, access control, egress prevention, audit logs, or deletion at the end.
+What: Article 59 permits specified further processing of personal data in an AI regulatory sandbox only under its cumulative conditions, including isolation, controlled access, restricted onward use and documented processing. Personal data is deleted when participation or its retention period ends; processing logs remain for the participation duration unless law provides otherwise.
 Tokens: `sandbox`, `regulatory_sandbox`, `sandbox_env`, `isolation`, `egress`, `data_export`, `delete_after_sandbox`, `sandbox_audit`, `sandbox_bucket`.
-Hits: sandbox job copying personal data to a non-sandbox bucket; sandbox data not deleted when participation ends; sandbox storage shared with production with no `isolation`.
-Drop when: no sandbox token appears anywhere (file-path header counts); the context is real-world testing (art60); generic training-data governance (art10).
-Vs: art59 needs a sandbox token; real-world-testing tokens → art60; ordinary training pipelines → art10.
+Hits: An established Article 59 sandbox flow bypasses required isolation, exports sandbox-created personal data outside the permitted conditions, or explicitly retains personal data beyond the applicable end trigger.
+Drop when: Only a directory or variable named sandbox is shown; the setting is ordinary development/testing rather than a competent-authority AI regulatory sandbox; applicability of this further-processing regime is unknown.
+Vs: Distinguish personal-data deletion from processing-log retention. Ordinary training is art10 where applicable; real-world testing outside regulatory sandboxes is art60.
 
 ## eu_ai_act_art60 - Testing in real world conditions
-What: Real-world testing without withdrawal-triggered data deletion, decision reversal, bounded duration, or transfer safeguards.
+What: For applicable real-world testing outside regulatory sandboxes, participants may withdraw without detriment and may request immediate permanent deletion of their personal data. Withdrawal stops participation but does not undo activities already carried out; predictions must be reversible or disregarded.
 Tokens: `real_world_test`, `field_test`, `pilot`, `testing_plan`, `test_subject`, `withdraw`, `delete_on_withdraw`, `reversal`, `disregard_prediction`, `test_duration`.
-Hits: `withdraw` handler keeping the subject's already-collected data (`delete_on_withdraw` missing); predictions made during testing with no `reversal`/`disregard_prediction` mechanism.
-Drop when: a `sandbox` token routes to art59; the defect is the consent capture/record itself (art61); the system is already on the market (art72/art73).
-Vs: art60 = honoring subject protections during testing; art61 = obtaining and recording the consent.
+Hits: A withdrawal is ignored or penalised; an explicit erasure request results only in a soft-delete while the personal data remains available; required prediction reversal is disabled.
+Drop when: The only allegation is retention after withdrawal without an erasure request; the context is an ordinary pilot without an established Article 60 testing duty; a different applicable legal requirement governs the alleged defect.
+Vs: Separate withdrawal from the erasure request in 60(5). Consent capture is art61; regulatory-sandbox processing is art59.
 
 ## eu_ai_act_art61 - Informed consent for real-world testing
 What: Test subjects enrolled without informed consent, or the consent record is undated, undocumented, missing required info, or has no copy/withdrawal path.

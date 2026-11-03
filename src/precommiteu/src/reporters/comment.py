@@ -45,7 +45,15 @@ def render_comment(result: ScanResult) -> str:
     findings = result.findings
     n = len(findings)
     header = "## precommitEU: regulatory scan\n"
+    incomplete = [s for s in result.statuses if s.status != "scanned"]
+    if incomplete:
+        header += "\n**Scan incomplete.**\n"
+        for status in incomplete:
+            detail = f" — {status.detail}" if status.detail else ""
+            header += f"\n- {status.regulation}: {status.status}{detail}\n"
     if n == 0:
+        if incomplete:
+            return header + "\nNo confirmed findings available; analysis is incomplete.\n"
         return header + "\nNo findings.\n"
 
     regs = sorted({f.regulation for f in findings})

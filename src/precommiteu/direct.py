@@ -10,7 +10,10 @@ from precommiteu.chunking import (
     CanonicalChunk,
     truncate_to_token_budget,
 )
-from precommiteu.config import CANDIDATE_FINDINGS_TOKEN_BUDGET
+from precommiteu.config import (
+    CANDIDATE_FINDINGS_TOKEN_BUDGET,
+    DEFAULT_WALL_SECONDS_PER_FILE,
+)
 from precommiteu.detector_call import call_detector
 from precommiteu.regulations import RegulationPack
 from precommiteu.validator_call import call_validator
@@ -37,7 +40,8 @@ def run_direct(
     detector_model: Any,
     validator_model: Any,
     regulation_pack: RegulationPack,
-    wall_seconds: float = 90.0,
+    wall_seconds: float = DEFAULT_WALL_SECONDS_PER_FILE,
+    enriched_chunks: dict[str, str] | None = None,
 ) -> OrchestratorRun:
     run = OrchestratorRun(exit_reason="direct")
     deadline = time.monotonic() + wall_seconds
@@ -46,7 +50,7 @@ def run_direct(
             if run.exit_reason == "direct":
                 run.exit_reason = "budget_exhausted_time"
             break
-        chunk_diff = _as_added_diff(file_label, chunk.text)
+        chunk_diff = (enriched_chunks or {}).get(chunk.id) or _as_added_diff(file_label, chunk.text)
         run.consult_log.record(
             chunk.id, truncate_to_token_budget(chunk_diff, _VALIDATOR_VIEW_BUDGET)
         )

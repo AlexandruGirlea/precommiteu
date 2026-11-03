@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 
@@ -46,19 +47,33 @@ def _scanner() -> dict:
                 {"version": f"precommiteu {__version__}"})
 
 
-# Only the shared base belongs here. Which adapter you want is a choice made
-# two steps later, on the regulation screen, and it is downloaded there.
-def _base() -> dict:
-    base = settings.models_dir() / install.BASE
+MIN_MEMORY_GIB = 32
+
+
+def _shared(name: str, label: str) -> dict:
+    path = settings.models_dir() / name
+    expected = install.SHARED[name]
     fix = {"action": "base", "auto": True, "command": None}
-    if not base.exists():
-        return _row("Base model", False, "models.nobase", fix=fix)
-    size = base.stat().st_size
-    if size != install.BASE_BYTES:
-        return _row("Base model", False, "models.truncated",
-                    {"size": f"{size:,}", "expected": f"{install.BASE_BYTES:,}"}, fix)
-    return _row("Base model", True, "models.ok",
-                {"gib": f"{install.BASE_BYTES / 1024 ** 3:.2f}"})
+    if not path.exists():
+        return _row(label, False, "models.nobase", fix=fix)
+    size = path.stat().st_size
+    if size != expected:
+        return _row(label, False, "models.truncated",
+                    {"size": f"{size:,}", "expected": f"{expected:,}"}, fix)
+    return _row(label, True, "models.ok", {"gib": f"{expected / 1024 ** 3:.2f}"})
+
+
+def _memory() -> dict:
+    try:
+        gib = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 1024 ** 3
+    except (AttributeError, ValueError, OSError):
+        row = _row("Memory", True, "memory.unknown")
+    else:
+        ok = gib >= MIN_MEMORY_GIB * 0.95
+        row = _row("Memory", ok, "memory.ok" if ok else "memory.low",
+                   {"gib": f"{gib:.0f}", "min": MIN_MEMORY_GIB})
+    row["optional"] = True
+    return row
 
 
 def _git() -> dict:
@@ -80,4 +95,6 @@ def _orphans(scanning: bool) -> dict:
 
 
 def run(scanning: bool) -> list[dict]:
-    return [_llama(), _scanner(), _base(), _git(), _orphans(scanning)]
+    return [_llama(), _scanner(), _shared(install.BASE, "Base model"),
+            _shared(install.ORCHESTRATOR, "Orchestrator model"), _memory(), _git(),
+            _orphans(scanning)]

@@ -131,6 +131,11 @@ async function build(){
 
   const pack = catalog.packs.find(p=>p.id===state.regulation) || {};
   const findings = state.findings || [], adv = state.advisories || [];
+  const failed = (state.files || []).filter(f=>['error','partial','interrupted'].includes(f.status));
+  const incomplete = state.phase !== 'done' || state.error || failed.length
+    || state.files_done < state.files_total;
+  const status = t(({done:'scan.complete', failed:'scan.failed', paused:'scan.paused',
+    idle:'scan.ready', running:'note.running'})[state.phase] || 'res.incompleteLede');
   const arts = [...new Set(findings.map(f=>artNo(f.probable_article_id)))].sort((a,b)=>a-b);
   const when = new Date().toLocaleDateString(document.documentElement.lang,
     {year:'numeric', month:'long', day:'numeric'});
@@ -142,7 +147,7 @@ async function build(){
     <div class="head">
       ${branding.logo?'<img id="logo" src="/logo" alt="">':''}
       <div class="t">
-        <h1>${findings.length
+        <h1>${incomplete ? t('res.incompleteLede') : findings.length
           ? t('res.lede',{n:findings.length, m:t('res.articles',{n:arts.length})})
           : t('res.cleanLede')}</h1>
         <div class="sub">${esc(pack.name||state.regulation)} · ${esc(pack.reference||'')}</div>
@@ -160,10 +165,16 @@ async function build(){
     <div class="note mono">${esc(state.target||'')}${
       state.elapsed_s>0 ? ' · '+mmss(state.elapsed_s) : ''}</div>
 
+    ${incomplete ? `<div class="card"><h3>${t('res.incompleteLede')}</h3>
+      <div>${esc(status)} · ${state.files_done}/${state.files_total}</div>
+      <div>${t('res.incompleteP')}</div>
+      ${state.error ? `<p>${esc(state.error)}</p>` : ''}
+      ${failed.map(f=>`<p>${esc(f.file)}: ${esc(f.error || f.status)}</p>`).join('')}</div>` : ''}
+
     ${findings.length ? `<h2 class="sect">${t('res.stat.confirmed')}</h2>`
       + findings.slice().sort((a,b)=>artNo(a.probable_article_id)-artNo(b.probable_article_id))
           .map(f=>card(f,pack,false)).join('')
-      : `<div class="clean"><h3>${t('res.cleanH',{n:state.files_total})}</h3>
+      : incomplete ? '' : `<div class="clean"><h3>${t('res.cleanH',{n:state.files_total})}</h3>
          <div>${t('res.cleanP',{pack:esc(pack.name||state.regulation)})}</div></div>`}
 
     ${adv.length ? `<h2 class="sect">${t('res.stat.advisory')}</h2>

@@ -15,7 +15,8 @@ If something is used without correct attribution, please open an issue.
 
 | Component | Author | License | How it is used |
 |---|---|---|---|
-| [Qwen 2.5 Coder 7B Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Alibaba Cloud / Qwen team | Apache-2.0 | Base weights. Delivered separately in the model bundle as `base.gguf`, not in this repository or the Python package. |
+| [Qwen 2.5 Coder 7B Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Alibaba Cloud / Qwen team | Apache-2.0 | Detector base weights. Delivered separately in the model bundle as `base.gguf`, not in this repository or the Python package. |
+| [Qwen3.6 35B A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) | Alibaba Cloud / Qwen team | Apache-2.0 | Orchestrator and validator weights, GGUF quantisation by Unsloth. Delivered separately in the model bundle as `orchestrator.gguf`, not in this repository or the Python package. |
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | ggml-org and contributors | MIT | Provides the `llama-server` binary the scanner drives. Installed by the user, never bundled. |
 | [pydantic](https://github.com/pydantic/pydantic) | Samuel Colvin and contributors | MIT | Declared Python dependency, installed from PyPI. |
 | [huggingface_hub](https://github.com/huggingface/huggingface_hub) | Hugging Face and contributors | Apache-2.0 | Provides the `hf` command used to download the model bundle. |

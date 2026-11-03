@@ -41,18 +41,20 @@ back to any step you have already passed.
   <img src="assets/img/ui-1-readiness.png" alt="The readiness screen" width="900">
 </p>
 
-Five checks, each with a fix where a fix is possible.
+Seven checks, each with a fix where a fix is possible.
 
 | Check | Blocking | Fix offered |
 |---|---|---|
 | Local inference engine | yes | The `llama.cpp` install command for your platform, to copy and run |
 | Scanner | yes | none needed, reports the installed version |
-| Base model | yes | A button that downloads the 4.36 GB shared base |
+| Base model | yes | A button that downloads missing shared models |
+| Orchestrator model | yes | The same shared-model download action |
+| Memory | no | Warns when installed memory is below the 32 GB recommendation |
 | Git | no | Reports the path; only `Clone from Git` needs it |
 | No stale processes | yes | A button that kills leftover `llama-server` processes |
 
 An unreadable `llama.cpp` version does not block a machine with a working
-binary. Only the shared base model belongs here; which regulation adapter you
+binary. Both shared models are checked here; which regulation adapter you
 want is chosen two steps later and downloaded there.
 
 ### 2. Jurisdiction
@@ -74,10 +76,11 @@ One pack is active per scan. Packs you have are listed under `Downloaded`,
 the rest under `Available to download`.
 
 `Download · 77 MB` fetches that pack's detector adapter. The first download
-also fetches the shared 4.36 GB base, so the first one is a 4.4 GB download and
-every pack after it is 77 MB. Both are verified against the bundle's
-`SHA256SUMS` before the pack is marked installed; a failed checksum reports the
-file that failed and the pack stays uninstalled.
+also fetches any missing shared models: the 4.36 GiB base and the 16.5 GiB
+orchestrator. A complete first download is about 22.5 GB; each subsequent pack
+is 77 MB. Downloaded models are verified against the bundle's `SHA256SUMS`
+before the pack is marked installed; a failed checksum reports the file that
+failed and the pack stays uninstalled.
 
 A download can be cancelled mid-flight. The partial file stays on disk and the
 next attempt resumes from it.
@@ -173,7 +176,7 @@ new location.
 
 | Setting | Default | Holds |
 |---|---|---|
-| Model bundle | `~/.precommiteu/models` | The base model and the adapter of every pack you downloaded |
+| Model bundle | `~/.precommiteu/models` | Both shared models and the adapter of every pack you downloaded |
 | Scan cache | `~/.precommiteu/scans` | One small JSON file per folder and pack, recording what was already analysed |
 | Reports | `~/.precommiteu-ui/runs` | JSON, SARIF, markdown, ledger and log for every run |
 
@@ -221,9 +224,9 @@ again.
 **The interface looks wrong after upgrading.** The browser cached the previous
 version. Hard reload the page.
 
-**A pack downloaded but readiness still blocks.** The adapter is 77 MB and the
-base is 4.36 GB, so the adapter lands long before the base. Wait for the
-download to finish.
+**A pack downloaded but readiness still blocks.** The adapter is 77 MB, while
+the shared models total about 22.4 GB, so the adapter can finish first. Wait
+for both shared models to finish downloading.
 
 For scanner behaviour rather than interface behaviour, see
 [Troubleshooting](troubleshooting.md).

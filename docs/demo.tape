@@ -2,7 +2,8 @@
 #   vhs docs/demo.tape
 #
 # Expects `precommiteu` and `llama-server` on PATH and $PRECOMMITEU_MODELS_DIR
-# pointing at a bundle containing base.gguf and gdpr/detector-adapter.gguf.
+# pointing at a bundle containing base.gguf, orchestrator.gguf and
+# gdpr/detector-adapter.gguf.
 #
 # The scan below is real and unedited. PlaybackSpeed compresses the wall-clock
 # wait; TypingSpeed and Sleep are pre-multiplied to stay legible after it.

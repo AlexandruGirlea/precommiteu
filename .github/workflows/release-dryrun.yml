@@ -62,3 +62,17 @@ jobs:
           slsa-verifier verify-artifact dist/* \
             --provenance-path provenance/*.intoto.jsonl \
             --source-uri "github.com/$GITHUB_REPOSITORY"
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - run: docker buildx build --platform linux/amd64,linux/arm64 .
+
+      - name: Smoke-test the amd64 image
+        run: |
+          docker buildx build --platform linux/amd64 --load -t precommiteu:dryrun .
+          docker run --rm precommiteu:dryrun sh -c 'llama-server --version && precommiteu --version'

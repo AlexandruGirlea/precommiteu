@@ -25,6 +25,8 @@ from types import ModuleType
 # Evaluate this checkout even when the virtualenv also contains a released wheel.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from precommiteu.config import DEFAULT_WALL_SECONDS_PER_FILE
+from precommiteu.defaults import model_bundle
 from precommiteu.detector_call import call_detector
 from precommiteu.direct import _as_added_diff
 from precommiteu.grammar import DETECTOR_GBNF, VALIDATOR_GBNF
@@ -45,6 +47,9 @@ class RecordedModel:
         self.model = model
         self.responses = []
 
+    def count_tokens(self, text):
+        return self.model.count_tokens(text)
+
     def invoke(self, messages, **kwargs):
         response = self.model.invoke(messages, **kwargs)
         self.responses.append(response.content)
@@ -62,7 +67,9 @@ def main():
     parser.add_argument("--validator-ref",
                         help="Load only validator_call.py from a trusted local git revision; "
                              "all other pipeline files still come from this checkout")
-    parser.add_argument("--wall-seconds", type=float, default=90.0)
+    parser.add_argument(
+        "--wall-seconds", type=float, default=DEFAULT_WALL_SECONDS_PER_FILE
+    )
     parser.add_argument("--fail-fast", action="store_true",
                         help="Stop after a runtime error; the partial run cannot pass comparison")
     args = parser.parse_args()
@@ -82,10 +89,11 @@ def main():
     if args.candidates_from:
         replay = {r["id"]: r for line in args.candidates_from.read_text().splitlines()
                   if (r := json.loads(line)).get("type") == "case"}
-    base = args.models_dir / "base.gguf"
-    adapter = args.models_dir / "eu_ai_act/detector-adapter.gguf"
-    if not base.is_file() or not adapter.is_file():
-        parser.error("both base model and AI Act detector adapter are required")
+    try:
+        orchestrator, base, adapters = model_bundle(args.models_dir, ("eu_ai_act",))
+    except ValueError as exc:
+        parser.error(str(exc))
+    adapter = adapters["eu_ai_act"]
     pack = get_regulation_pack("eu_ai_act")
     validate = call_validator
     validator_path = Path("src/precommiteu/validator_call.py")
@@ -105,6 +113,7 @@ def main():
         "platform": platform.platform(), "python": platform.python_version(),
         "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "fixture_sha256": {str(p): sha256(p) for p in fixture_paths}, "base_sha256": sha256(base),
+        "orchestrator_sha256": sha256(orchestrator),
         "adapter_sha256": sha256(adapter), "temperature": 0, "n_ctx": 32768,
         "max_tokens": 8192, "wall_seconds": args.wall_seconds,
         "fail_fast": args.fail_fast,
@@ -126,10 +135,10 @@ def main():
     with args.output.open("x") as output, ExitStack() as stack:
         output.write(json.dumps(metadata) + "\n")
         output.flush()
-        print("Starting local base model" + (
+        print("Starting local orchestrator model" + (
             " with recorded detector candidates" if args.candidates_from else " and AI Act adapter"
         ), flush=True)
-        handle = stack.enter_context(launch_llama_server(base, n_gpu_layers=99))
+        handle = stack.enter_context(launch_llama_server(orchestrator, n_gpu_layers=99))
         validator = RecordedModel(build_chat_model(handle, grammar=VALIDATOR_GBNF))
         detector = None
         if not args.candidates_from:

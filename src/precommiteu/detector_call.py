@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import logging
 
-from precommiteu.chunking import USER_MESSAGE_TOKEN_BUDGET, truncate_to_token_budget
+from precommiteu.chunking import (
+    USER_MESSAGE_TOKEN_BUDGET,
+    token_counter,
+    truncate_to_token_budget,
+)
 from precommiteu.regulations import RegulationPack
 from precommiteu.src.inference import _extract_detector_findings_json
 from precommiteu.src.schemas import ModelOutput
@@ -20,8 +24,10 @@ def call_detector(
     timeout_s: float | None = None,
 ) -> list[dict]:
     pack = regulation_pack
-    enriched_code = truncate_to_token_budget(enriched_code, USER_MESSAGE_TOKEN_BUDGET)
-    user_message = f"[CODE DIFF]\n{enriched_code}"
+    user_message = truncate_to_token_budget(
+        f"[CODE DIFF]\n{enriched_code}", USER_MESSAGE_TOKEN_BUDGET,
+        count_tokens=token_counter(model),
+    )
 
     messages = [
         {"role": "system", "content": pack.detector_system},

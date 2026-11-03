@@ -30,33 +30,33 @@ to stderr too, in the form `[event] file key=value`.
 ### What you see
 
 ```
-error: no model paths configured; pass --models-dir (or set PRECOMMITEU_MODELS_DIR) pointing at the directory holding the precommitEU model bundle (expected layout: base.gguf, <regulation>/detector-adapter.gguf), or pass explicit --orchestrator-model / --detector-adapter paths; see docs/install.md for how to get the bundle
+error: no model paths configured; pass --models-dir (or set PRECOMMITEU_MODELS_DIR) pointing at the directory holding the precommitEU model bundle (expected layout: base.gguf, orchestrator.gguf, <regulation>/detector-adapter.gguf); see docs/install.md for how to get the bundle
 ```
 
-Exit code 2. Or, when a directory was given but the base model is not there:
+Exit code 2. Or, when a directory was given but a model is not there:
 
 ```
-error: required path not found: /opt/precommiteu/models/base.gguf
+error: required path not found: /opt/precommiteu/models/orchestrator.gguf
 ```
 
 ### Why it happens
 
 Models are not bundled with the wheel. `pip install precommiteu` ships pure
-Python only. The scanner resolves the base model in this order:
+Python only. The scanner resolves the orchestrator model in this order:
 
-1. `--orchestrator-model` (explicit file path, bypasses the layout)
-2. `--models-dir <dir>` then `<dir>/base.gguf`
-3. `$PRECOMMITEU_MODELS_DIR` then `$PRECOMMITEU_MODELS_DIR/base.gguf`
+1. `--models-dir <dir>` then `<dir>/orchestrator.gguf`
+2. `$PRECOMMITEU_MODELS_DIR` then `$PRECOMMITEU_MODELS_DIR/orchestrator.gguf`
 
 If none of those resolve to an existing file, the run stops before any model
-is loaded. The detector adapter is resolved the same way, at
-`<models-dir>/<regulation>/detector-adapter.gguf`.
+is loaded. The detector always runs on `<models-dir>/base.gguf`, and its
+adapter is resolved at `<models-dir>/<regulation>/detector-adapter.gguf`.
 
 ### Expected directory layout
 
 ```
 ~/.precommiteu/models/
-├── base.gguf                          # shared, Qwen2.5-Coder-7B-Instruct Q4_K_M, ~4.36 GiB
+├── orchestrator.gguf                  # Qwen3.6-35B-A3B IQ4_XS, ~16.5 GiB
+├── base.gguf                          # detector base, Qwen2.5-Coder-7B-Instruct Q4_K_M, ~4.36 GiB
 ├── gdpr/detector-adapter.gguf         # ~77 MiB per regulation
 ├── eu_ai_act/detector-adapter.gguf
 ├── eu_data_act/detector-adapter.gguf
@@ -72,7 +72,7 @@ character.
 
 ```bash
 pip install -U "huggingface_hub[cli]"
-hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/
 ```
@@ -84,24 +84,17 @@ landed on disk:
 ls -lh ~/.precommiteu/models ~/.precommiteu/models/gdpr
 ```
 
-### Missing adapter is not fatal
+### Missing adapter stops the scan
 
-A missing base model is a hard error. A missing detector adapter is not: the
-scan continues on the base model alone, in degraded mode, and the progress
-stream says so.
+Detection requires `base.gguf` and the selected regulation's adapter.
+If either is missing, the scan stops before loading any models:
 
 ```
-[detector_adapter] regulation=gdpr adapter=base model (degraded)
+error: required path not found: /opt/precommiteu/models/gdpr/detector-adapter.gguf
 ```
 
-If you passed `--detector-adapter` explicitly and the file is absent, you
-also get a `::warning::precommiteu: detector adapter missing (...)` line.
-Degraded mode produces noticeably weaker detection. Fix the bundle rather
-than living with it.
-
-One more configuration error worth knowing: a single explicit
-`--detector-adapter` cannot be combined with several regulations. Omit the
-flag and let each regulation resolve its own adapter.
+Download each selected adapter into its regulation directory. The scanner
+never substitutes the orchestrator model or runs detection without an adapter.
 
 ---
 
@@ -110,7 +103,7 @@ flag and let each regulation resolve its own adapter.
 ### What you see
 
 ```
-error: scan wiring failed: llama-server binary not found on PATH; install llama.cpp >= b4400
+error: scan wiring failed: llama-server binary not found on PATH; install llama.cpp >= b10158
 ```
 
 ```
@@ -122,7 +115,7 @@ error: scan wiring failed: llama-server exited during startup
 ```
 
 ```
-error: scan wiring failed: llama-server build b4102 is older than required b4400
+error: scan wiring failed: llama-server build b4102 is older than required b10158
 ```
 
 ```
@@ -136,7 +129,7 @@ All of these exit with code 2.
 The scanner does not link llama.cpp. It spawns `llama-server` as a
 subprocess, on a free loopback port, and waits for `GET /health` to return
 `{"status":"ok"}` within 90 seconds. It then runs `llama-server --version`
-and refuses any build older than b4400.
+and refuses any build older than b10158.
 
 Common causes, in order of frequency:
 
@@ -171,7 +164,8 @@ curl -s http://127.0.0.1:8080/health
 A healthy server answers `{"status":"ok"}`. Stop it with Ctrl-C. If this
 fails, the problem is llama.cpp or the model file, not precommitEU. If it
 succeeds, re-run the scan with the same `--n-ctx` and `--gpu-layers` values
-you just proved working.
+you just proved working. Repeat with `orchestrator.gguf` to check that the
+larger model loads too.
 
 Also test the adapter, since a corrupt adapter fails the same way:
 
@@ -185,8 +179,8 @@ llama-server -m ~/.precommiteu/models/base.gguf --lora ~/.precommiteu/models/gdp
   If the port is taken the scanner retries with a new one, five times.
 - macOS: `brew install llama.cpp`. Linux: use a release binary or build from
   source, then copy `build/bin/llama-server` onto `PATH`.
-- In CI, install llama.cpp in the same step or image as the scan, and echo
-  `llama-server --version` before scanning so the log records the build.
+- In CI, the precommitEU image already includes `llama-server`; see
+  [ci.md](ci.md).
 
 ---
 
@@ -308,7 +302,7 @@ Long pauses between `file_start` and `file_done`, and lines like:
 
 Inference is local. Throughput is set by your hardware and by the llama.cpp
 build, not by the scanner. On top of that, each file carries hard budgets:
-12 orchestrator iterations, 90 seconds of wall clock, and an 8000 token cap
+12 orchestrator iterations, 300 seconds of wall clock, and an 8000 token cap
 on every message sent to the model.
 
 Budget exhaustion is not an error. The file keeps whatever the validator
@@ -340,11 +334,11 @@ precommiteu scan src/ --gpu-layers 0 --threads 8
 # Pin the fast route for every file.
 precommiteu scan src/ --agent-mode direct
 
-# Tighter budgets: fail fast instead of spending 90s per file.
+# Tighter budgets: fail fast instead of spending up to 300 s per file.
 precommiteu scan src/ --max-wall-seconds-per-file 45 --max-orchestrator-iterations 6
 
 # More budget: let the orchestrator finish on a slow machine.
-precommiteu scan src/ --max-wall-seconds-per-file 180 --max-orchestrator-iterations 20
+precommiteu scan src/ --max-wall-seconds-per-file 600 --max-orchestrator-iterations 20
 
 # Smaller context window: less memory to allocate and manage.
 precommiteu scan src/ --n-ctx 16384
@@ -359,7 +353,7 @@ GIT_MERGE_TARGET_BRANCH=main precommiteu scan --ci
 | `--threads` | auto | Only relevant when layers run on CPU. Over-subscribing cores makes it slower, not faster. |
 | `--n-ctx` | `32768` | Lower values reduce allocation and memory pressure. Do not go below 16384 (see section 5). |
 | `--agent-mode` | `auto` | `direct` is the fast route. `orchestrator` is the slow one. |
-| `--max-wall-seconds-per-file` | `90` | Hard cap per file. Lower it to bound total runtime, raise it on slow hardware. |
+| `--max-wall-seconds-per-file` | `300` | Hard cap per file. Lower it to bound total runtime, raise it on slow hardware. |
 | `--max-orchestrator-iterations` | `12` | Cap on agent steps. Only affects the orchestrator route. |
 | `--max-file-bytes` | `1000000` | Large files chunk into many model calls. |
 
@@ -384,11 +378,11 @@ the process, or the machine swapping until the scan crawls.
 
 ### Why it happens
 
-A normal scan runs two `llama-server` processes: one on the base model for
-the orchestrator and validator, and one on the base model with the detector
+A normal scan runs two `llama-server` processes: one on `orchestrator.gguf`
+for the orchestrator and validator, and one on `base.gguf` with the detector
 adapter attached. Each holds its own context window - the running memory of
-everything that server has read - sized by `--n-ctx`. The default 32768 token
-window is generous for a 7B model on a small GPU.
+everything that server has read - sized by `--n-ctx`. The model weights take
+most of the memory: about 17.5 GiB and 6.3 GiB at the default window.
 
 ### How to fix
 
@@ -410,16 +404,17 @@ treated as not analysed.
 
 Other checks:
 
-- The bundle is already quantised (Q4_K_M, about 4.36 GiB for the base).
-  There is no smaller variant to switch to, and no separate CPU or GPU
+- The bundle is already quantised (IQ4_XS, about 16.5 GiB for
+  `orchestrator.gguf`; Q4_K_M, about 4.36 GiB for `base.gguf`). There is no
+  smaller variant to switch to, and no separate CPU or GPU
   build. Acceleration comes entirely from the llama.cpp build you installed.
-- Budget for **both** servers, not one. Measured peak is ~6.3 GiB each at the
-  default `--n-ctx 32768`, so about 12.6 GiB combined; 16 GB of RAM is the
-  practical minimum. The context window costs 56 KiB per token per server, so
-  halving `--n-ctx` saves about 1.75 GiB across the pair. Full numbers are in
+- Budget for **both** servers, not one. Measured peak at the default
+  `--n-ctx 32768` is ~17.5 GiB for the orchestrator server and ~6.3 GiB for
+  the detector server, about 23.7 GiB combined; 32 GB of RAM is the practical
+  minimum. Halving `--n-ctx` saves only about 1.1 GiB across the pair. Full numbers are in
   [install.md](install.md#memory).
-- On an 8 GB machine the defaults will swap or be killed. Use
-  `--n-ctx 16384 --gpu-layers 0` and close other applications.
+- On a machine with less than 32 GB the scan will swap or be killed.
+  Lowering `--n-ctx` does not make it fit.
 - After the system kills a scan to reclaim memory, the servers can outlive the
   scanner. Check with
   `pgrep -fl precommiteu-llama-server` and `pkill -f precommiteu-llama-server`
@@ -588,7 +583,7 @@ Common mistakes: `nis2`, `cra`, `dma`, `ai_act` and `eu-ai-act` are not pack
 names. CRA, DMA and NIS2 ship together as `cra_dma_nis2`. Hyphens are not
 accepted where the pack name uses underscores.
 
-If the pack name is valid but the scan runs in degraded mode, the adapter
+If the pack name is valid but the scan reports a missing adapter, the adapter
 directory under `--models-dir` is missing or misspelled. See section 1.
 
 ---

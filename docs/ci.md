@@ -5,15 +5,163 @@ nav_order: 9
 
 # CI integration
 
-`precommiteu scan --ci` scans only the files changed on the current branch
-against a merge-target branch. It reads exactly one environment variable,
-`GIT_MERGE_TARGET_BRANCH`, and nothing else from the CI platform.
+Scan the files each pull request changes and fail the build on confirmed
+findings. Set up one machine once, then add one job to your CI.
+
+## Where it runs
+
+A scan needs 32 GB of RAM and about 23 GB of disk for the models. Hosted CI
+runners (GitHub `ubuntu-latest`, GitLab SaaS, Azure DevOps Microsoft-hosted
+agents) are too small. Run the scan in the precommitEU container on one Linux
+machine of your own:
+
+- 32 GB of RAM and 30 GB of free disk
+- x86_64 or ARM64, with Docker installed
+- registered as a runner (or agent) for your CI
+
+## Set up the machine
+
+Download the models once, on that machine:
 
 ```bash
-GIT_MERGE_TARGET_BRANCH="${GITHUB_BASE_REF:-main}" precommiteu scan --ci --fail-on-findings
+docker run --rm -v /opt/precommiteu/models:/models ghcr.io/alexandrugirlea/precommiteu:0.3.0 hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --revision v0.3.0 --local-dir /models
+```
+
+Add one `<pack>/detector-adapter.gguf` per pack you scan, for example
+`eu_ai_act/detector-adapter.gguf`. Jobs mount `/opt/precommiteu/models`
+read-only at `/models`, where the image looks for the models.
+
+The image `ghcr.io/alexandrugirlea/precommiteu` holds `llama-server`, the
+scanner and git, tagged by release.
+
+## GitHub Actions
+
+Register the machine as a self-hosted runner with the label `precommiteu`
+(Settings → Actions → Runners → New self-hosted runner) and add the runner's
+user to the `docker` group. Use it for private repositories only: on a public
+repository, pull requests from forks would run on your machine.
+
+```yaml
+name: compliance-scan
+
+on: pull_request
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  precommiteu:
+    runs-on: [self-hosted, precommiteu]
+    container:
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+      volumes:
+        - /opt/precommiteu/models:/models:ro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: AlexandruGirlea/precommiteu@v0.3.0
+        with:
+          regulations: gdpr
+      - uses: github/codeql-action/upload-sarif@v3
+        if: ${{ !cancelled() }}
+        with:
+          sarif_file: precommiteu.sarif
+```
+
+The action scans with what the container provides. It installs and downloads
+nothing.
+
+| Input | Default | Notes |
+|---|---|---|
+| `regulations` | `gdpr` | Comma-separated packs, each with its adapter on the machine |
+| `paths` | *(empty)* | Scan these paths instead of the branch diff |
+| `fail-on-findings` | `true` | Fail the job on confirmed findings |
+| `sarif` | `precommiteu.sarif` | SARIF output path |
+| `summary` | `precommiteu-summary.md` | Markdown summary path |
+
+`fetch-depth: 0` is still worth setting: the action un-shallows the clone
+itself, but doing it in `checkout` is faster.
+
+## GitLab CI
+
+Register the machine as a GitLab runner with the Docker executor and the tag
+`precommiteu`. In the runner's `config.toml`, add the models to the volumes:
+
+```toml
+[runners.docker]
+  volumes = ["/cache", "/opt/precommiteu/models:/models:ro"]
+```
+
+```yaml
+precommiteu:
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+  tags: [precommiteu]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - git fetch origin "+refs/heads/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME:refs/remotes/origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - export GIT_MERGE_TARGET_BRANCH="$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out mr-summary.md --force
+  artifacts:
+    when: always
+    paths: [mr-summary.md, precommiteu_scan.log]
+    reports:
+      sast: precommiteu.sarif
+```
+
+## Azure DevOps
+
+Add the machine as a self-hosted agent in a pool named `precommiteu` and add
+the agent's user to the `docker` group.
+
+```yaml
+trigger: none
+pr:
+  branches: { include: ['*'] }
+
+pool: { name: precommiteu }
+
+container:
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.0
+  options: -v /opt/precommiteu/models:/models:ro
+
+steps:
+  - checkout: self
+    fetchDepth: 0          # required: shallow clones have no merge base
+
+  - script: |
+      export GIT_MERGE_TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}"
+      git fetch --quiet origin "+refs/heads/$GIT_MERGE_TARGET_BRANCH:refs/remotes/origin/$GIT_MERGE_TARGET_BRANCH" || true
+      precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out pr-summary.md --force
+    displayName: Scan changed files
+
+  - publish: precommiteu.sarif
+    artifact: precommiteu-sarif
+    condition: always()
+```
+
+`SYSTEM_PULLREQUEST_TARGETBRANCH` arrives as `refs/heads/main`. Strip the
+prefix: the scanner resolves `<branch>` then `origin/<branch>`, and neither
+matches a full ref path.
+
+## Any other CI
+
+On the same machine, run the image against a non-shallow checkout:
+
+```bash
+docker run --rm -v "$PWD:/src" -w /src -v /opt/precommiteu/models:/models:ro -e GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" ghcr.io/alexandrugirlea/precommiteu:0.3.0 precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
 ```
 
 ## What `--ci` scans
+
+The jobs above run `precommiteu scan --ci`. It scans only the files changed
+on the current branch against a merge-target branch, and reads exactly one
+environment variable, `GIT_MERGE_TARGET_BRANCH`, and nothing else from the CI
+platform:
 
 ```bash
 git diff --name-only --diff-filter=AM "<merge-target>...HEAD"
@@ -36,210 +184,6 @@ Wire your platform's variable through `GIT_MERGE_TARGET_BRANCH`:
 | GitLab CI | `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` |
 | Azure DevOps | `${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}` |
 | Jenkins | `${CHANGE_TARGET:-main}` |
-
-## GitHub Actions: the action
-
-```yaml
-name: compliance-scan
-
-on: pull_request
-
-permissions:
-  contents: read
-  security-events: write
-
-jobs:
-  precommiteu:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.2.4
-        with:
-          regulations: gdpr,eu_ai_act
-      - uses: github/codeql-action/upload-sarif@v3
-        if: ${{ !cancelled() }}
-        with:
-          sarif_file: precommiteu.sarif
-```
-
-The action installs `llama-server` and the scanner, caches and downloads the
-model bundle, and scans the changed files.
-
-| Input | Default | Notes |
-|---|---|---|
-| `regulations` | `gdpr` | Comma-separated packs |
-| `paths` | *(empty)* | Scan these paths instead of the branch diff |
-| `fail-on-findings` | `true` | Fail the job on confirmed findings |
-| `sarif` | `precommiteu.sarif` | SARIF output path |
-| `summary` | `precommiteu-summary.md` | Markdown summary path |
-| `version` | *(latest)* | Pin the scanner version |
-| `models-revision` | `main` | Pin the model bundle revision |
-
-Pin both for reproducible runs:
-
-```yaml
-- uses: AlexandruGirlea/precommiteu@v0.2.4
-  with:
-    version: 0.2.4
-    models-revision: v0.1.0
-```
-
-`fetch-depth: 0` is still worth setting: the action un-shallows the clone
-itself, but doing it in `checkout` is faster.
-
-## GitHub Actions: without the action
-
-```yaml
-name: compliance-scan
-
-on: pull_request
-
-permissions:
-  contents: read
-  security-events: write        # for the SARIF upload
-
-jobs:
-  precommiteu:
-    runs-on: ubuntu-latest
-    env:
-      LLAMA_BUILD: b10158       # b4400 or newer
-      PRECOMMITEU_MODELS_DIR: ${{ github.workspace }}/.precommiteu-models
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0        # required: shallow clones have no merge base
-
-      - name: Install llama-server
-        run: |
-          curl -fsSL -o /tmp/llama.tar.gz \
-            "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_BUILD}/llama-${LLAMA_BUILD}-bin-ubuntu-x64.tar.gz"
-          mkdir -p "$HOME/llama" && tar -xzf /tmp/llama.tar.gz -C "$HOME/llama"
-          dirname "$(find "$HOME/llama" -name llama-server -type f | head -1)" >> "$GITHUB_PATH"
-
-      - run: pip install precommiteu
-
-      - name: Cache the model bundle
-        id: models
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PRECOMMITEU_MODELS_DIR }}
-          key: precommiteu-models-gdpr-v1
-
-      - name: Download the model bundle
-        if: steps.models.outputs.cache-hit != 'true'
-        run: |
-          pip install -U "huggingface_hub[cli]"
-          hf download AlexandruGirlea/precommiteu-models \
-            base.gguf gdpr/detector-adapter.gguf \
-            --local-dir "$PRECOMMITEU_MODELS_DIR"
-
-      - name: Scan changed files
-        env:
-          GIT_MERGE_TARGET_BRANCH: ${{ github.base_ref || 'main' }}
-        run: |
-          precommiteu scan --ci \
-            --fail-on-findings \
-            --sarif precommiteu.sarif \
-            --out pr-summary.md \
-            --force
-
-      - name: Upload SARIF
-        if: ${{ !cancelled() }}   # the scan exits 1 on findings; upload anyway
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: precommiteu.sarif
-          category: precommiteu
-```
-
-Cache the bundle or every run re-downloads 4.4 GB. The cache key is yours to
-bump when you change regulations or update the models.
-
-## GitLab CI
-
-```yaml
-precommiteu:
-  stage: test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  variables:
-    GIT_DEPTH: "0"
-    PRECOMMITEU_MODELS_DIR: "$CI_PROJECT_DIR/.precommiteu-models"
-  cache:
-    key: precommiteu-models-gdpr-v1
-    paths: [.precommiteu-models/]
-  script:
-    - git fetch origin "+refs/heads/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME:refs/remotes/origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-    - export GIT_MERGE_TARGET_BRANCH="$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-    - precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out mr-summary.md --force
-  artifacts:
-    when: always
-    paths: [mr-summary.md, precommiteu_scan.log]
-    reports:
-      sast: precommiteu.sarif
-```
-
-## Azure DevOps
-
-```yaml
-trigger: none
-pr:
-  branches: { include: ['*'] }
-
-pool: { vmImage: ubuntu-latest }
-
-variables:
-  PRECOMMITEU_MODELS_DIR: $(Pipeline.Workspace)/.precommiteu-models
-  LLAMA_BUILD: b10158
-
-steps:
-  - checkout: self
-    fetchDepth: 0          # required: shallow clones have no merge base
-
-  - task: Cache@2
-    inputs:
-      key: 'precommiteu-models-gdpr-v1'
-      path: $(PRECOMMITEU_MODELS_DIR)
-      cacheHitVar: MODELS_CACHED
-
-  - script: |
-      curl -fsSL -o /tmp/llama.tar.gz "https://github.com/ggml-org/llama.cpp/releases/download/$(LLAMA_BUILD)/llama-$(LLAMA_BUILD)-bin-ubuntu-x64.tar.gz"
-      mkdir -p "$HOME/llama" && tar -xzf /tmp/llama.tar.gz -C "$HOME/llama"
-      echo "##vso[task.prependpath]$(dirname $(find $HOME/llama -name llama-server -type f | head -1))"
-      pip install precommiteu "huggingface_hub[cli]"
-    displayName: Install llama-server and precommiteu
-
-  - script: hf download AlexandruGirlea/precommiteu-models base.gguf gdpr/detector-adapter.gguf --local-dir "$(PRECOMMITEU_MODELS_DIR)"
-    condition: ne(variables.MODELS_CACHED, 'true')
-    displayName: Download the model bundle
-
-  - script: |
-      export GIT_MERGE_TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}"
-      git fetch --quiet origin "+refs/heads/$GIT_MERGE_TARGET_BRANCH:refs/remotes/origin/$GIT_MERGE_TARGET_BRANCH" || true
-      precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out pr-summary.md --force
-    displayName: Scan changed files
-
-  - publish: precommiteu.sarif
-    artifact: precommiteu-sarif
-    condition: always()
-```
-
-`SYSTEM_PULLREQUEST_TARGETBRANCH` arrives as `refs/heads/main`. Strip the
-prefix: the scanner resolves `<branch>` then `origin/<branch>`, and neither
-matches a full ref path.
-
-## Any other CI
-
-One variable is all it takes:
-
-```bash
-GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" \
-    precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
-```
-
-The agent needs a non-shallow checkout where the target branch resolves,
-`llama-server` on `PATH`, and `PRECOMMITEU_MODELS_DIR` pointing at the bundle.
 
 ## Reports
 
@@ -268,27 +212,12 @@ not be scanned · `130` interrupted. Full detail in [cli.md](cli.md).
 Advisories never affect the exit code. Only confirmed, evidence-backed
 findings can fail a build.
 
-## CPU or GPU
-
-One wheel, one bundle. The llama.cpp build you install decides which you get.
-
-```bash
-precommiteu scan src/                  # default: --gpu-layers 99, full offload
-precommiteu scan src/ --gpu-layers 0   # CPU only
-```
-
-Hosted runners (GitHub, GitLab SaaS, Azure DevOps) have **no GPU**, so the
-default full-offload setting simply falls back to CPU, with nothing to configure.
-On a self-hosted runner with an NVIDIA card, install a CUDA build of
-`llama-server` and the default offloads automatically. See
-[install.md](install.md) for the build commands.
-
 ## Runtime cost
 
-Scans run on CPU on hosted runners, and the model is 7B. Budget roughly a
-minute per changed file. That is fine on a pull request touching a handful of
-files; for large PRs or a whole-repo scan, use a scheduled job, a self-hosted
-GPU runner, or a bigger machine rather than blocking every push.
+On the CPU the orchestrator model (35B parameters, about 3B active per token)
+sets the pace. Budget several minutes per changed file; a GPU is much faster.
+That is fine on a pull request touching a handful of files; for large PRs or a
+whole-repo scan, use a scheduled job rather than blocking every push.
 
 ## Debugging scope
 
@@ -299,3 +228,28 @@ GIT_MERGE_TARGET_BRANCH=main precommiteu scan --ci --dry-run
 Prints the files the scan would cover and exits. No model needed. Compare
 with `git diff --name-only --diff-filter=AM "origin/main...HEAD"` to see what
 the file filter removed.
+
+## Updating
+
+For a new release, run the model download again with `--revision v<version>`,
+then bump the image tag and the action version in your CI file.
+
+## GPU or no Docker
+
+The image runs the models on the CPU. To use a GPU, or on a Mac runner,
+install `llama-server`, the scanner and the models directly on the machine
+([install.md](install.md)), set `PRECOMMITEU_MODELS_DIR`, and leave the
+container settings out of the job. The action and the scan commands work the
+same.
+
+## Build the image yourself
+
+To host the image in your own registry, build it from the repository's
+`Dockerfile`:
+
+```bash
+docker build -t <your-registry>/precommiteu:0.3.0 https://github.com/AlexandruGirlea/precommiteu.git#v0.3.0
+```
+
+Push it to a registry your CI can pull from, and use that name in place of
+`ghcr.io/alexandrugirlea/precommiteu:0.3.0`.

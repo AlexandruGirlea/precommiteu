@@ -8,6 +8,10 @@ authoritative wording, follow the EUR-Lex link rendered with each finding.
 
 # GDPR (General Data Protection Regulation)
 
+Scope and evidence: code smells below are investigation leads, not automatic violations. Establish the applicable actor, activity, conditions and exceptions from the supplied context; missing information in one excerpt is not proof of a system-wide omission.
+
+Applicability: Personal data includes identifiers that can reasonably be linked to people. Hashing/tokenisation may be pseudonymisation, not anonymisation. A personal-data breach requires destruction, loss, alteration, unauthorised disclosure or access; a blocked attempt alone is not a breach.
+
 ## gdpr_art5
 Reference: GDPR Art. 5
 Title: Principles relating to processing of personal data
@@ -25,10 +29,11 @@ Title: Lawfulness of processing
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Every processing operation needs a valid legal basis (consent, contract, legal obligation, vital/public interest, or legitimate interest). Reusing data for a new purpose requires re-checking compatibility and adding safeguards like encryption or pseudonymisation.
-Developer impact: Gate processing behind consent/legal-basis checks and apply pseudonymisation when repurposing data.
-Code smells: processing without checking consent flag; marketing opt-in defaulted to true; raw data exported to ML without filtering; missing pseudonymisation on secondary use; tracking cookie set before consent
+Summary: Personal-data processing needs an Article 6(1) lawful basis; consent is one option, alongside contract necessity, legal obligation, vital interests, public tasks and legitimate interests subject to their conditions.
+Developer impact: Article 6 concerns lawfulness; Article 7 concerns valid consent and withdrawal. Further-use compatibility under 6(4) weighs purpose, collection context, data, consequences and safeguards; encryption is not a universal prerequisite.
+Code smells: A consent-based operation proceeds after refusal or withdrawal with no other established basis; an established purpose restriction is bypassed for incompatible further processing.
 Related: gdpr_art9, gdpr_art10, gdpr_art23
+Conditions and exceptions: The claim rests only on an absent consent or legal_basis variable; another applicable lawful basis supports the operation; processing necessity or purpose compatibility is unresolved.
 
 ## gdpr_art7
 Reference: GDPR Art. 7
@@ -46,10 +51,11 @@ Title: Conditions applicable to child's consent in relation to information socie
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Online services for children need a verified parent/guardian's consent when the child is under 16 (or the national floor, down to 13). You must make reasonable efforts to verify that parental authorization.
-Developer impact: Add age verification and parental-consent workflows that block processing of under-age data until a guardian authorizes it.
-Code smells: hardcoded default age bypassing checks; no parental consent verification flow; tracking SDK init for minors pre-consent; missing age gate on data collection; no guardian authorization token stored
+Summary: Article 8 concerns consent-based information-society services offered directly to children: parental authorisation is needed below the applicable Member-State age, between 13 and 16.
+Developer impact: Establish the service, consent basis and applicable age before confirming a child-consent defect; not every operation involving a child requires parental consent.
+Code smells: An established child-consent flow bypasses parental authorisation below the applicable age or substitutes a false adult age to avoid it.
 Related: gdpr_art6
+Conditions and exceptions: Processing uses an applicable non-consent basis; a threshold of 13-15 is criticised without establishing national law; an age field alone is shown.
 
 ## gdpr_art9
 Reference: GDPR Art. 9
@@ -57,10 +63,11 @@ Title: Processing of special categories of personal data
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Processing sensitive data (health, biometrics, race, religion, sexual orientation, political/union views, genetics) is banned unless a strict exception applies, such as explicit consent. Such data needs extra protection.
-Developer impact: Enforce explicit-consent checks, encryption, and strict access controls before storing or processing sensitive fields.
-Code smells: sensitive data stored in plaintext; biometrics collected without explicit consent; inferring race/religion/orientation from data; sensitive fields lacking access controls; special-category data in unencrypted cache
+Summary: Special-category processing needs an Article 9(2) condition as well as an Article 6 basis. Conditions include explicit consent, employment/social law, vital interests, qualifying nonprofit activities, manifestly public data, legal claims, substantial public interest, professional care, public health and research, each subject to its statutory safeguards.
+Developer impact: Article 9 addresses permission to process special categories, including biometrics used for unique identification. A healthcare setting alone proves neither an exception nor its absence; security defects remain assessable under art32.
+Code smells: A consent-dependent special-category operation bypasses explicit consent with no other established 9(2) condition; a legally limited sensitive-data purpose is visibly exceeded.
 Related: gdpr_art89
+Conditions and exceptions: Another applicable 9(2) condition and its safeguards support the processing; the only allegation concerns transport, storage or access security (art32); an ordinary photograph is treated as identification biometrics without that purpose.
 
 ## gdpr_art10
 Reference: GDPR Art. 10
@@ -90,10 +97,11 @@ Title: Transparent information, communication and modalities for the exercise of
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: You must handle data-subject requests in clear language, for free, and respond within one month (extendable to three). Allow electronic submission, reply electronically, explain refusals, and only charge/refuse for excessive requests.
-Developer impact: Build DSR workflows with a 30-day SLA, electronic intake/output, machine-readable privacy icons, and failure notifications.
-Code smells: DSR job exceeding 30-day deadline; request failures silently swallowed; privacy notice not accessible via URL; payment gate on data access request; no rate limiting to flag excessive requests
+Summary: Privacy information and rights communications must be concise, transparent, intelligible and accessible. Respond without undue delay and within one calendar month; a necessary extension of up to two further months requires notice and reasons within the first month.
+Developer impact: Article 12 concerns communication and request handling; art15 concerns access content and art20 qualifying portability. Neither a file extension nor a particular UI technology proves unintelligibility.
+Code smells: A rights workflow explicitly exceeds the applicable deadline without an extension; ordinary requests face an unjustified fee; refusal omits reasons or complaint/remedy information; privacy communication is demonstrably unintelligible or inaccessible.
 Related: gdpr_art11, gdpr_art13, gdpr_art14, gdpr_art15, gdpr_art16, gdpr_art17
+Conditions and exceptions: A justified extension is notified on time; a fee/refusal meets the manifestly unfounded or excessive request conditions; a reasonable fee covers further copies under art15(3); only a binary format or a 31-day calendar month is cited.
 
 ## gdpr_art13
 Reference: GDPR Art. 13
@@ -101,10 +109,11 @@ Title: Information to be provided where personal data are collected from the dat
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: When you collect data directly from a user, you must disclose at that moment who the controller/DPO is, the purposes and legal basis, recipients, retention period, their rights, and any automated decision-making logic.
-Developer impact: Render mandatory privacy disclosures in collection forms/UIs and API responses at the point of data capture.
-Code smells: form missing privacy notice/DPO contact; no retention period or recipients disclosed; automated decision-making logic not explained; missing right-to-withdraw/erase disclosure; no legal-basis disclosure on collection
+Summary: At direct collection, provide applicable Article 13 information, including controller details, purposes and legal basis, rights, retention and relevant recipients, transfers and automated decisions. Information may be layered.
+Developer impact: Read the relevant notice before claiming an omission. A link does not prove that the full policy is compliant, and an incomplete excerpt does not prove that it is deficient; indirect collection is art14.
+Code smells: The supplied collection flow explicitly withholds required information across the available notice layers; an applicable disclosure is removed or falsified before it reaches the person.
 Related: gdpr_art6, gdpr_art9, gdpr_art22, gdpr_art46, gdpr_art47, gdpr_art49
+Conditions and exceptions: The allegation infers missing information solely from a short notice linked to an unseen full policy, a backend handler, or missing DPO details without an applicable DPO; the person already has the information under 13(4).
 
 ## gdpr_art14
 Reference: GDPR Art. 14
@@ -112,10 +121,11 @@ Title: Information to be provided where personal data have not been obtained fro
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: When you ingest personal data from a third party (not the user directly), you must inform the data subject of the controller, purposes, data categories, recipients, retention, their rights, and the data's source. This must happen within one month, or at first contact/disclosure, whichever is sooner.
-Developer impact: Build automated notification workflows (email/SMS templates with timing triggers) that fire when data is acquired from external sources.
-Code smells: ingest third-party data without notification job; first-contact email/SMS omits source disclosure; no scheduled privacy notice within 30-day deadline; notification payload missing rights/retention/transfer info; import script lacks Art.14 notice queue
+Summary: For personal data obtained indirectly, provide the applicable information, including categories and source, within a reasonable period no longer than one month, or earlier at first communication or disclosure as required by 14(3).
+Developer impact: Distinguish indirect from direct collection (art13); check timing and the actual exception conditions before treating the absence of a notification call as a violation.
+Code smells: An applicable notice is explicitly disabled or scheduled beyond its legal trigger; the source or another required item is removed from the completed notice.
 Related: gdpr_art6, gdpr_art9, gdpr_art22, gdpr_art46, gdpr_art47, gdpr_art49
+Conditions and exceptions: An Article 14(5) exception is established: already informed, qualifying impossibility/disproportionate effort with safeguards, legally prescribed obtaining/disclosure with protections, or regulated professional secrecy. A research label or public notice alone does not establish an exception.
 
 ## gdpr_art15
 Reference: GDPR Art. 15
@@ -155,10 +165,11 @@ Title: Right to restriction of processing
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Users can require you to halt active processing (analytics, sharing, automated decisions) while still storing the data, e.g. while accuracy is disputed. Restricted data may then only be stored or processed with consent or for legal claims. Notify the user before lifting any restriction.
-Developer impact: Implement a restriction state flag plus access controls that stop all processing except storage, and notify before lifting it.
-Code smells: batch/ML job ignores processing_restricted flag; restricted records still queried by analytics; third-party sync ignores RESTRICTED status; marketing scheduler skips restriction flag; restriction lifted with no pre-notification
+Summary: Restriction applies to contested accuracy during verification, unlawful processing where erasure is opposed, data needed for legal claims after the controller no longer needs it, and an objection pending verification.
+Developer impact: Trace the meaning of accuracy-contested, objection-pending and legal-claim-hold flags; field names alone do not establish a restriction. Article 18 limits processing rather than requiring erasure.
+Code smells: An established restriction is bypassed for analytics, marketing, sharing or another processing purpose outside the permitted exceptions; restriction is lifted without the required prior notice.
 Related: gdpr_art21
+Conditions and exceptions: Only storage is involved; processing has consent or serves legal claims, another person's rights, or important Union/Member-State public interest; the flag refers to an unrelated commercial dispute.
 
 ## gdpr_art19
 Reference: GDPR Art. 19
@@ -199,10 +210,11 @@ Title: Automated individual decision-making, including profiling
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Users have the right not to be subject to decisions made solely by automated processing (including profiling) that significantly affect them, unless contract-necessary, legally authorized, or consented. Even then you must allow human review, contesting, and input. Such decisions must not use special-category data without explicit consent/safeguards.
-Developer impact: Add human-review fallbacks, appeal/contest endpoints, consent verification, and exclude sensitive-category data from automated decision models.
-Code smells: auto-reject/ban with no manual review endpoint; automated decision lacks appeal/contest mechanism; model uses special-category data without consent check; no human-override state in decision flow; no logged decision logic for human auditor
+Summary: Article 22 concerns decisions based solely on automated processing that produce legal or similarly significant effects, subject to the contract-necessity, legal-authorisation and explicit-consent exceptions and their safeguards.
+Developer impact: Assess effect, automation and exceptions, not token pairs. A review token alone proves no meaningful oversight, and missing explanation logs alone do not establish an Article 22 breach.
+Code smells: An established significant automated decision bypasses applicable safeguards; a required meaningful human intervention or contest route is explicitly disabled.
 Related: gdpr_art9
+Conditions and exceptions: The effect is not legally or similarly significant; meaningful human decision-making is established; an applicable exception and safeguards cover the decision; a token such as auto_block or pricing_tier is the sole premise.
 
 ## gdpr_art24
 Reference: GDPR Art. 24
@@ -254,9 +266,10 @@ Title: Processing under the authority of the controller or processor
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Anyone with access to personal data under a controller or processor may only process it on the controller's instructions, unless required by law. This means processing must be gated by the controller's explicit configuration rather than initiated independently.
-Developer impact: Gate all processing behind the controller's explicit instructions/config flags; never process or share data autonomously.
-Code smells: cross-tenant aggregation without per-tenant opt-in; data forwarded to third party ignoring tenant config; prod data copied to staging without instruction; secondary processing added without controller config; full payload logged beyond authorized metadata
+Summary: A processor or person acting under the controller or processor's authority may process personal data only on the controller's instructions, unless Union or Member-State law requires otherwise.
+Developer impact: Prove processing beyond instructions for art29. Contract terms belong to art28 and security defects to art32; ordinary automation is not autonomous unauthorised processing.
+Code smells: An established instruction or purpose restriction is visibly bypassed by an operator, processor or job.
+Conditions and exceptions: The only premise is that a cron job, script or log call lacks a policy_check variable; instructions are unknown or the operation follows established instructions; a statutory requirement applies.
 
 ## gdpr_art30
 Reference: GDPR Art. 30
@@ -275,10 +288,11 @@ Title: Security of processing
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Controllers and processors must apply risk-appropriate security measures including pseudonymization, encryption, ongoing confidentiality/integrity/availability, the ability to restore data after an incident, and regular testing of those measures.
-Developer impact: Encrypt data at rest and in transit, pseudonymize, enforce access controls, and ensure backups/recovery.
-Code smells: PII over unencrypted HTTP between services; credit card / PII logged in plaintext; no rate limit enables brute-force data extraction; weak password hashing (MD5/SHA1) not bcrypt/Argon2; PII in cache without auth or network isolation
+Summary: Controllers and processors must implement security appropriate to the risk, considering the state of the art, cost, context and processing. This includes special-category and national-identifier data; it is not a universal per-field encryption rule.
+Developer impact: Validate the candidate's security allegation and trace its data and safeguards. Lawfulness of special-category processing is art9; art87 adds national-identifier conditions rather than replacing art32.
+Code smells: A traced personal-data or credential operation disables a material transport/access control, uses demonstrably unsuitable credential protection, or exposes data to unauthorised readers through logs or other sinks.
 Related: gdpr_art40, gdpr_art42
+Conditions and exceptions: Only a data-field/logging token or missing wrapper implementation is shown; deployment security is unknown; an internal identifier is logged without evidence of inappropriate access or excess; an algorithm is used for a non-security checksum.
 
 ## gdpr_art33
 Reference: GDPR Art. 33
@@ -286,10 +300,11 @@ Title: Notification of a personal data breach to the supervisory authority
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Controllers must report a breach to the supervisory authority without undue delay and within 72 hours unless it poses no risk; processors must alert the controller promptly. Reports must describe the breach nature, affected categories/counts, DPO contact, likely consequences, and remedial measures, and breaches must be documented.
-Developer impact: Build incident response that fires breach notifications within 72h with required fields and persistently logs breach facts.
-Code smells: hardcoded delay exceeds 72-hour notification window; notification payload omits affected record count; missing DPO contact in breach alert body; breach logs in volatile cache not persisted; no timestamp of first breach detection
+Summary: After awareness of an actual personal-data breach, a controller notifies the authority without undue delay and, where feasible, within 72 hours unless risk to rights and freedoms is unlikely. A processor notifies its controller without undue delay; Article 33(2) sets no separate 72-hour processor deadline.
+Developer impact: Article 33 covers controller-to-authority and processor-to-controller notification plus breach documentation under 33(5); user communication is art34. Abbreviated field names and an in-memory work queue alone prove no omission.
+Code smells: An applicable notification is explicitly suppressed or unjustifiably delayed; a completed breach report omits required available information without phased follow-up; breach documentation discards facts, effects or remedial action.
 Related: gdpr_art55
+Conditions and exceptions: Only a blocked attempt or potential exposure is established; the actor or notification trigger is unknown; authority notification is exempt because risk is unlikely; required information follows in justified phases. Trace populated fields and queue consumers before declaring documentation or delivery absent.
 
 ## gdpr_art34
 Reference: GDPR Art. 34
@@ -297,10 +312,11 @@ Title: Communication of a personal data breach to the data subject
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: When a breach is high-risk to individuals, the controller must tell affected users without undue delay in clear language, including DPO contact, likely consequences, and remedial measures. Not required if data was encrypted/unintelligible, risk was mitigated, or a public notice is used instead.
-Developer impact: Implement user-facing breach notifications (with encryption checks deciding if required) using plain-language templates.
-Code smells: breach email fails silently on SMTP timeout; plaintext storage voids encryption exemption; breach notice sends raw stack trace not plain language; missing DPO contact in user breach alert; user breach notification queued at low priority
+Summary: A controller communicates a personal-data breach to affected people without undue delay when it is likely to create high risk, subject to Article 34(3). The notice needs clear language, a contact, likely consequences and mitigation information.
+Developer impact: Hashing or pseudonymisation alone does not establish unintelligibility. Evaluate protection of the actual affected data; a low_risk, encrypted or public_notice flag alone neither proves nor disproves the exception.
+Code smells: An established high-risk breach has its required user notice disabled or unjustifiably delayed; applicable notice content is removed; a claimed exception is contradicted by the traced safeguards.
 Related: gdpr_art33
+Conditions and exceptions: A breach or high-risk threshold is not established; affected data was protected so it is unintelligible to unauthorised persons; subsequent measures remove the likely high risk; disproportionate effort is addressed by equally effective public communication.
 
 ## gdpr_art38
 Reference: GDPR Art. 38
@@ -319,9 +335,10 @@ Title: General principle for transfers
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: Personal data may only leave the EEA to a third country or international org if this chapter's conditions are met, including for onward re-transfers. The EU level of protection must follow the data wherever it goes.
-Developer impact: Gate any cross-border data flow (API, webhook, cloud/CDN routing) behind transfer-legality checks and EEA data-residency constraints.
-Code smells: hardcoded non-EEA endpoint for EU personal data; webhook forwards PII outside EEA with no safeguards; third-party SDK syncs PII to non-EEA server; backup/replication to third-country cluster; CDN edge caches personal data outside EEA
+Summary: Chapter V governs transfers of personal data to third countries or international organisations, including onward transfers. A valid adequacy decision covering the recipient/data, appropriate safeguards or an applicable derogation may support the transfer; a foreign region alone proves no breach.
+Developer impact: Map the recipient, destination and applicable transfer mechanism, including any scope limitations; a contract or adequacy mechanism need not be implemented as a runtime flag.
+Code smells: an established required transfer gate deliberately bypassed; onward disclosure contrary to the applicable mechanism
+Conditions and exceptions: Consider applicable Article 45 adequacy, Article 46 safeguards and Article 49 derogations; Article 48 is without prejudice to other Chapter V transfer grounds. Check actual recipients and legal arrangements, not merely region names or absent runtime flags.
 
 ## gdpr_art46
 Reference: GDPR Art. 46
@@ -333,6 +350,7 @@ Summary: Without an adequacy decision, you may transfer data abroad only if appr
 Developer impact: Route/block outbound cross-border transfers based on presence of a validated legal safeguard (SCC/BCR) for the destination.
 Code smells: cross-border API call lacks SCC/safeguard validation; sync to non-EU bucket with no regional routing; webhook POSTs PII abroad without SCCs; third-party widget/SDK in third country gets PII; no data-residency enforcement on telemetry sink
 Related: gdpr_art40, gdpr_art42, gdpr_art45, gdpr_art47, gdpr_art63, gdpr_art93
+Conditions and exceptions: Consider applicable Article 45 adequacy, Article 46 safeguards and Article 49 derogations; Article 48 is without prejudice to other Chapter V transfer grounds. Check actual recipients and legal arrangements, not merely region names or absent runtime flags.
 
 ## gdpr_art48
 Reference: GDPR Art. 48
@@ -340,9 +358,10 @@ Title: Transfers or disclosures not authorised by Union law
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: A foreign court or authority order to hand over personal data is only enforceable if backed by an international agreement (e.g. an MLAT) with the EU/Member State. You can't auto-comply with third-country legal demands otherwise.
+Summary: A foreign judgment or administrative decision requiring personal-data disclosure is recognised or enforceable only on the basis of an applicable international agreement, without prejudice to other Chapter V transfer grounds.
 Developer impact: Validate foreign authority/legal-disclosure requests against treaty (MLAT) authorization before exporting any personal data.
-Code smells: auto-fulfills foreign subpoena with no legal-basis check; no MLAT/treaty validation on disclosure request; law-enforcement portal auto-approves non-EU requests; e-discovery export skips authorization check; no jurisdiction-check middleware on data-query API
+Code smells: foreign-demand disclosure that demonstrably lacks an applicable lawful route; bypass of a required disclosure-authorisation check
+Conditions and exceptions: Consider applicable Article 45 adequacy, Article 46 safeguards and Article 49 derogations; Article 48 is without prejudice to other Chapter V transfer grounds. Check actual recipients and legal arrangements, not merely region names or absent runtime flags.
 
 ## gdpr_art49
 Reference: GDPR Art. 49
@@ -371,9 +390,10 @@ Title: Processing of the national identification number
 Regulation: GDPR
 Source CELEX: 32016R0679
 
-Summary: National ID numbers (or any general-purpose identifier) may only be processed under appropriate safeguards for the data subject's rights, as further specified by Member State law. Treat them as highly sensitive identifiers.
-Developer impact: Encrypt, hash, or mask national ID numbers everywhere: storage, logs, URLs, and UI responses.
-Code smells: national ID stored unencrypted in DB; national ID logged in plaintext; unmasked national ID in API response/HTML; national ID passed as URL query param; national ID used as primary/public user key
+Summary: National identification numbers and other identifiers of general application require appropriate safeguards; Member States may specify further processing conditions under Article 87.
+Developer impact: Trace which identifier is protected: hashing an email does not protect a separate national ID. Do not infer database-at-rest protection from an application value; a proven general security defect can fall under art32.
+Code smells: An established national-identifier safeguard or applicable national-law condition is visibly bypassed; the actual handling exposes the identifier in a way shown to defeat that requirement.
+Conditions and exceptions: The claim assumes every unencrypted identifier, URL parameter, cache key or database column automatically violates Article 87; relevant safeguards or national conditions are unknown; the identifier is merely an internal record key.
 
 ## gdpr_art89
 Reference: GDPR Art. 89

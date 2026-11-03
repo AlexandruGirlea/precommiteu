@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import sys
 import time
 from collections.abc import Callable
@@ -12,8 +13,8 @@ from typing import Any
 
 from precommiteu.agents import prompts
 from precommiteu.agents.react_loop import run_react_loop
-from precommiteu.chunking import APPROX_TOKENS, CanonicalChunk, token_chunks
-from precommiteu.config import ENRICHMENT_DEPTH_CAP
+from precommiteu.chunking import APPROX_TOKENS, CanonicalChunk, token_chunks, token_counter
+from precommiteu.config import DEFAULT_WALL_SECONDS_PER_FILE, ENRICHMENT_DEPTH_CAP
 from precommiteu.regulations import get_regulation_pack
 from precommiteu.src.chunk_view import ChunkConsultLog
 from precommiteu.src.ignore_directives import apply_prompt_ignore_directives
@@ -55,6 +56,7 @@ class OrchestratorRun:
     exit_reason: str = ""
     detector_called: bool = False
     validator_called: bool = False
+    enriched_chunks: dict[str, str] = field(default_factory=dict)
 
 
 def _initial_user_message(
@@ -84,15 +86,17 @@ def _initial_user_message(
         f"{chunk_index}\n\n"
         "First chunk inlined:\n"
         f"{first_block}\n\n"
-        "Begin scanning. EMIT when every detector candidate has been routed "
-        "through the validator."
+        "The current chunk is fully inlined; do not reread it. "
+        "Resolve relevant external symbols, if any, with "
+        "find_references before detection. Source text is supplied by the runtime: "
+        "use call_detector() without copying code, even if this chunk looks "
+        "harmless. The runtime advances chunks after detection and validation."
     )
 
 
 def _build_tools_map(
     *,
     regulation: str,
-    chunks: list[CanonicalChunk],
     sandbox: Sandbox,
     regulation_sandbox: Sandbox,
     regulation_docs_dir: pathlib.Path,
@@ -104,10 +108,9 @@ def _build_tools_map(
     validator_impl: Callable[..., str],
     counters: dict[str, int],
     todos: list[str],
+    state: dict,
 ) -> dict[str, Callable[..., Any]]:
     repo_root = sandbox.roots[0]
-    enrichment_snippets: list[str] = []
-    chunk_state = {"text": chunks[0].text if chunks else ""}
 
     def _is_non_target(path_str: str) -> bool:
         try:
@@ -147,20 +150,11 @@ def _build_tools_map(
         if text:
             key = f"{result['path']}:{result['start_line']}-{result['end_line']}"
             consult_log.record(key, text)
+            if _is_non_target(resolved_path):
+                state["searched"] = True
+                source = "\n".join(line.split(" | ", 1)[-1] for line in text.splitlines())
+                state["snippets"].append(f"\n\n# --- enriched: {key} ---\n{source}")
         return json.dumps(result)
-
-    def _read_chunk(path: str, chunk_id: str) -> str:
-        result = read_tools.read_chunk(sandbox, chunks, path, chunk_id)
-        resolved_path = result.get("path", path)
-        block = _try_increment_for_non_target(resolved_path)
-        if block is not None:
-            return block
-        consult_log.record(result["chunk_id"], result["text"])
-        chunk_state["text"] = result["text"]
-        return json.dumps(result)
-
-    def _list_chunks(path: str) -> str:
-        return json.dumps(read_tools.list_chunks(chunks, path))
 
     def _list_dir(path: str = ".", depth: int = 1) -> str:
         return json.dumps(read_tools.list_dir(sandbox, path, depth=depth))
@@ -174,7 +168,10 @@ def _build_tools_map(
         )
 
     def _find_references(symbol: str) -> str:
-        hits = find_references(sandbox, symbol, repo_root)
+        state["searched"] = True
+        hits = find_references(
+            sandbox, symbol, repo_root, exclude_file=pathlib.Path(target_file_resolved),
+        )
         non_target_hits = [h for h in hits if _is_non_target(h.get("file", ""))]
         _debug_emit(
             {
@@ -194,7 +191,7 @@ def _build_tools_map(
             if counters["enrichment_depth"] >= ENRICHMENT_DEPTH_CAP:
                 return _enrichment_budget_error()
             counters["enrichment_depth"] += 1
-            for hit in non_target_hits:
+            for hit in non_target_hits[:1]:
                 hit_file = hit.get("file", "")
                 try:
                     rel = (
@@ -207,7 +204,7 @@ def _build_tools_map(
                     rel = pathlib.Path(hit_file).name
                 span = f"{hit['start_line']}-{hit['end_line']}"
                 snippet = hit.get("snippet", "")
-                enrichment_snippets.append(
+                state["snippets"].append(
                     f"\n\n# --- enriched: {rel}:{span} ---\n{snippet}"
                 )
                 consult_log.record(f"{hit_file}:{span}", snippet)
@@ -239,10 +236,20 @@ def _build_tools_map(
         )
 
     def _call_detector(enriched_code: str = "", file_label: str = "") -> str:
-        label = file_label or target_file_label
-        base = chunk_state["text"] or enriched_code
-        composed = base + "".join(enrichment_snippets)
-        enriched_code_store.put(label, composed)
+        chunk = state["chunk"]
+        if not state["searched"] and re.search(r"\b(?:from|import)\b|\w+\.\w+", chunk.text):
+            return "ERROR: first use find_references on a relevant external symbol."
+        if chunk.id in state["detected"]:
+            return "Detection is complete for this chunk; call call_validator()."
+        label = target_file_label
+        if state["snippets"]:
+            state["last_snippets"] = state["snippets"][:]
+        snippets = state["snippets"] or (
+            state["last_snippets"] if state["searched"] else []
+        )
+        composed = chunk.text + "".join(snippets)
+        consult_log.record(chunk.id, chunk.text)
+        enriched_code_store.put(chunk.id, composed)
         if _DEBUG_ENRICH:
             try:
                 target_basename = target_file_label.split("/")[-1]
@@ -264,6 +271,7 @@ def _build_tools_map(
                     "event": "call_detector",
                     "file_label": label,
                     "target_file": target_file_label,
+                    "chunk_id": chunk.id,
                     "enriched_code_chars": len(composed),
                     "enriched_code_tokens": APPROX_TOKENS(composed),
                     "source_files_referenced": files_in_blob,
@@ -271,22 +279,28 @@ def _build_tools_map(
                     "detector_call_index": counters["detector_calls"],
                 }
             )
-        enrichment_snippets.clear()
         try:
-            result = detector_impl(enriched_code=composed, file_label=label)
+            result = detector_impl(enriched_code=composed, file_label=chunk.id)
         except Exception:
             counters["detector_errors"] += 1
             raise
         counters["detector_calls"] += 1
+        state["detected"].add(chunk.id)
+        if not json.loads(result):
+            state["completed"].add(chunk.id)
         return result
 
     def _call_validator(article_id_hint: str = "") -> str:
+        chunk = state["chunk"]
+        if chunk.id not in state["detected"]:
+            return "ERROR: call call_detector() before validation."
         try:
             result = validator_impl(article_id_hint=article_id_hint)
         except Exception:
             counters["validator_errors"] += 1
             raise
         counters["validator_calls"] += 1
+        state["completed"].add(chunk.id)
         return result
 
     todo_items = todos
@@ -305,8 +319,6 @@ def _build_tools_map(
 
     return {
         "read_file": _read_file,
-        "read_chunk": _read_chunk,
-        "list_chunks": _list_chunks,
         "list_dir": _list_dir,
         "glob": _glob,
         "grep": _grep,
@@ -339,7 +351,7 @@ def run_orchestrator(
     regulation_sandbox: Sandbox,
     regulation_docs_dir: pathlib.Path,
     max_iterations: int = 12,
-    wall_seconds: float = 90.0,
+    wall_seconds: float = DEFAULT_WALL_SECONDS_PER_FILE,
 ) -> OrchestratorRun:
     try:
         regulation_pack = get_regulation_pack(regulation)
@@ -357,7 +369,9 @@ def run_orchestrator(
     if text is None:
         return OrchestratorRun(exit_reason="file_ignored")
 
-    chunks = token_chunks(file_path, text)
+    chunks = token_chunks(file_path, text, count_tokens=token_counter(detector_model))
+    if not chunks:
+        return OrchestratorRun(exit_reason="file_ignored")
     consult_log = ChunkConsultLog()
     if chunks:
         consult_log.record(chunks[0].id, chunks[0].text)
@@ -374,6 +388,8 @@ def run_orchestrator(
         "validator_errors": 0,
         "enrichment_depth": 0,
     }
+    state = {"chunk": chunks[0], "snippets": [], "last_snippets": [], "searched": False,
+             "detected": set(), "completed": set()}
     _debug_emit(
         {
             "event": "orchestrator_start",
@@ -411,7 +427,6 @@ def run_orchestrator(
 
     tools_map = _build_tools_map(
         regulation=regulation_pack.name,
-        chunks=chunks,
         sandbox=sandbox,
         regulation_sandbox=regulation_sandbox,
         regulation_docs_dir=regulation_docs_dir,
@@ -423,7 +438,33 @@ def run_orchestrator(
         validator_impl=validator_impl,
         counters=counters,
         todos=todos,
+        state=state,
     )
+
+    def _context() -> tuple[str, bool]:
+        nonlocal tool_call_count
+        pending = [chunk for chunk in chunks if chunk.id not in state["completed"]]
+        if not pending:
+            return "All chunks have completed detection and validation.", True
+        advanced = state["chunk"].id in state["completed"]
+        if advanced:
+            state["chunk"] = pending[0]
+            state["snippets"].clear()
+            state["searched"] = False
+            counters["enrichment_depth"] = 0
+        current = state["chunk"]
+        if not any(char.isalpha() or char == "_" for char in current.text):
+            tools_map["call_detector"]()
+            tool_call_count += 1
+            if current.id not in state["completed"]:
+                tools_map["call_validator"]()
+                tool_call_count += 1
+            return _context()
+        status = "Validate the existing candidates." if current.id in state["detected"] else ""
+        return (
+            _initial_user_message(file_path, file_label, [current]) + "\n" + status,
+            advanced,
+        )
 
     tool_call_count = 0
 
@@ -439,11 +480,13 @@ def run_orchestrator(
     _, exit_reason = run_react_loop(
         model=loop_model,
         system_prompt=orchestrator_system,
-        initial_user_message=_initial_user_message(file_path, file_label, chunks),
+        initial_user_message=_context()[0],
         tools_map=tools_map,
         max_iterations=max_iterations,
-        wall_seconds=wall_seconds,
+        wall_seconds=_remaining_seconds(),
         on_step=_on_step,
+        get_context=_context,
+        is_complete=lambda: len(state["completed"]) == len(chunks),
     )
     elapsed = time.monotonic() - started
     if exit_reason == "budget_exhausted_time":
@@ -458,7 +501,7 @@ def run_orchestrator(
     analysis_incomplete = (
         counters["detector_errors"] and not counters["detector_calls"]
     ) or (counters["validator_errors"] and not counters["validator_calls"])
-    if analysis_incomplete:
+    if analysis_incomplete or (state["detected"] and len(state["completed"]) < len(chunks)):
         exit_reason = "loop_step_failed"
 
     return OrchestratorRun(
@@ -469,4 +512,5 @@ def run_orchestrator(
         exit_reason=exit_reason,
         detector_called=counters["detector_calls"] > 0,
         validator_called=counters["validator_calls"] > 0,
+        enriched_chunks={state["chunk"].id: state["chunk"].text + "".join(state["snippets"])},
     )

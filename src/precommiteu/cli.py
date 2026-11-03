@@ -9,10 +9,7 @@ from contextlib import ExitStack
 
 from precommiteu import __version__
 from precommiteu.config import DEFAULT_MAX_ITERATIONS, DEFAULT_WALL_SECONDS_PER_FILE
-from precommiteu.defaults import (
-    MISSING_MODELS_HINT,
-    default_orchestrator_model,
-)
+from precommiteu.defaults import model_bundle
 from precommiteu.regulations import DEFAULT_REGULATION, get_regulation_pack
 from precommiteu.reporting import IncrementalReporter, attach_scan_log, log_scan_event
 from precommiteu.scan import (
@@ -90,23 +87,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--models-dir",
         type=pathlib.Path,
         default=None,
-        help="Directory holding the model files (base.gguf, "
+        help="Directory holding the model files (base.gguf, orchestrator.gguf, "
         "<regulation>/detector-adapter.gguf). Overrides $PRECOMMITEU_MODELS_DIR.",
-    )
-    scan.add_argument(
-        "--orchestrator-model",
-        type=pathlib.Path,
-        default=None,
-        help="Base GGUF used by the orchestrator deep-agent and validator "
-        "(default: base.gguf under --models-dir / $PRECOMMITEU_MODELS_DIR).",
-    )
-    scan.add_argument(
-        "--detector-adapter",
-        type=pathlib.Path,
-        default=None,
-        help="LoRA adapter GGUF applied to the detector llama-server "
-        "(default: <regulation>/detector-adapter.gguf under --models-dir / "
-        "$PRECOMMITEU_MODELS_DIR).",
     )
     scan.add_argument(
         "--detector-grammar",
@@ -210,7 +192,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--max-wall-seconds-per-file",
         type=int,
         default=int(DEFAULT_WALL_SECONDS_PER_FILE),
-        help="Wall-clock budget per file in seconds (default: 90).",
+        help="Wall-clock budget per file in seconds "
+        f"(default: {int(DEFAULT_WALL_SECONDS_PER_FILE)}).",
     )
     scan.add_argument(
         "--fail-on-findings",
@@ -242,6 +225,12 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the files that would be scanned and exit without loading "
         "any model.",
+    )
+    scan.add_argument(
+        "--exclude-context", type=pathlib.Path, action="append", default=[],
+        help="Exclude a file or directory from context reads and cache "
+        "fingerprints. Repeatable; configured report files are excluded "
+        "automatically.",
     )
 
     ui = sub.add_parser(
@@ -318,37 +307,17 @@ def _run_scan(args: argparse.Namespace) -> int:
         )
         return 2
 
-    orchestrator_model = args.orchestrator_model or default_orchestrator_model(
-        args.models_dir
-    )
-    detector_grammar = args.detector_grammar
-    if orchestrator_model is None:
-        print(f"error: no model paths configured; {MISSING_MODELS_HINT}", file=sys.stderr)
+    try:
+        orchestrator_model, detector_model, _ = model_bundle(
+            args.models_dir, regulations
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
-    required_paths = [orchestrator_model]
-    if detector_grammar is not None:
-        required_paths.append(detector_grammar)
-    for required in required_paths:
-        if not pathlib.Path(required).exists():
-            print(f"error: required path not found: {required}", file=sys.stderr)
-            return 2
-
-    adapter_path: pathlib.Path | None = args.detector_adapter
-    if adapter_path is not None:
-        if len(regulations) > 1:
-            print(
-                "error: a single --detector-adapter can't be combined with "
-                "multiple regulations; omit it to auto-resolve per regulation",
-                file=sys.stderr,
-            )
-            return 2
-        if not pathlib.Path(adapter_path).exists():
-            print(
-                f"::warning::precommiteu: detector adapter missing ({adapter_path}); "
-                "running without a LoRA-bound detector (degraded mode).",
-                file=sys.stderr,
-            )
-            adapter_path = None
+    detector_grammar = args.detector_grammar
+    if detector_grammar is not None and not detector_grammar.is_file():
+        print(f"error: required path not found: {detector_grammar}", file=sys.stderr)
+        return 2
 
     attach_scan_log(args.log_file)
     log_scan_event(
@@ -358,7 +327,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             "paths": [str(p) for p in args.paths],
             "regulations": list(regulations),
             "orchestrator_model": str(orchestrator_model),
-            "detector_adapter": str(adapter_path) if adapter_path is not None else None,
+            "detector_model": str(detector_model),
             "detector_grammar": str(detector_grammar) if detector_grammar else "embedded",
             "json_out": str(args.json_out) if args.json_out is not None else None,
             "sarif": str(args.sarif) if args.sarif is not None else None,
@@ -376,6 +345,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     output_files = [
         str(p) for p in (args.json_out, args.sarif, args.out, args.report) if p is not None
     ]
+    context_excludes = [*args.exclude_context, *output_files, args.log_file]
 
     def _print_interrupted() -> None:
         where = f"; partial results written to {', '.join(output_files)}" if output_files else ""
@@ -426,9 +396,9 @@ def _run_scan(args: argparse.Namespace) -> int:
         try:
             if args.ci:
                 result = scan_diff(
+                    context_excludes=context_excludes,
                     regulations=regulations,
-                    orchestrator_model_path=orchestrator_model,
-                    detector_adapter_path=adapter_path,
+                    models_dir=args.models_dir,
                     detector_grammar_path=detector_grammar,
                     agent_mode=args.agent_mode,
                     n_ctx=args.n_ctx,
@@ -444,9 +414,9 @@ def _run_scan(args: argparse.Namespace) -> int:
             else:
                 result = scan_paths(
                     args.paths,
+                    context_excludes=context_excludes,
                     regulations=regulations,
-                    orchestrator_model_path=orchestrator_model,
-                    detector_adapter_path=adapter_path,
+                    models_dir=args.models_dir,
                     detector_grammar_path=detector_grammar,
                     agent_mode=args.agent_mode,
                     n_ctx=args.n_ctx,
@@ -555,6 +525,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    for path in args.paths:
+        expanded = pathlib.Path(path).expanduser()
+        if not expanded.is_file() and not expanded.is_dir():
+            print(f"error: scan path not found or invalid: {path}", file=sys.stderr)
+            return 2
+
     if args.dry_run:
         repo_root = pathlib.Path.cwd().resolve()
         if args.ci:
@@ -567,7 +543,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"error: {exc}", file=sys.stderr)
                 return 2
         else:
-            paths = [pathlib.Path(p) for p in args.paths]
+            paths = [pathlib.Path(p).expanduser() for p in args.paths]
 
         selected, _oversized = collect_code_files(
             paths,
@@ -575,7 +551,8 @@ def main(argv: list[str] | None = None) -> int:
             max_bytes=args.max_file_bytes if args.max_file_bytes > 0 else None,
         )
         for path in selected:
-            print(str(path))
+            print(path.relative_to(repo_root)
+                  if path.is_relative_to(repo_root) else path)
         return 0
 
     return _run_scan(args)

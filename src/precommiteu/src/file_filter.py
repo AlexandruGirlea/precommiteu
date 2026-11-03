@@ -469,6 +469,10 @@ def collect_code_files(
     active_rules = load_eu_ignore(repo_root) if eu_ignore_rules is None else eu_ignore_rules
     for raw_path in paths:
         path = raw_path.expanduser()
+        explicit_test_target = path.is_dir() and _is_under_test_prefix(
+            _relative_posix(path, repo_root) + "/"
+        )
+        skip_target_tests = skip_tests and not explicit_test_target
         if path.is_file():
             candidates = [path]
         elif path.is_dir():
@@ -483,7 +487,9 @@ def collect_code_files(
                 )
                 candidates.extend(root_path / name for name in sorted(files))
         else:
-            continue
+            if not path.exists():
+                raise FileNotFoundError(f"scan path does not exist: {path}")
+            raise ValueError(f"scan path is not a file or directory: {path}")
         for candidate in candidates:
             try:
                 resolved = candidate.resolve()
@@ -495,7 +501,7 @@ def collect_code_files(
                 candidate,
                 repo_root,
                 config=config,
-                skip_tests=skip_tests,
+                skip_tests=skip_target_tests,
                 max_bytes=max_bytes,
                 eu_ignore_rules=active_rules,
             ):
@@ -506,14 +512,14 @@ def collect_code_files(
                         candidate,
                         repo_root,
                         config=config,
-                        skip_tests=skip_tests,
+                        skip_tests=skip_target_tests,
                         max_bytes=None,
                         eu_ignore_rules=active_rules,
                     )
                 ):
                     seen.add(resolved)
-                    oversized.append(candidate)
+                    oversized.append(resolved)
                 continue
             seen.add(resolved)
-            selected.append(candidate)
+            selected.append(resolved)
     return selected, oversized

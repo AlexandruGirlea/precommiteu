@@ -11,8 +11,9 @@ import threading
 import time
 from datetime import UTC, datetime
 
+from precommiteu.defaults import model_bundle
 from precommiteu.llama_server import PROC_NAME
-from precommiteu.scan_ledger import ScanLedger
+from precommiteu.scan_ledger import ScanLedger, fingerprint
 from precommiteu.ui import eta, ledger, settings, state
 
 # Subprocess, not an in-process call: a scan must stay interruptible and its
@@ -73,6 +74,7 @@ class Session:
         self.lock = threading.Lock()
         self.phase = "idle"
         self.error: str | None = None
+        self._plan_error: str | None = None
         self.adapter: str | None = None
         self.files: list[str] = []
         self.plan: list[str] = []
@@ -85,23 +87,60 @@ class Session:
         self.forecast: dict[str, dict] = {}
 
     def refresh_plan(self) -> dict:
-        files, self.error = discover(self.target)
-        self.files = files
-        self.forecast = {f: self._forecast(f) for f in files}
-        self.plan = list(files)
-        if files:
-            # The core ledger is the only judge of what still needs scanning.
-            book = ScanLedger.load(self.target, self.regulation, self.scan_log)
-            self.plan = [f for f in files if book.reuse(f) is None]
-        for rel in list(self.state["files"]):
-            if rel not in self.forecast:
-                self.state["files"].pop(rel)
-        state.save(self.state)
-        return {
-            "files": files,
-            "plan": self.plan,
-            "cached": [f for f in files if f not in self.plan],
-        }
+        from precommiteu.scan import _scan_cache_inputs
+
+        with self.lock:
+            if self.phase != "running":
+                files, self._plan_error = discover(self.target)
+                self.files = files
+                self.forecast = {f: self._forecast(f) for f in files}
+                self.plan = list(files)
+                if files:
+                    try:
+                        orchestrator, detector, adapters = model_bundle(
+                            settings.models_dir(), (self.regulation,),
+                        )
+                        contexts, configuration = _scan_cache_inputs(
+                            [(self.target / f).resolve() for f in files],
+                            self.target.resolve(),
+                            context_excludes=(settings.runs_dir(), self.scan_log),
+                        )
+                        book = ScanLedger.load(
+                            self.target, self.regulation, self.scan_log,
+                            configuration={
+                                **configuration,
+                                "models": fingerprint([
+                                    orchestrator, detector,
+                                    adapters[self.regulation],
+                                ]),
+                            },
+                        )
+                        self.plan = [
+                            f for f in files
+                            if book.reuse(f, context=contexts[f]) is None
+                        ]
+                    except (OSError, ValueError):
+                        pass
+                stale = {
+                    rel for rel, entry in self.state["files"].items()
+                    if rel not in self.forecast or (
+                        rel in self.plan
+                        and entry["status"] in ("done", "cached")
+                    )
+                }
+                if stale:
+                    for rel in stale:
+                        del self.state["files"][rel]
+                    self.state["advisories"] = [
+                        a for a in self.state.get("advisories", [])
+                        if a["file"] not in stale
+                    ]
+                    state.save(self.state)
+            return {
+                "files": self.files,
+                "plan": self.plan,
+                "cached": [f for f in self.files if f not in self.plan],
+            }
 
     def _forecast(self, rel: str) -> dict:
         from precommiteu.chunking import token_chunks
@@ -110,23 +149,33 @@ class Session:
 
         path = self.target / rel
         text = apply_prompt_ignore_directives(path.read_text(errors="replace")) or ""
-        route = "orchestrator" if _references_siblings(text, path) else "direct"
+        route = (
+            "orchestrator" if _references_siblings(text, path, self.target)
+            else "direct"
+        )
         return {"chunks": max(1, len(token_chunks(path, text))), "route": route}
 
     def start(self) -> None:
         if self.phase == "running":
             return
         self.refresh_plan()
-        if self.error:
-            self.phase = "failed"
-            return
-        if not self.files:
-            self.phase = "done"
-            return
-        self.phase = "running"
-        self.state["run"] = {"started_at": _stamp(), "interrupted": False}
-        self.thread = threading.Thread(target=self._run, daemon=True)
-        self.thread.start()
+        with self.lock:
+            if self.phase == "running":
+                return
+            self.error = self._plan_error
+            if self.error:
+                self.phase = "failed"
+                return
+            self.state["files"] = {}
+            self.state["advisories"] = []
+            self.state["run"] = {"started_at": _stamp(), "interrupted": False}
+            state.save(self.state)
+            if not self.files:
+                self.phase = "done"
+                return
+            self.phase = "running"
+            self.thread = threading.Thread(target=self._run, daemon=True)
+            self.thread.start()
 
     def _argv(self, segment: str, run_dir: pathlib.Path) -> list[str]:
         keep_awake = ["caffeinate", "-dimsu"] if shutil.which("caffeinate") else []
@@ -137,7 +186,9 @@ class Session:
             "--regulations", self.regulation,
             "--models-dir", str(settings.models_dir()),
             "--scan-log", str(self.scan_log),
+            "--exclude-context", str(settings.runs_dir()),
             "--agent-mode", "auto",
+            "--fail-on-error",
             "--progress", "jsonl",
             "--report", str(run_dir / f"{segment}.events.jsonl"),
             "--json-out", str(run_dir / f"{segment}.result.json"),
@@ -328,7 +379,7 @@ class Session:
             done = sum(1 for r in rows if r["status"] not in ("queued", "running"))
             return {
                 "phase": self.phase,
-                "error": self.error,
+                "error": self.error or self._plan_error,
                 "adapter": self.adapter,
                 "regulation": self.regulation,
                 "target": self.key,
