@@ -14,8 +14,8 @@ SPDX-License-Identifier: Apache-2.0
 <h1 align="center">precommitEU</h1>
 
 <p align="center">
-  <strong>Air-gapped GenAI scanning for EU regulatory risks.<br>
-  Your code. Your infrastructure. Your control. Free and open source.</strong>
+  <strong>Run your own AI for EU regulatory scanning.<br>
+  On your infrastructure. Under your control. Free and open source.</strong>
 </p>
 
 <p align="center">
