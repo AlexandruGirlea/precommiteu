@@ -18,9 +18,11 @@ works with a self-hosted runner; use a GPU for practical PR scan times.
 
 [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) provisions
 an ephemeral GitHub Actions runner on an Azure Container Apps T4 GPU, plus a
-shared model volume. Follow its README for prerequisites, deployment, model
-download, workflow and cost estimates. Ops 0.2.0 uses scanner/action 0.3.2 and
-model bundle v0.3.0. The runner already contains the scanner and CUDA runtime:
+shared model volume. Follow the
+[ops deployment guide](https://alexandrugirlea.github.io/precommiteu-ops/deployment.html)
+for prerequisites and setup, then connect its CI workflow. Ops 0.2.0 uses
+scanner/action 0.3.2 and model bundle v0.3.0. The runner already contains the
+scanner and CUDA runtime:
 use its workflow directly, without the CPU `container:` block below.
 
 The Azure deployment needs GitHub and registry connectivity; it makes no

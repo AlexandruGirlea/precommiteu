@@ -347,7 +347,7 @@ jobs:
 ```
 
 For the Azure GPU deployment, use the
-[ops workflow](https://github.com/AlexandruGirlea/precommiteu-ops#workflow)
+[ops workflow](https://alexandrugirlea.github.io/precommiteu-ops/ci.html)
 without this CPU container. Private-repository code scanning requires GitHub
 Code Security; [CI integration](ci.md) also shows report artifact uploads.
 

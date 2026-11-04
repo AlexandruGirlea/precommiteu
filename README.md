@@ -36,7 +36,7 @@ SPDX-License-Identifier: Apache-2.0
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/ui.html">Local UI</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://github.com/AlexandruGirlea/precommiteu-ops"><strong>Deploy to CI</strong></a>
+  <a href="https://alexandrugirlea.github.io/precommiteu-ops/deployment.html"><strong>Deploy to CI</strong></a>
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/cli.html">CLI reference</a>
   &nbsp;&middot;&nbsp;
@@ -59,7 +59,7 @@ See the [air-gapped installation guide](https://alexandrugirlea.github.io/precom
 | [Try the CLI or local UI](https://alexandrugirlea.github.io/precommiteu/install.html) on a 32 GB laptop. | [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) adds Azure GPU runners to GitHub Actions through Terraform or Pulumi. |
 
 The software is free; you provide the compute. Ops documents the
-[deployment costs and timings](https://github.com/AlexandruGirlea/precommiteu-ops#cost-and-speed).
+[deployment costs and timings](https://alexandrugirlea.github.io/precommiteu-ops/performance.html).
 Its GitHub Actions deployment uses local inference but requires GitHub
 connectivity; the scanner itself can operate fully offline.
 
@@ -342,7 +342,8 @@ jobs:
 `--ci` scans only the files changed against the merge-target branch. Exit code
 `1` on confirmed findings with `--fail-on-findings`, `0` when clean, and `3`
 when analysis is incomplete. Make this job a required status check to gate
-merges. The ops README includes measured timings and estimated Azure costs.
+merges. The [ops documentation](https://alexandrugirlea.github.io/precommiteu-ops/)
+includes deployment steps, measured timings and estimated Azure costs.
 Existing runner setup, GitLab, Azure DevOps, inputs and every exit code
 are in [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
 
