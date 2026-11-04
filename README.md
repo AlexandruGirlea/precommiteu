@@ -14,8 +14,8 @@ SPDX-License-Identifier: Apache-2.0
 <h1 align="center">precommitEU</h1>
 
 <p align="center">
-  <strong>Catch EU regulatory violations at PR time, on your own machine, with
-  zero data egress.</strong>
+  <strong>Air-gapped GenAI scanning for EU regulatory risks.<br>
+  Free, open source, with models you run on your own infrastructure.</strong>
 </p>
 
 <p align="center">
@@ -36,12 +36,32 @@ SPDX-License-Identifier: Apache-2.0
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/ui.html">Local UI</a>
   &nbsp;&middot;&nbsp;
+  <a href="https://github.com/AlexandruGirlea/precommiteu-ops"><strong>Deploy to CI</strong></a>
+  &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/cli.html">CLI reference</a>
   &nbsp;&middot;&nbsp;
   <a href="https://huggingface.co/AlexandruGirlea/precommiteu-models">Model bundle</a>
   &nbsp;&middot;&nbsp;
   <a href="https://precommit.eu">precommit.eu</a>
 </p>
+
+precommitEU uses generative AI to review source code, follow relevant code
+across files, and report potential EU regulatory violations with quoted
+evidence. **The scanner and model weights are available under Apache-2.0.**
+**Scan without internet access after installation.** Download or transfer
+the scanner, llama.cpp runtime and model bundle once; every model then runs
+inside your own environment, including on an air-gapped machine. There is
+no external LLM API, API key, subscription or per-scan licence fee.
+See the [air-gapped installation guide](https://alexandrugirlea.github.io/precommiteu/install.html#air-gapped-and-offline-installation).
+
+| Start locally | Deploy for your team |
+|---|---|
+| [Try the CLI or local UI](https://alexandrugirlea.github.io/precommiteu/install.html) on a 32 GB laptop. | [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) adds Azure GPU runners to GitHub Actions through Terraform or Pulumi. |
+
+The software is free; you provide the compute. Ops documents the
+[deployment costs and timings](https://github.com/AlexandruGirlea/precommiteu-ops#cost-and-speed).
+Its GitHub Actions deployment uses local inference but requires GitHub
+connectivity; the scanner itself can operate fully offline.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/AlexandruGirlea/precommiteu/main/docs/assets/img/scan-demo.gif" alt="precommitEU scanning a Python project for GDPR violations">
@@ -52,8 +72,8 @@ A real scan, unedited: about 80 seconds on an M-series MacBook, played back at
 validator is never called. `user_store.py` mentions a sibling file, so the
 orchestrator takes over: it resolves `UserProfile` into `models.py`, finds that
 `audit_line()` interpolates a national ID and a home address, and confirms a
-GDPR Art. 32 violation on a log line that looks harmless on its own. Grep
-cannot find that one.
+GDPR Art. 32 violation by connecting the log line to the data in the sibling
+file.
 
 **[Replay this scan in your browser](https://precommit.eu/try)**. No install,
 nothing to upload.
@@ -62,6 +82,21 @@ nothing to upload.
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/ --fail-on-findings
 ```
+
+## What's new in 0.3
+
+Version 0.3 adds a larger local model for validation and cross-file reasoning.
+In our 450-case evaluation, it achieved **95.5% case-level precision and a 4%
+false-positive rate on clean cases**. DSA and the combined CRA/DMA/NIS2 pack
+raised no false alarms in their samples, compared with 15% and 5% in the older
+README results. Gains vary by pack; see [Detection quality](#detection-quality)
+for the recall tradeoffs and evaluation limits.
+
+That comes at a hardware cost: **32 GB RAM and about 23 GB of model files**.
+It still runs locally on a 32 GB laptop, including Apple Silicon, but standard
+GitHub-hosted runners are too small. GitHub Actions remains supported with a
+self-hosted runner. For CI, [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops)
+provides the Azure T4 GPU infrastructure through Terraform or Pulumi.
 
 ## Local UI
 
@@ -116,8 +151,8 @@ the network: **[Local UI](https://alexandrugirlea.github.io/precommiteu/ui.html)
 
 ```bash
 brew install llama.cpp
-pip install precommiteu "huggingface_hub[cli]"
-hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+pip install precommiteu==0.3.2 huggingface_hub
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf SHA256SUMS LICENSE.Apache-2.0.txt NOTICE --revision v0.3.0 --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/
 ```
@@ -170,8 +205,8 @@ callbacks: **[Python library](https://alexandrugirlea.github.io/precommiteu/libr
 - **Your code never leaves your machine.** All analysis runs on local
   `llama-server` processes the scanner starts and stops itself. No cloud, no
   telemetry, no network egress.
-- **No finding without proof.** A detector proposes candidates; a validator
-  then has to locate the quoted evidence verbatim in your file, or the
+- **Confirmed findings quote code evidence.** A detector proposes candidates;
+  a validator then has to locate the quoted evidence verbatim in your file, or the
   candidate is dropped. Confirmed findings cite the line. Candidates that fail
   validation are reported as advisories: clearly labeled, never gating. Only
   confirmed findings can fail a build.
@@ -201,13 +236,13 @@ everything:
 
 ```bash
 # shared models + GDPR only, about 22.5 GB
-hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf SHA256SUMS LICENSE.Apache-2.0.txt NOTICE --revision v0.3.0 --local-dir ~/.precommiteu/models
 
 # add another pack later, the shared models are already there
-hf download AlexandruGirlea/precommiteu-models eu_ai_act/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models eu_ai_act/detector-adapter.gguf --revision v0.3.0 --local-dir ~/.precommiteu/models
 
 # everything, about 22.9 GB
-hf download AlexandruGirlea/precommiteu-models --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models --revision v0.3.0 --local-dir ~/.precommiteu/models
 ```
 
 `--regulations` picks which downloaded packs to run. Every selected pack's
@@ -241,56 +276,74 @@ is for, and how several packs run in one scan are in
 
 ## Detection quality
 
-precommitEU is not built to catch everything. The bar it aims for is: **flag
-more than half of the real violations, and be right about nine out of ten
-things it flags.**
-
-Historical results from local evaluation runs on my own codebases using the
-earlier shared-base setup, measured on confirmed findings (advisories excluded):
+The 3 November 2026 evaluation used a 0.3.0 wheel and the released 0.3.x model
+bundle on 450 balanced synthetic cases. These are **case-level** results:
+whether a file raised any confirmed finding, excluding advisories.
 
 | Pack | Precision | Recall | False positive rate |
 |---|---|---|---|
-| `gdpr` | 97% | 98% | 6% |
-| `eu_ai_act` | 97% | 93% | 5% |
-| `eu_data_act` | 97% | 93% | 5% |
-| `cra_dma_nis2` | 97% | 93% | 5% |
-| `dsa` | 90% | 90% | 15% |
-| `dora` | 100% | 73% | 0% |
+| `gdpr` | 92% | 92% | 8% |
+| `eu_ai_act` | 94% | 64% | 4% |
+| `eu_data_act` | 96% | 92% | 4% |
+| `cra_dma_nis2` | 100% | 88% | 0% |
+| `dsa` | 100% | 92% | 0% |
+| `dora` | 96% | 88% | 4% |
+| All nine evaluated datasets | **95.5%** | **85.7%** | **4%** |
 
-In those runs, every pack cleared both bars. `dora` was the most conservative
-and `dsa` the noisiest, but nothing here is a compliance guarantee - treat a
-clean scan as one useful signal, not as sign-off.
+Compared with the older README results, DSA and CRA/DMA/NIS2 show the clearest
+false-alarm reductions. EU AI Act and Data Act fall from 5% to 4%. GDPR rises
+from 6% to 8%, and DORA from 0% to 4%; EU AI Act recall falls from 93% to 64%.
+The older runs used different samples, so this is a historical comparison,
+not a controlled measurement of the model change alone.
 
-These numbers cover the earlier shared base model with per-regulation LoRA
-adapters. They have not been revalidated with the separate `orchestrator.gguf`
-validator introduced in 0.3.0.
+The aggregate includes separate CRA, DMA and NIS2 datasets as well as the
+combined pack: 450 runs, 440 unique snippets. False-positive rate means 9 of
+225 clean cases were flagged; 9 of 201 flagged cases were false alarms (4.5%).
+One positive case failed to complete: recall is 85.7% on completed positives,
+or 85.3% counting that failure as a miss. Exact article sets matched in 79.1%
+of all cases. A clean scan is not compliance sign-off.
+
+Method, counts and limitations:
+[Detection evaluation](https://alexandrugirlea.github.io/precommiteu/detection-evaluation.html).
 
 ## In CI
 
-The models need 32 GB of RAM, more than hosted CI runners have. Scans run in
-the precommitEU container on a Linux machine of your own, registered as a
-runner. After a one-time setup of that machine, the job is:
+Deploy [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops)
+with Terraform or Pulumi, then wait for its model download job to succeed.
+It supplies an ephemeral GitHub Actions runner on an Azure T4 GPU with
+scanner 0.3.2 and models v0.3.0 already available. Add this workflow to a
+private repository:
 
 ```yaml
+name: compliance-scan
+on: pull_request
+permissions:
+  contents: read
 jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
-    container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
-      volumes:
-        - /opt/precommiteu/models:/models:ro
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.1
+      - uses: AlexandruGirlea/precommiteu@v0.3.2
         with:
           regulations: gdpr
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: precommiteu-reports
+          path: |
+            precommiteu.sarif
+            precommiteu-summary.md
 ```
 
 `--ci` scans only the files changed against the merge-target branch. Exit code
-`1` on confirmed findings with `--fail-on-findings`, `0` when clean. The
-machine setup, GitLab, Azure DevOps, the full input list and every exit code
+`1` on confirmed findings with `--fail-on-findings`, `0` when clean, and `3`
+when analysis is incomplete. Make this job a required status check to gate
+merges. The ops README includes measured timings and estimated Azure costs.
+Existing runner setup, GitLab, Azure DevOps, inputs and every exit code
 are in [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
 
 ## Documentation
@@ -302,6 +355,7 @@ are in [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html).
 | [CLI reference](https://alexandrugirlea.github.io/precommiteu/cli.html) | CLI usage, complete flag reference, reports, suppressions |
 | [Regulation packs](https://alexandrugirlea.github.io/precommiteu/regulations.html) | The six packs, application dates, choosing packs, multi-regulation runs |
 | [CI integration](https://alexandrugirlea.github.io/precommiteu/ci.html) | The CI container, GitHub Actions, GitLab, Azure DevOps, exit codes |
+| [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) | Deploy Azure GPU runners with Terraform or Pulumi; setup, workflows and costs |
 | [Python library](https://alexandrugirlea.github.io/precommiteu/library.html) | Python API: `scan_paths`, `scan_diff`, schemas, callbacks |
 | [Report reference](https://alexandrugirlea.github.io/precommiteu/reports.html) | Report formats: JSON field reference, SARIF, summary, ledger |
 | [Ignoring and suppressing](https://alexandrugirlea.github.io/precommiteu/suppressions.html) | `.eu-ignore`, inline `eu-ignore` directives, audited `precommiteu-ignore` markers |

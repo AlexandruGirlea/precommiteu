@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: precommitEU compliance scan
-description: Scan changed code for EU regulatory compliance violations in the precommitEU container.
+description: Scan changed code for EU regulatory compliance with local models on a self-hosted runner.
 author: Alexandru Girlea
 
 branding:

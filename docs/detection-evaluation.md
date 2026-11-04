@@ -5,6 +5,58 @@ nav_order: 12
 
 # Detection evaluation
 
+## Version 0.3 results
+
+On 3 November 2026, a built 0.3.0 wheel was evaluated with the released
+v0.3.0 model bundle: Qwen2.5-Coder-7B-Instruct Q4_K_M plus detector adapters,
+and Qwen3.6-35B-A3B IQ4_XS for validation. The 450 case runs contain 225
+positive and 225 clean examples, drawn from nine synthetic golden datasets.
+There are 440 unique code snippets; the combined and standalone CRA, DMA and
+NIS2 datasets overlap. Advisories are excluded.
+
+| Dataset | True positives | True negatives | False positives | Misses | Errors |
+|---|---|---|---|---|---|
+| GDPR | 23 | 23 | 2 | 2 | 0 |
+| EU AI Act | 16 | 24 | 1 | 9 | 0 |
+| EU Data Act | 23 | 24 | 1 | 2 | 0 |
+| DORA | 22 | 24 | 1 | 3 | 0 |
+| DSA | 23 | 25 | 0 | 2 | 0 |
+| CRA/DMA/NIS2 combined | 22 | 25 | 0 | 3 | 0 |
+| CRA | 21 | 24 | 1 | 4 | 0 |
+| DMA | 22 | 24 | 1 | 2 | 1 |
+| NIS2 | 20 | 23 | 2 | 5 | 0 |
+| Total | 192 | 216 | 9 | 32 | 1 |
+
+- Case-level precision: 192/201 flagged cases, **95.5%**.
+- Recall: 192/224 completed positive cases, **85.7%**; **85.3%** if the
+  incomplete positive case counts as a miss.
+- False-positive rate: 9/225 clean cases, **4%**. The false-alarm share among
+  flagged cases is 9/201, **4.5%**; these are different denominators.
+- F1 on completed cases: **90.4%**. Accuracy across all attempts: 408/450,
+  **90.7%**, with the error counted as unsuccessful.
+- Exact article-set matches: 356/450, **79.1%**, including clean cases.
+  Of 192 detected positive cases, 52 had incomplete or different article sets.
+- 449/450 scans completed. One DMA case exhausted the validator output-token
+  limit and was marked incomplete, not clean.
+
+These are file-level yes/no detection metrics, not a judgment that every
+finding or legal citation is correct. All cases took the direct route;
+cross-file reasoning and CI diff selection were outside this evaluation.
+The run used a 32 GiB Apple Silicon Mac, llama.cpp build 10450, a 32768-token
+context, a 300-second file budget and no incremental reuse. It took about
+66 minutes. The archived wheel and source snapshot identify the tested
+implementation; this was not a fresh evaluation of the 0.3.1 or 0.3.2 wheel.
+
+The older README reported results from a different setup and different
+samples. DSA's clean-case false-positive rate changed from 15% to 0%, and the
+combined CRA/DMA/NIS2 sample from 5% to 0%, but GDPR worsened from 6% to 8%
+and EU AI Act recall fell from 93% to 64%. This historical comparison cannot
+attribute those differences solely to the model change. Fifty cases per
+dataset, only 25 of them clean, do not establish production error rates or
+guarantee zero false alarms. Training overlap was not audited in this run.
+
+## Evaluating changes
+
 Use this workflow when changing detector prompts, validator context or article
 checks. The repository contains reusable evaluation tools and regression
 fixtures. Raw model outputs, experiment sources and release evaluation reports

@@ -147,6 +147,11 @@ This provides the `precommiteu` command and the importable package
 
 ## Step 3: download the model bundle
 
+The deployment combination is scanner/action/image **0.3.2**, model bundle
+**v0.3.0**, and Azure ops **0.2.0**. Model and scanner versions are independent.
+The model tag resolves to `fe15487df95233aac4478f9a08e2fc12e8dda7f1`;
+use that commit in place of `v0.3.0` when an immutable revision is required.
+
 Models are not shipped with pip. They are published on Hugging Face at
 [AlexandruGirlea/precommiteu-models](https://huggingface.co/AlexandruGirlea/precommiteu-models).
 The repository is public: no account, no token, no `hf auth login`.
@@ -173,26 +178,26 @@ model.
 ### Download only the packs you need
 
 ```bash
-pip install -U "huggingface_hub[cli]"
+pip install -U huggingface_hub
 ```
 
 The shared models plus GDPR only (about 22.5 GB):
 
 ```bash
-hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf SHA256SUMS LICENSE.Apache-2.0.txt NOTICE --revision v0.3.0 --local-dir ~/.precommiteu/models
 ```
 
 The whole bundle, all six adapters (about 22.9 GB):
 
 ```bash
-hf download AlexandruGirlea/precommiteu-models --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models --revision v0.3.0 --local-dir ~/.precommiteu/models
 ```
 
 Add a regulation later by re-running with its adapter path. Files already
 present are not downloaded again:
 
 ```bash
-hf download AlexandruGirlea/precommiteu-models eu_ai_act/detector-adapter.gguf --local-dir ~/.precommiteu/models
+hf download AlexandruGirlea/precommiteu-models eu_ai_act/detector-adapter.gguf --revision v0.3.0 --local-dir ~/.precommiteu/models
 ```
 
 Notes on this step:
@@ -211,8 +216,11 @@ Notes on this step:
 Without the Hugging Face client, plain HTTP works too:
 
 ```bash
-mkdir -p ~/.precommiteu/models/gdpr && curl -L -o ~/.precommiteu/models/base.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/base.gguf && curl -L -o ~/.precommiteu/models/orchestrator.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/orchestrator.gguf && curl -L -o ~/.precommiteu/models/gdpr/detector-adapter.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/main/gdpr/detector-adapter.gguf
+mkdir -p ~/.precommiteu/models/gdpr && curl -fL -o ~/.precommiteu/models/base.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/v0.3.0/base.gguf && curl -fL -o ~/.precommiteu/models/orchestrator.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/v0.3.0/orchestrator.gguf && curl -fL -o ~/.precommiteu/models/gdpr/detector-adapter.gguf https://huggingface.co/AlexandruGirlea/precommiteu-models/resolve/v0.3.0/gdpr/detector-adapter.gguf
 ```
+
+With HTTP downloads, also fetch `SHA256SUMS`, `LICENSE.Apache-2.0.txt` and
+`NOTICE` from that same revision into the model directory.
 
 ### The layout the scanner expects
 
@@ -259,14 +267,22 @@ than one.
 
 ### Verify the download
 
-`SHA256SUMS` covers all eight model files: both shared models and six adapters:
+`SHA256SUMS` covers all eight model files: both shared models and six adapters.
+For a complete bundle:
 
 ```bash
 cd ~/.precommiteu/models && shasum -a 256 -c SHA256SUMS
 ```
 
-If you downloaded a subset, the files you skipped are reported as missing.
-Every line for a file you did download must say `OK`.
+For the GDPR-only download, select exactly its three manifest entries so
+missing unselected adapters do not hide an actual verification failure:
+
+```bash
+cd ~/.precommiteu/models && awk '$2 == "base.gguf" || $2 == "orchestrator.gguf" || $2 == "gdpr/detector-adapter.gguf"' SHA256SUMS | shasum -a 256 -c -
+```
+
+All three entries must report `OK`. Include the corresponding manifest entry
+for every additional adapter you download.
 
 ### Air-gapped and offline installation
 
@@ -281,13 +297,13 @@ The bundle is plain files, so it copies like any other directory.
 4. Get the wheel across with pip:
 
 ```bash
-pip download precommiteu -d ./wheels
+pip download precommiteu==0.3.2 -d ./wheels
 ```
 
 then, on the target machine:
 
 ```bash
-pip install --no-index --find-links ./wheels precommiteu
+pip install --no-index --find-links ./wheels precommiteu==0.3.2
 ```
 
 Run `pip download` on a machine with the same OS and Python version as the
@@ -339,7 +355,7 @@ Details worth knowing:
 precommiteu --version
 ```
 
-Prints `precommiteu 0.3.1`.
+Prints `precommiteu 0.3.2`.
 
 ### 2. File discovery works
 

@@ -9,6 +9,17 @@ SPDX-License-Identifier: Apache-2.0
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [semantic versioning](https://semver.org/).
 
+## 0.3.2
+
+- Refresh the README and package description with air-gapped installation,
+  local model inference and the Azure deployment path through precommitEU ops.
+- Publish the 450-case 0.3.0 evaluation summary, including per-pack results,
+  false-positive denominators, recall tradeoffs and limitations.
+- Pin model downloads to v0.3.0 and clarify that model and scanner versions
+  are independent. Include checksums and licence files in download examples.
+- Correct CI examples and document report retention and merge gating.
+- Scanner logic, prompts and model weights are unchanged from 0.3.1.
+
 ## 0.3.1
 
 - Scan every change in a GitHub push, including multi-commit and force pushes.

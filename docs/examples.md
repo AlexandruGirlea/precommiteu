@@ -328,14 +328,14 @@ jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
     container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.2
       volumes:
         - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.1
+      - uses: AlexandruGirlea/precommiteu@v0.3.2
         with:
           regulations: gdpr
           fail-on-findings: "true"
@@ -345,6 +345,11 @@ jobs:
           sarif_file: precommiteu.sarif
           category: precommiteu
 ```
+
+For the Azure GPU deployment, use the
+[ops workflow](https://github.com/AlexandruGirlea/precommiteu-ops#workflow)
+without this CPU container. Private-repository code scanning requires GitHub
+Code Security; [CI integration](ci.md) also shows report artifact uploads.
 
 Two details that decide whether this works.
 
@@ -392,7 +397,7 @@ precommiteu scan src/ --json-out result.json --sarif precommiteu.sarif --out pr-
 | Flag | Format | Consumed by |
 |---|---|---|
 | `--json-out` | JSON | Your own tooling, dashboards, policy checks. The complete result: findings (including suppressed ones), advisories, per-regulation statuses |
-| `--sarif` | SARIF 2.1.0 | GitHub code scanning, GitLab SAST, any SARIF viewer. Findings only, and only those whose article resolves in the pack registry |
+| `--sarif` | SARIF 2.1.0 | GitHub code scanning and SARIF viewers. Findings only, and only those whose article resolves in the pack registry |
 | `--out` | Markdown | A PR comment, posted verbatim. Findings table only |
 | `--report` | JSONL | Audit trails and debugging. Append-only ledger of every event in the order it happened |
 | `--log-file` | Text | Operators. Same events plus warnings and errors, timestamped. Written to `precommiteu_scan.log` by default |

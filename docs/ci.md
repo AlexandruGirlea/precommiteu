@@ -10,10 +10,26 @@ findings. Set up one machine once, then add one job to your CI.
 
 ## Where it runs
 
-A scan needs 32 GB of RAM and about 23 GB of disk for the models. Hosted CI
-runners (GitHub `ubuntu-latest`, GitLab SaaS, Azure DevOps Microsoft-hosted
-agents) are too small. Run the scan in the precommitEU container on one Linux
-machine of your own:
+A scan needs 32 GB of RAM and about 23 GB of disk for the models. Standard
+hosted runners such as GitHub `ubuntu-latest` are too small. GitHub Actions
+works with a self-hosted runner; use a GPU for practical PR scan times.
+
+## Azure GPU runners with Terraform or Pulumi
+
+[precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) provisions
+an ephemeral GitHub Actions runner on an Azure Container Apps T4 GPU, plus a
+shared model volume. Follow its README for prerequisites, deployment, model
+download, workflow and cost estimates. Ops 0.2.0 uses scanner/action 0.3.2 and
+model bundle v0.3.0. The runner already contains the scanner and CUDA runtime:
+use its workflow directly, without the CPU `container:` block below.
+
+The Azure deployment needs GitHub and registry connectivity; it makes no
+calls to an external LLM provider. A truly disconnected installation uses
+the [offline installation steps](install.md#air-gapped-and-offline-installation).
+
+## An existing runner
+
+Alternatively, run the precommitEU container on a Linux machine of your own:
 
 - 32 GB of RAM and 30 GB of free disk
 - x86_64 or ARM64, with Docker installed
@@ -24,7 +40,7 @@ machine of your own:
 Download the models once, on that machine:
 
 ```bash
-docker run --rm -v /opt/precommiteu/models:/models ghcr.io/alexandrugirlea/precommiteu:0.3.1 hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --revision v0.3.0 --local-dir /models
+docker run --rm -v /opt/precommiteu/models:/models ghcr.io/alexandrugirlea/precommiteu:0.3.2 hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf SHA256SUMS LICENSE.Apache-2.0.txt NOTICE --revision v0.3.0 --local-dir /models
 ```
 
 Add one `<pack>/detector-adapter.gguf` per pack you scan, for example
@@ -32,7 +48,9 @@ Add one `<pack>/detector-adapter.gguf` per pack you scan, for example
 read-only at `/models`, where the image looks for the models.
 
 The image `ghcr.io/alexandrugirlea/precommiteu` holds `llama-server`, the
-scanner and git, tagged by release.
+scanner and git, tagged by release. It uses CPU inference; a machine with
+enough RAM can still exceed the five-minute per-file budget. Use ops or a
+native GPU runtime for the measured T4 performance.
 
 ## GitHub Actions
 
@@ -54,24 +72,37 @@ jobs:
   precommiteu:
     runs-on: [self-hosted, precommiteu]
     container:
-      image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
+      image: ghcr.io/alexandrugirlea/precommiteu:0.3.2
       volumes:
         - /opt/precommiteu/models:/models:ro
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: AlexandruGirlea/precommiteu@v0.3.1
+      - uses: AlexandruGirlea/precommiteu@v0.3.2
         with:
           regulations: gdpr
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
+        with:
+          name: precommiteu-reports
+          path: |
+            precommiteu.sarif
+            precommiteu-summary.md
+      - uses: github/codeql-action/upload-sarif@v3
+        if: ${{ !cancelled() && hashFiles('precommiteu.sarif') != '' }}
         with:
           sarif_file: precommiteu.sarif
 ```
 
 The action scans with what the container provides. It installs and downloads
 nothing.
+
+SARIF upload to GitHub code scanning requires that feature to be enabled and
+licensed for a private repository. Otherwise omit `upload-sarif` and the
+`security-events` permission; the artifact download and failing check still
+work. Mark the scan job as required in branch protection or a ruleset to
+block merges on findings or incomplete scans.
 
 | Input | Default | Notes |
 |---|---|---|
@@ -101,7 +132,7 @@ Register the machine as a GitLab runner with the Docker executor and the tag
 
 ```yaml
 precommiteu:
-  image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.2
   tags: [precommiteu]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -113,10 +144,11 @@ precommiteu:
     - precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out mr-summary.md --force
   artifacts:
     when: always
-    paths: [mr-summary.md, precommiteu_scan.log]
-    reports:
-      sast: precommiteu.sarif
+    paths: [precommiteu.sarif, mr-summary.md, precommiteu_scan.log]
 ```
+
+SARIF is retained as a downloadable artifact. GitLab's `reports: sast`
+expects its own JSON schema, so do not put the SARIF file under that key.
 
 ## Azure DevOps
 
@@ -131,7 +163,7 @@ pr:
 pool: { name: precommiteu }
 
 container:
-  image: ghcr.io/alexandrugirlea/precommiteu:0.3.1
+  image: ghcr.io/alexandrugirlea/precommiteu:0.3.2
   options: -v /opt/precommiteu/models:/models:ro
 
 steps:
@@ -140,7 +172,8 @@ steps:
 
   - script: |
       export GIT_MERGE_TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}"
-      git fetch --quiet origin "+refs/heads/$GIT_MERGE_TARGET_BRANCH:refs/remotes/origin/$GIT_MERGE_TARGET_BRANCH" || true
+      set -eu
+      git fetch --quiet origin "+refs/heads/$GIT_MERGE_TARGET_BRANCH:refs/remotes/origin/$GIT_MERGE_TARGET_BRANCH"
       precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --out pr-summary.md --force
     displayName: Scan changed files
 
@@ -153,12 +186,15 @@ steps:
 prefix: the scanner resolves `<branch>` then `origin/<branch>`, and neither
 matches a full ref path.
 
+For Azure Repos Git, configure this pipeline as a build-validation branch
+policy; YAML `pr:` triggers apply to GitHub and Bitbucket repositories.
+
 ## Any other CI
 
 On the same machine, run the image against a non-shallow checkout:
 
 ```bash
-docker run --rm -v "$PWD:/src" -w /src -v /opt/precommiteu/models:/models:ro -e GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" ghcr.io/alexandrugirlea/precommiteu:0.3.1 precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
+docker run --rm -v "$PWD:/src" -w /src -v /opt/precommiteu/models:/models:ro -e GIT_MERGE_TARGET_BRANCH="${CHANGE_TARGET:-main}" ghcr.io/alexandrugirlea/precommiteu:0.3.2 precommiteu scan --ci --fail-on-findings --sarif precommiteu.sarif --force
 ```
 
 ## What `--ci` scans
@@ -200,7 +236,7 @@ Wire your platform's variable through `GIT_MERGE_TARGET_BRANCH`:
 
 | Flag | Use |
 |---|---|
-| `--sarif <file>` | GitHub code scanning / GitLab SAST |
+| `--sarif <file>` | GitHub code scanning / SARIF-compatible tooling |
 | `--out <file>` | Markdown summary to post as a PR comment |
 | `--json-out <file>` | Full result for downstream tooling |
 | `--report <file>` | JSONL event ledger, for an audit trail |
@@ -220,8 +256,8 @@ output, and on a repo that has committed a file of the same name. Pass
 `0` clean · `1` confirmed findings · `2` usage/config error · `3` a file could
 not be scanned · `130` interrupted. Full detail in [cli.md](cli.md).
 
-Advisories never affect the exit code. Only confirmed, evidence-backed
-findings can fail a build.
+Advisories never affect the exit code. Confirmed findings and incomplete
+analysis fail CI; an interrupted or failed scan must not be treated as clean.
 
 ## Runtime cost
 
@@ -242,8 +278,10 @@ the file filter removed.
 
 ## Updating
 
-For a new release, run the model download again with `--revision v<version>`,
-then bump the image tag and the action version in your CI file.
+Scanner and model versions are independent: scanner/action/image **0.3.2**
+uses models **v0.3.0**. Pin the bundle revision documented for the scanner,
+then bump the image and action together. Do not infer a model tag from the
+scanner version. Ops pins all three in its release; follow its update steps.
 
 ## GPU or no Docker
 
@@ -259,8 +297,8 @@ To host the image in your own registry, build it from the repository's
 `Dockerfile`:
 
 ```bash
-docker build -t <your-registry>/precommiteu:0.3.1 https://github.com/AlexandruGirlea/precommiteu.git#v0.3.1
+docker build -t <your-registry>/precommiteu:0.3.2 https://github.com/AlexandruGirlea/precommiteu.git#v0.3.2
 ```
 
 Push it to a registry your CI can pull from, and use that name in place of
-`ghcr.io/alexandrugirlea/precommiteu:0.3.1`.
+`ghcr.io/alexandrugirlea/precommiteu:0.3.2`.

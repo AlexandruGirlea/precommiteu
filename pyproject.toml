@@ -8,8 +8,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "precommiteu"
-version = "0.3.1"
-description = "Local-first EU regulatory compliance scanner for source code."
+version = "0.3.2"
+description = "Offline GenAI scanner for EU regulatory risks in source code."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

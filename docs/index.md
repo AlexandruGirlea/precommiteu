@@ -21,14 +21,22 @@ source code egress.
 
 ```bash
 brew install llama.cpp
-pip install precommiteu "huggingface_hub[cli]"
-hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf --local-dir ~/.precommiteu/models
+pip install precommiteu==0.3.2 huggingface_hub
+hf download AlexandruGirlea/precommiteu-models base.gguf orchestrator.gguf gdpr/detector-adapter.gguf SHA256SUMS LICENSE.Apache-2.0.txt NOTICE --revision v0.3.0 --local-dir ~/.precommiteu/models
 export PRECOMMITEU_MODELS_DIR=~/.precommiteu/models
 precommiteu scan src/
 ```
 
 `hf` is the Hugging Face downloader, installed on the second line. For Linux,
 source builds, GPU builds and air-gapped hosts, see [install.md](install.md).
+
+Version 0.3 needs 32 GB RAM and about 23 GB of model files. A 32 GB laptop
+can run it locally; standard GitHub-hosted runners are too small. For CI,
+use [precommitEU ops](https://github.com/AlexandruGirlea/precommiteu-ops) to
+deploy an Azure GPU runner, or [configure an existing runner](ci.md).
+The [0.3 evaluation](detection-evaluation.md#version-03-results) measured
+95.5% case-level precision and a 4% false-positive rate on clean cases,
+with gains and regressions that vary by regulation pack.
 
 Two things to know before your first run:
 
@@ -82,11 +90,10 @@ A detector proposes candidate violations, then a validator has to locate
 verbatim code evidence for each one. If the quoted evidence cannot be found in
 the file the candidate is dropped (drop reason `evidence_not_visible`), so a
 finding with `source: "precommiteu"` always quotes code that is really there.
-A second, smaller class of finding has `source: "retrieval"`: these are
-promoted from advisories when the description matches a packaged violation
-pattern closely enough, and they carry `code_evidence: null` because no line
-was quoted. Only confirmed findings can fail a build, and only with
-`--fail-on-findings`.
+The schema also supports legacy `source: "retrieval"` findings with
+`code_evidence: null`; promotion from retrieval is disabled in 0.3.x.
+Confirmed findings fail a build with `--fail-on-findings`; incomplete scans
+also fail under `--ci`.
 
 Advisories are unconfirmed candidates, and they never gate a merge. They are
 produced only for files where nothing was confirmed: once a file has a
