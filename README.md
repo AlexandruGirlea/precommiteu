@@ -15,7 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <strong>Air-gapped GenAI scanning for EU regulatory risks.<br>
-  Free, open source, with models you run on your own infrastructure.</strong>
+  Your code. Your infrastructure. Your control. Free and open source.</strong>
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ SPDX-License-Identifier: Apache-2.0
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/ui.html">Local UI</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://alexandrugirlea.github.io/precommiteu-ops/deployment.html"><strong>Deploy to CI</strong></a>
+  <a href="https://alexandrugirlea.github.io/precommiteu-ops/"><strong>Ops docs · Deploy to CI</strong></a>
   &nbsp;&middot;&nbsp;
   <a href="https://alexandrugirlea.github.io/precommiteu/cli.html">CLI reference</a>
   &nbsp;&middot;&nbsp;

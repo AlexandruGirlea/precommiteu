@@ -14,6 +14,8 @@ back_to_top_text: "Back to top"
 aux_links:
   GitHub:
     - "https://github.com/AlexandruGirlea/precommiteu"
+  Ops docs:
+    - "https://alexandrugirlea.github.io/precommiteu-ops/"
   precommit.eu:
     - "https://precommit.eu"
 aux_links_new_tab: true

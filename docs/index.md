@@ -10,7 +10,10 @@ nav_order: 1
   </picture>
 </p>
 
-precommitEU is a local-first EU regulatory compliance scanner for source code.
+**Air-gapped AI scanning. Your code, your infrastructure, your control.**
+
+precommitEU scans source code for EU regulatory risks, with no internet
+access needed after installation.
 It reads your files, reasons about them against a regulation pack, and reports
 the places where the code looks like a violation. Everything runs on your
 machine: the scanner starts local `llama-server` processes, talks to them over
