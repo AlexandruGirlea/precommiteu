@@ -315,6 +315,7 @@ The GitHub Action handles both event types automatically.
 As a GitHub Actions workflow, on your own runner set up as in
 [CI integration](ci.md):
 
+{% raw %}
 ```yaml
 name: compliance-scan
 
@@ -345,6 +346,7 @@ jobs:
           sarif_file: precommiteu.sarif
           category: precommiteu
 ```
+{% endraw %}
 
 For the Azure GPU deployment, use the
 [ops workflow](https://alexandrugirlea.github.io/precommiteu-ops/ci.html)
@@ -356,7 +358,8 @@ Two details that decide whether this works.
 `fetch-depth: 0` gives the runner a merge base. A shallow clone cannot resolve
 the target branch, and the scan exits 2.
 
-`if: ${{ !cancelled() }}` on the upload step matters because the scan exits 1
+{% raw %}`if: ${{ !cancelled() }}`{% endraw %} on the upload step matters
+because the scan exits 1
 when it finds something. Without it, the failing run never uploads the SARIF
 and reviewers see a red check with no detail.
 

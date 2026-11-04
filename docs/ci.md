@@ -61,6 +61,7 @@ Register the machine as a self-hosted runner with the label `precommiteu`
 user to the `docker` group. Use it for private repositories only: on a public
 repository, pull requests from forks would run on your machine.
 
+{% raw %}
 ```yaml
 name: compliance-scan
 
@@ -96,6 +97,7 @@ jobs:
         with:
           sarif_file: precommiteu.sarif
 ```
+{% endraw %}
 
 The action scans with what the container provides. It installs and downloads
 nothing.
